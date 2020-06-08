@@ -10,15 +10,15 @@
 /**
  ** @brief Device address
  **/
-#define ADDR_BME280_SHIFTED             0xEC                                //7 bit MSB 0x76 (address) + 1 bit LSB 0x00 (read/write)
-#define ADDR_BME280						0x76								//It's not shifted address
-#define ADDR_BME280_SHIFTED_ALTERNATIVE 0xEE                                //
-#define ADDR_BME280_ALTERNATIVE			0x77								//It's not shifted address
+#define BME280_ADDR_SHIFTED             0xEC                                //7 bit MSB 0x76 (address) + 1 bit LSB 0x00 (read/write)
+#define BME280_ADDR						0x76								//It's not shifted address
+#define BME280_ADDR_ALTERNATIVE_SHIFTED 0xEE                                //
+#define BME280_ADDR_ALTERNATIVE			0x77								//It's not shifted address
 
 /**
  ** @brief Software reset cmd.
  **/
-#define RESET_STATE                     0xB6
+#define BME280_RESET_STATE              0xB6
 
 /**
  ** @brief Internal registers addresses
@@ -26,50 +26,50 @@
 typedef enum 
 {
 	///The trimming parameters are programmed into the devices’ non-volatile memory (NVM) during production
-	CALIB00_START_ADDR     =  0x88,
-	CALIB25_FINISH_ADDR    =  0xA1,
+	BME280_CALIB00_START_ADDR     =  0x88,
+	BME280_CALIB25_FINISH_ADDR    =  0xA1,
 	///Chip identification number chip_id[7:0], which is 0x60.
-	ID_ADDR                =  0xD0,
+	BME280_ID_ADDR                =  0xD0,
 	///The “reset” register contains the soft reset word reset[7:0]. If the value 0xB6 is written to the
 	///register, the device is reset. Writing other values than 0xB6 has no effect.
-	RESET_ADDR             =  0xE0,
+	BME280_RESET_ADDR             =  0xE0,
 	///The trimming parameters are programmed into the devices’ non - volatile memory(NVM) during production
-	CALIB26_START_ADDR     =  0xE1,
-	CALIB41_FINISH_ADDR    =  0xF0,
+	BME280_CALIB26_START_ADDR     =  0xE1,
+	BME280_CALIB41_FINISH_ADDR    =  0xF0,
 	///The “ctrl_hum” register sets the humidity data acquisition options of the device.Changes to this
 	///register only become effective after a write operation to “ctrl_meas”.
-	CTRL_HUM_ADDR          =  0xF2,
+	BME280_CTRL_HUM_ADDR          =  0xF2,
 	///The “status” register contains two bits which indicate the status of the device.
 	///Bit 3 "measuring[0]" Automatically set to ‘1’ whenever a conversion is running and back to ‘0’ when the results have been
 	///transferred to the data registers. 
 	///Bit 0 "im_update[0]" Automatically set to ‘1’ when the NVM data are being copied to image registers and back to ‘0’ when the
 	///copying is done. The data are copied at power-on-reset and before every conversion.
-	STATUS_ADDR            =  0xF3,
+	BME280_STATUS_ADDR            =  0xF3,
 	///The “ctrl_meas” register sets the pressure and temperature data acquisition options of the device.
 	///The register needs to be written after changing “ctrl_hum” for the changes to become effective.
-	CTRL_MEAS_ADDR         =  0xF4,
+	BME280_CTRL_MEAS_ADDR         =  0xF4,
 	///The “config” register sets the rate, filter and interface options of the device. Writes to the “config”
 	///register in normal mode may be ignored.In sleep mode writes are not ignored.
-	CONFIG_ADDR            =  0xF5,
+	BME280_CONFIG_ADDR            =  0xF5,
 	///The “press” register contains the raw pressure measurement output data up[19:0].
 	///Contains the MSB part up[19:12] of the raw pressure measurement output data.
-	PRESS_MSB_ADDR         =  0xF7,
+	BME280_PRESS_MSB_ADDR         =  0xF7,
 	///Contains the LSB part up[11:4] of the raw pressure measurement output data.
-	PRESS_LSB_ADDR         =  0xF8,
+	BME280_PRESS_LSB_ADDR         =  0xF8,
 	///Contains the XLSB part up[3:0] of the raw pressure measurement output data (bit 7, 6, 5, 4). Contents depend on temperature resolution.
-	PRESS_XLSB_ADDR        =  0xF9,
+	BME280_PRESS_XLSB_ADDR        =  0xF9,
 	///The “temp” register contains the raw temperature measurement output data ut[19:0].
 	///Contains the MSB part ut[19:12] of the raw temperature measurement output data.
-	TEMP_MSB_ADDR          =  0xFA,
+	BME280_TEMP_MSB_ADDR          =  0xFA,
 	///Contains the LSB part ut[11:4] of the raw temperature measurement output data.
-	TEMP_LSB_ADDR          =  0xFB,
+	BME280_TEMP_LSB_ADDR          =  0xFB,
 	///Contains the XLSB part ut[3:0] of the raw temperature measurement output data (bit 7, 6, 5, 4). Contents depend on pressure resolution.
-	TEMP_XLSB_ADDR         =  0xFC,
+	BME280_TEMP_XLSB_ADDR         =  0xFC,
 	///The “temp” register contains the raw temperature measurement output data ut[19:0]. 
 	///Contains the MSB part uh[15:8] of the raw humidity measurement output data.
-	HUM_MSB_ADDR           =  0xFD,
+	BME280_HUM_MSB_ADDR           =  0xFD,
 	///Contains the LSB part uh[7:0] of the raw humidity measurement output data.
-	HUM_LSB_ADDR           =  0xFE,     
+	BME280_HUM_LSB_ADDR           =  0xFE,     
 	
 } BME280_AddrReg;
 
@@ -79,13 +79,13 @@ typedef enum
 typedef enum
 {
 	///Skipped (output set to 0x8000).
-	OSRS_H_SKIPPED          =  0x00,
-	OSRS_H_OVERSAMPLING_1   =  0x01,
-	OSRS_H_OVERSAMPLING_2   =  0x02,
-	OSRS_H_OVERSAMPLING_4   =  0x03,
-	OSRS_H_OVERSAMPLING_8   =  0x04,
+	BME280_OSRS_H_SKIPPED          =  0x00,
+	BME280_OSRS_H_OVERSAMPLING_1   =  0x01,
+	BME280_OSRS_H_OVERSAMPLING_2   =  0x02,
+	BME280_OSRS_H_OVERSAMPLING_4   =  0x03,
+	BME280_OSRS_H_OVERSAMPLING_8   =  0x04,
 	///Value 0x05 or others.
-	OSRS_H_OVERSAMPLING_16  =  0x05,
+	BME280_OSRS_H_OVERSAMPLING_16  =  0x05,
 	
 } BME280_CtrlHum;
 
@@ -96,29 +96,29 @@ typedef enum
 {
 	///Controls oversampling of pressure data.
 	///Skipped (output set to 0x80000).
-	OSRS_P_SKIPPED           =       0x00,
-	OSRS_P_OVERSAMPLING_1    =       0x01,
-	OSRS_P_OVERSAMPLING_2    =       0x02,
-	OSRS_P_OVERSAMPLING_4    =       0x03,
-	OSRS_P_OVERSAMPLING_8    =       0x04,
+	BME280_OSRS_P_SKIPPED           =       0x00,
+	BME280_OSRS_P_OVERSAMPLING_1    =       0x01,
+	BME280_OSRS_P_OVERSAMPLING_2    =       0x02,
+	BME280_OSRS_P_OVERSAMPLING_4    =       0x03,
+	BME280_OSRS_P_OVERSAMPLING_8    =       0x04,
 	///Value is 0x05 or other.
-	OSRS_P_OVERSAMPLING_16   =       0x05,
+	BME280_OSRS_P_OVERSAMPLING_16   =       0x05,
 							 			 
 	///Controls oversampling of temperature data.
 	///Skipped (output set to 0x80000).
-	OSRS_T_SKIPPED           =       0x00,
-	OSRS_T_OVERSAMPLING_1    =       0x01,
-	OSRS_T_OVERSAMPLING_2    =       0x02,
-	OSRS_T_OVERSAMPLING_4    =       0x03,
-	OSRS_T_OVERSAMPLING_8    =       0x04,
+	BME280_OSRS_T_SKIPPED           =       0x00,
+	BME280_OSRS_T_OVERSAMPLING_1    =       0x01,
+	BME280_OSRS_T_OVERSAMPLING_2    =       0x02,
+	BME280_OSRS_T_OVERSAMPLING_4    =       0x03,
+	BME280_OSRS_T_OVERSAMPLING_8    =       0x04,
 	///Value is 0x05 or other.
-	OSRS_T_OVERSAMPLING_16   =       0x05,
+	BME280_OSRS_T_OVERSAMPLING_16   =       0x05,
 							 			 
 	///Controls the sensor mode of the device.
-	SLEEP_MODE               =       0x00,
-	FORCED_MODE              =       0x01,
+	BME280_SLEEP_MODE               =       0x00,
+	BME280_FORCED_MODE              =       0x01,
 	//FORCED_MODE              =       0x02,
-	NORMAL_MODE              =       0x03,
+	BME280_NORMAL_MODE              =       0x03,
 	
 } BME280_CtrlMeas;
 
@@ -128,25 +128,25 @@ typedef enum
 typedef enum
 {
 	///Controls inactive duration t standby in normal mode.
-	T_SB_500uS               =       0x00,
-	T_SB_62500uS             =       0x01,
-	T_SB_125mS               =       0x02,
-	T_SB_250mS               =       0x03,
-	T_SB_500mS               =       0x04,
-	T_SB_1000mS              =       0x05,
-	T_SB_10mS                =       0x06,
-	T_SB_20mS                =       0x07,
+	BME280_T_SB_500uS               =       0x00,
+	BME280_T_SB_62500uS             =       0x01,
+	BME280_T_SB_125mS               =       0x02,
+	BME280_T_SB_250mS               =       0x03,
+	BME280_T_SB_500mS               =       0x04,
+	BME280_T_SB_1000mS              =       0x05,
+	BME280_T_SB_10mS                =       0x06,
+	BME280_T_SB_20mS                =       0x07,
 							 			 
 	///Controls the time constant of the IIR filter.
-	FILTER_OFF               =       0x00,
-	FILTER_COEFF2            =       0x01,
-	FILTER_COEFF4            =       0x02,
-	FILTER_COEFF8            =       0x03,
-	FILTER_COEFF16           =       0x04,
+	BME280_FILTER_OFF               =       0x00,
+	BME280_FILTER_COEFF2            =       0x01,
+	BME280_FILTER_COEFF4            =       0x02,
+	BME280_FILTER_COEFF8            =       0x03,
+	BME280_FILTER_COEFF16           =       0x04,
 							 		
 	///Enables 3-wire SPI.
-	SPI3WIRE_EN              =       0x01,
-	SPI3WIRE_DIS             =       0x00,
+	BME280_SPI3WIRE_EN              =       0x01,
+	BME280_SPI3WIRE_DIS             =       0x00,
 	
 } BME280_Config;
 /**

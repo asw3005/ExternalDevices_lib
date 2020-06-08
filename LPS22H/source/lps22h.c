@@ -35,7 +35,7 @@ static void LPS22H_Set_CtrlReg3(LPS22H_typedef *dev_lps22h, LPS22H_CtrlReg3 int_
 void LPS22H_InitDevice(LPS22H_typedef *dev_lps22h)                              
 {	
 	LPS22H_Get_ID(dev_lps22h);
-	LPS22H_Set_ConfigFifo(dev_lps22h, 0, F_MODE_BYPASS_MODE);
+	LPS22H_Set_ConfigFifo(dev_lps22h, 0, LPS22H_F_MODE_BYPASS_MODE);
 	LPS22H_Set_OffesetCompensation(dev_lps22h, 0);
 	LPS22H_Set_ReferencePressure(dev_lps22h, 0);
 	LPS22H_Set_ThresholdP(dev_lps22h, 0);
@@ -67,7 +67,7 @@ LPS22H_TempPressStruct_typedef* HTS221_Get_DataTempPress(LPS22H_typedef *dev_lps
  **/
 static void LPS22H_Get_ID(LPS22H_typedef *dev_lps22h)                              
 {
-	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, WHO_AM_I, 1, (uint8_t *)(&dev_lps22h->dev_compensated_data.dev_id), sizeof(dev_lps22h->dev_compensated_data.dev_id));
+	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, LPS22H_WHO_AM_I, 1, (uint8_t *)(&dev_lps22h->dev_compensated_data.dev_id), sizeof(dev_lps22h->dev_compensated_data.dev_id));
 	dev_lps22h->delay(1);
 }
 
@@ -88,7 +88,7 @@ static void LPS22H_Set_ConfigFifo(LPS22H_typedef *dev_lps22h, LPS22H_FifoCtrl wt
 	dev_lps22h->dev_configuration.bitsFifoCtrl.f_mode_2_0 = f_mode;
 	dev_lps22h->dev_configuration.bitsFifoCtrl.wtm_4_0 = wtm_fifo;
 	
-	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, FIFO_CTRL, 1, (uint8_t *)&dev_lps22h->dev_configuration.FifoCtrl, sizeof(dev_lps22h->dev_configuration.FifoCtrl));
+	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, LPS22H_FIFO_CTRL, 1, (uint8_t *)&dev_lps22h->dev_configuration.FifoCtrl, sizeof(dev_lps22h->dev_configuration.FifoCtrl));
 	dev_lps22h->delay(1);
 }
 
@@ -110,7 +110,7 @@ static void LPS22H_Set_OffesetCompensation(LPS22H_typedef *dev_lps22h, int16_t o
 {	
 	dev_lps22h->dev_configuration.Rpds = offeset;
 	
-	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, RPDS_L, 1, (uint8_t *)&dev_lps22h->dev_configuration.Rpds, sizeof(dev_lps22h->dev_configuration.Rpds));
+	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, LPS22H_RPDS_L, 1, (uint8_t *)&dev_lps22h->dev_configuration.Rpds, sizeof(dev_lps22h->dev_configuration.Rpds));
 	dev_lps22h->delay(1);
 }
 
@@ -127,7 +127,7 @@ static void LPS22H_Set_ReferencePressure(LPS22H_typedef *dev_lps22h, int32_t ref
 	
 	dev_lps22h->dev_configuration.RefP = (((reference & 0x80000000) >> 8) | reference); 
 	///WARNING! Return only 3 low bytes.
-	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, REF_P_XL, 1, (uint8_t *)&dev_lps22h->dev_configuration.RefP, sizeof(dev_lps22h->dev_configuration.RefP) - 1);
+	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, LPS22H_REF_P_XL, 1, (uint8_t *)&dev_lps22h->dev_configuration.RefP, sizeof(dev_lps22h->dev_configuration.RefP) - 1);
 	dev_lps22h->delay(1);
 }
 
@@ -143,7 +143,7 @@ static void LPS22H_Set_ThresholdP(LPS22H_typedef *dev_lps22h, uint16_t threshold
 {	
 	dev_lps22h->dev_configuration.ThresholdP = threshold_p;
 	
-	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, THS_P_L, 1, (uint8_t *)&dev_lps22h->dev_configuration.ThresholdP, sizeof(dev_lps22h->dev_configuration.ThresholdP));
+	dev_lps22h->read_data_i2c(dev_lps22h->dev_address, LPS22H_THS_P_L, 1, (uint8_t *)&dev_lps22h->dev_configuration.ThresholdP, sizeof(dev_lps22h->dev_configuration.ThresholdP));
 	dev_lps22h->delay(1);
 }
 
@@ -178,7 +178,7 @@ static void LPS22H_Set_InterruptMode(LPS22H_typedef *dev_lps22h, LPS22H_Interrup
 	dev_lps22h->dev_configuration.bitsInterruptCfg.reset_arp = reset_arp;
 	dev_lps22h->dev_configuration.bitsInterruptCfg.autorifp = autorifp;
 	
-	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, INTERRUPT_CFG, 1, &dev_lps22h->dev_configuration.InterruptCfg, sizeof(dev_lps22h->dev_configuration.InterruptCfg));
+	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, LPS22H_INTERRUPT_CFG, 1, &dev_lps22h->dev_configuration.InterruptCfg, sizeof(dev_lps22h->dev_configuration.InterruptCfg));
 	dev_lps22h->delay(1); 
 }
 
@@ -202,7 +202,7 @@ static void LPS22H_Set_CtrlReg1(LPS22H_typedef *dev_lps22h, LPS22H_CtrlReg1 spi_
 	dev_lps22h->dev_configuration.bitsCtrlReg1.en_lpfp = lpf_state;
 	dev_lps22h->dev_configuration.bitsCtrlReg1.odr_2_0 = odr_mode;
 	
-	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, CTRL_REG1, 1, &dev_lps22h->dev_configuration.CtrlReg1, sizeof(dev_lps22h->dev_configuration.CtrlReg1));
+	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, LPS22H_CTRL_REG1, 1, &dev_lps22h->dev_configuration.CtrlReg1, sizeof(dev_lps22h->dev_configuration.CtrlReg1));
 	dev_lps22h->delay(1); 
 }
 
@@ -231,7 +231,7 @@ static void LPS22H_Set_CtrlReg2(LPS22H_typedef *dev_lps22h, LPS22H_CtrlReg2 one_
 	dev_lps22h->dev_configuration.bitsCtrlReg2.fifo_en = fifo_state;
 	dev_lps22h->dev_configuration.bitsCtrlReg2.boot = boot_state;
 	
-	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, CTRL_REG2, 1, &dev_lps22h->dev_configuration.CtrlReg2, sizeof(dev_lps22h->dev_configuration.CtrlReg2));
+	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, LPS22H_CTRL_REG2, 1, &dev_lps22h->dev_configuration.CtrlReg2, sizeof(dev_lps22h->dev_configuration.CtrlReg2));
 	dev_lps22h->delay(1); 
 	
 }
@@ -260,7 +260,7 @@ static void LPS22H_Set_CtrlReg3(LPS22H_typedef *dev_lps22h, LPS22H_CtrlReg3 int_
 	dev_lps22h->dev_configuration.bitsCtrlReg3.pp_od = pp_od;
 	dev_lps22h->dev_configuration.bitsCtrlReg3.int_h_l = int_h_l;
 	
-	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, CTRL_REG3, 1, &dev_lps22h->dev_configuration.CtrlReg3, sizeof(dev_lps22h->dev_configuration.CtrlReg3));
+	dev_lps22h->write_data_i2c(dev_lps22h->dev_address, LPS22H_CTRL_REG3, 1, &dev_lps22h->dev_configuration.CtrlReg3, sizeof(dev_lps22h->dev_configuration.CtrlReg3));
 	dev_lps22h->delay(1); 
 }
 
@@ -274,7 +274,7 @@ static void LPS22H_Set_Profile(LPS22H_Profile profile_type, LPS22H_typedef *dev_
 {
 	switch (profile_type)
 	{
-	case PROFILE_FIFO_BYPASS:
+	case LPS22H_PROFILE_FIFO_BYPASS:
 
 
 		
