@@ -1,0 +1,81 @@
+/**
+ ** @brief Reading temperature from si7021 sensor task 
+ **/
+static void readTemperatureSI7021Task(void)
+{
+	static SI7021_typedef dev_si7021_inst0 = { 
+	
+		.dev_address = ADDR_SI7021_SHIFTED,
+		.read_data_i2c = user_i2c_read,
+		.write_data_i2c = user_i2c_write,
+		.delay = user_delay_ms,
+	};	
+	
+	xSemaphoreTake(mutI2C1Handle, portMAX_DELAY);
+	SI7021_Get_Electronic_Serial_Number(&dev_si7021_inst0);
+	xSemaphoreGive(mutI2C1Handle);
+	
+	for (;;)
+	{
+		SI7021_TempHumStruct_typedef *device_compinsated_data_si7021; 
+		xSemaphoreTake(mutI2C1Handle, portMAX_DELAY);	
+		SI7021_Get_Temp(&dev_si7021_inst0);
+		device_compinsated_data_si7021 = SI7021_Get_Hum(&dev_si7021_inst0);
+		xSemaphoreGive(mutI2C1Handle);
+		vTaskDelay(1000);
+		
+	}
+}
+
+
+//additional function
+#include "stm32l4xx_hal.h"
+
+/**
+ ** @brief Read i2c function for external device library 
+ **/
+int8_t user_i2c_read(uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)
+{
+	int8_t rslt = 1; /* Return 0 for Success, non-zero for failure */
+
+	//HAL_Delay(2);
+	rslt = HAL_I2C_Mem_Read_IT(&hi2c1, DevAddress, MemAddress, MemAddSize, pData, Size);
+	HAL_Delay(1);
+	return rslt = 0;
+}
+
+/**
+ ** @brief Write i2c function for external device library 
+ **/
+int8_t user_i2c_write(uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)
+{
+	int8_t rslt = 1; /* Return 0 for Success, non-zero for failure */
+
+	//HAL_Delay(2);
+	rslt = HAL_I2C_Mem_Write_IT(&hi2c1, DevAddress, MemAddress, MemAddSize, pData, Size);
+	HAL_Delay(1);
+	return rslt = 0;
+}
+
+/**
+ ** @brief Alternative write  function for external device library 
+ **/
+int8_t user_i2c_write_alt(uint8_t dev_addr, uint8_t data, uint16_t len)
+{
+	int8_t rslt = 1; /* Return 0 for Success, non-zero for failure */
+	
+	static uint8_t tmp_data;
+	tmp_data = data;
+	rslt = HAL_I2C_Master_Transmit_IT(&hi2c1, dev_addr, &tmp_data, len);
+	
+	return rslt = 0;
+}
+
+/**
+ ** @brief Delay function for external device library 
+ **/
+void user_delay_ms(uint32_t period)
+{
+	vTaskDelay(period);
+	//HAL_Delay(period);
+}

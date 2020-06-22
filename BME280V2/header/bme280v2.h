@@ -325,8 +325,8 @@ typedef struct {
 /**
  ** @brief Public function prototype.
  **/
-void BME280_Init_Device(BME280_PROFILES_enum meas_profil, BME280_typedef *dev_bme280);
-BME280_TempHumPressStruct_typedef* BME280_Get_Data_Press_Temp_Hum(BME280_typedef *dev_bme280); 
+void BME280_Init_Device(BME280_Profile meas_profil, BME280_typedef *dev_bme280);
+BME280_TempHumPressStruct_typedef* BME280_Get_PressTempHum(BME280_typedef *dev_bme280); 
 void BME280_Write_Config(void); 								  
 void BME280_Get_Calibration_Data(BME280_typedef *dev_bme280); 
 void BME280_Get_Calibration_Data0(BME280_typedef *dev_bme280); 

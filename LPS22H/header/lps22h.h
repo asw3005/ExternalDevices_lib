@@ -351,11 +351,11 @@ typedef void(*lps22h_delay_fptr)(uint32_t period);
  **/
 typedef struct {
 	uint8_t dev_id;	
-	int32_t TemperatureC;
-	int32_t TemperatureF;
-	uint32_t PressurePa;
-	uint32_t PressuremmHg;
-	uint32_t PressuremBar;
+	float TemperatureC;
+	float TemperatureF;
+	float PressurePa;
+	float PressuremmHg;
+	float PressuremBar;
 	
 } LPS22H_TempPressStruct_typedef;
 
@@ -641,7 +641,7 @@ typedef struct {
  ** @brief Public function prototype
  **/
 void LPS22H_InitDevice(LPS22H_typedef *dev_lps22h);
-
+LPS22H_TempPressStruct_typedef* LPS22H_Get_DataTempPress(LPS22H_typedef *dev_lps22h);
 
 //#endif /* LPS22H_H_ */
 

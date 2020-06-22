@@ -41,7 +41,7 @@ void BME280_Init_Device(BME280_Profile meas_profile, BME280_typedef *dev_bme280)
  ** @param[in] *dev_bme280 : pointer to instance BME280_typedef.
  **
  **/				
-BME280_TempHumPressStruct_typedef* BME280_Get_Data_Press_Temp_Hum(BME280_typedef *dev_bme280)                              
+BME280_TempHumPressStruct_typedef* BME280_Get_PressTempHum(BME280_typedef *dev_bme280)                              
 {
 	dev_bme280->dev_compensated_data.TemperatureC = BME280_Temperature_Conv(dev_bme280);
 	dev_bme280->dev_compensated_data.TemperatureF = ((BME280_Temperature_Conv(dev_bme280) * 18) + 32000) / 10;
