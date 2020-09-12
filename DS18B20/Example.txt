@@ -1,0 +1,119 @@
+//additional function
+#include "stm32l4xx_hal.h"
+
+/*
+ * @brief Reading temperature from the DS18B20 sensor.
+ *
+ **/
+static void DS18B20_ReadDataTaskImpl()
+{
+	uint8_t buffer[100];
+	///Create instance of ds18b20's data struct.
+	static DS18B20_GeneralDataInstance_typedef ds18b20_instance0 = { 
+			
+		.strong_pull_up = UART_ParasitePinRemote,
+		.isReceiveComplete = &huart2.RxXferCount,
+		.uart_init_baud = UART_Init_Baud,	
+		.uart_rx_data = UART_Receive_IT,
+		.uart_tx_data = UART_Transmit_IT,
+		.delay = HAL_Delay
+	};
+	DS18B20_ResetLine(&ds18b20_instance0);
+	vTaskDelay(5);
+	DS18B20_Get_LaserRomCode(&ds18b20_instance0);
+	DS18B20_Get_PowerSupplyType(&ds18b20_instance0);
+	//DS18B20_Set_ThresholdAndControl(&ds18b20_instance0, 0, 0, MEASUREMENT_RESOLUTION_12BIT);
+	sprintf((char*)buffer, "Serial number %Xh\r\n", ds18b20_instance0.converted_data.Serialnumber);
+	HAL_UART_Transmit_IT(&huart3, buffer, 24);
+	HAL_Delay(10);
+	sprintf((char*)buffer, "Family code is %Xh\r\n", ds18b20_instance0.converted_data.FamilyCode);
+	HAL_UART_Transmit_IT(&huart3, buffer, 19);
+	HAL_Delay(10);
+	
+	for (;;)
+	{
+		//HAL_GetTick();
+		DS18B20_Get_Temperature(&ds18b20_instance0, FULL_SCRATCHPAD);
+		sprintf((char*)buffer, "DS18B20 temperature is %5.2f °C\r\n", ds18b20_instance0.converted_data.Temperature);
+		HAL_UART_Transmit_IT(&huart2, buffer, 33);
+		
+		vTaskDelay(250);
+		
+	}
+}
+
+/*
+ * @brief Usart baud rate reinitialisation.
+ *
+ **/
+void UART_Init_Baud(uint32_t baud)
+{
+	huart2.Instance = USART2;
+	huart2.Init.BaudRate = baud;
+	huart2.Init.WordLength = UART_WORDLENGTH_8B;
+	huart2.Init.StopBits = UART_STOPBITS_1;
+	huart2.Init.Parity = UART_PARITY_NONE;
+	huart2.Init.Mode = UART_MODE_TX_RX;
+	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&huart2) != HAL_OK)
+	{
+		for (;;) ;
+	}
+ }
+
+/*
+ * @brief 
+ *
+ **/
+void UART_Receive_IT(uint8_t *buffer, uint8_t size)
+{
+	HAL_UART_Receive_IT(&huart2, buffer, size);
+}
+
+/*
+ * @brief
+ *
+ **/
+void UART_Transmit_IT(uint8_t *buffer, uint8_t size)
+{
+	HAL_UART_Transmit_IT(&huart2, buffer, size);
+}
+
+/*
+ * @brief USART2 GPIO Reconfiguration 
+ *
+ **/
+void UART_ParasitePinRemote(uint8_t pull_up)
+{		
+	/**   
+	PD5     ------> USART2_TX
+	*/
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	
+	GPIO_InitStruct.Pin = GPIO_PIN_5;
+	if (pull_up > 0)
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	}
+	else
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	}
+	
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+}
+
+/**
+ ** @brief Delay function for external device library 
+ **/
+void user_delay_ms(uint32_t period)
+{
+	vTaskDelay(period);
+	//HAL_Delay(period);
+}
