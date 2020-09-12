@@ -4,9 +4,9 @@
  *
  **/
 
-#include "stm32f1xx_hal.h"
+#include "stm32l4xx_hal.h"
 #include "ds18b20.h"
-#include "calcCRC.h"
+//#include "calcCRC.h"
 
 #pragma region PrivateFunctionPrototype
 
@@ -49,11 +49,11 @@ uint8_t DS18B20_ResetLine(DS18B20_GeneralDataInstance_typedef *device)
 		device->raw_data.UART_RxBuffer[0] <= ONEWIRE_READ_PRESENT_STOP_VALUE_ALT)
 	{
 		///Read first state.
-		DS18B20_ReadScratchpadBytes(device, 9);
+		DS18B20_ReadScratchpadBytes(device, DS18B20_FULL_SCRATCHPAD);
 		device->delay(15);
-		return PRESENT_IS_OK;
+		return DS18B20_PRESENT_IS_OK;
 	}
-	else return DEVICE_NOT_FOUND;	
+	else return DS18B20_DEVICE_NOT_FOUND;	
 }
 
 /*
@@ -207,7 +207,7 @@ static void DS18B20_ConvertT(DS18B20_GeneralDataInstance_typedef *device)
 				__NOP();				
 			}
 		///Strong pull up is here.
-		device->strong_pull_up(STRONG_PULL_UP_EN);
+		device->strong_pull_up(DS18B20_STRONG_PULL_UP_EN);
 	}
 
 	
@@ -215,13 +215,13 @@ static void DS18B20_ConvertT(DS18B20_GeneralDataInstance_typedef *device)
 	//switch(((device->scratchpad_data.ConfigurationRegister & 0x60)  >> 5))
 	switch(device->scratchpad_data.ConfigurationRegister)
 		{
-		case MEASUREMENT_RESOLUTION_9BIT : delay = 100;
+		case DS18B20_MEASUREMENT_RESOLUTION_9BIT : delay = 100;
 			break;
-		case MEASUREMENT_RESOLUTION_10BIT :	delay = 200;
+		case DS18B20_MEASUREMENT_RESOLUTION_10BIT :	delay = 200;
 			break;
-		case MEASUREMENT_RESOLUTION_11BIT : delay = 400;
+		case DS18B20_MEASUREMENT_RESOLUTION_11BIT : delay = 400;
 			break;
-		case MEASUREMENT_RESOLUTION_12BIT :	delay = 750;
+		case DS18B20_MEASUREMENT_RESOLUTION_12BIT :	delay = 750;
 			break;		
 		///Default delay is MAX
 		default : delay = 750;
@@ -230,7 +230,7 @@ static void DS18B20_ConvertT(DS18B20_GeneralDataInstance_typedef *device)
 	device->delay(delay);
 	if (device->converted_data.PowerSupplyType <= ONEWIRE_READ_ZERO_STOP_VALUE)
 	{
-		device->strong_pull_up(STRONG_PULL_UP_DIS);
+		device->strong_pull_up(DS18B20_STRONG_PULL_UP_DIS);
 	}
 }
 
@@ -244,7 +244,7 @@ static void DS18B20_ConvertT(DS18B20_GeneralDataInstance_typedef *device)
 static void DS18B20_ReadScratchpadBytes(DS18B20_GeneralDataInstance_typedef *device, uint8_t amountOfbytes)
 {
 	uint8_t rxByte = 0;
-	uint8_t *structPtr = &device->scratchpad_data.partsTemperature.TemperatureLsb;  
+	uint8_t *structPtr = (uint8_t *)&device->scratchpad_data.Temperature;  
 	
 	if (amountOfbytes > 9) return;
 	

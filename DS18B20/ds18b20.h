@@ -9,7 +9,7 @@
 #ifndef DS18B20_H_				  
 #define DS18B20_H_
 
-#include "stm32f1xx_hal.h"
+#include "stm32l4xx_hal.h"
 
 #ifndef NULL
 #define NULL (void *)0	
@@ -21,8 +21,8 @@
  **/
 typedef enum
 {
-	PRESENT_IS_OK = 0,
-	DEVICE_NOT_FOUND = 1
+	DS18B20_PRESENT_IS_OK = 0,
+	DS18B20_DEVICE_NOT_FOUND = 1
 	
 } DS18B20_StateOfLine;
 
@@ -32,20 +32,20 @@ typedef enum
  **/
 typedef enum
 {
-	STRONG_PULL_UP_EN    = 1,
-	STRONG_PULL_UP_DIS = 0
+	DS18B20_STRONG_PULL_UP_EN		= 1,
+	DS18B20_STRONG_PULL_UP_DIS		= 0
 	
 } DS18B20_StrongPullUp;
 
 /*
- * @brief DS18B20 data read dapth.
+ * @brief DS18B20 data read depth.
  *
  **/
 typedef enum
 {
-	ONLY_TEMPERATURE = 3,
-	TEMPERATURE_WITH_CONFIGURATION_REGISTER = 5,
-	FULL_SCRATCHPAD = 9
+	DS18B20_ONLY_TEMPERATURE = 3,
+	DS18B20_TEMPERATURE_WITH_CONFIGURATION_REGISTER = 5,
+	DS18B20_FULL_SCRATCHPAD = 9
 	
 } DS18B20_DataReadDepth;
 
@@ -55,10 +55,10 @@ typedef enum
  **/
 typedef enum
 {
-	MEASUREMENT_RESOLUTION_9BIT		= 0x1F,
-	MEASUREMENT_RESOLUTION_10BIT	= 0x3F,
-	MEASUREMENT_RESOLUTION_11BIT	= 0x5F,
-	MEASUREMENT_RESOLUTION_12BIT	= 0x7F
+	DS18B20_MEASUREMENT_RESOLUTION_9BIT		= 0x1F,
+	DS18B20_MEASUREMENT_RESOLUTION_10BIT	= 0x3F,
+	DS18B20_MEASUREMENT_RESOLUTION_11BIT	= 0x5F,
+	DS18B20_MEASUREMENT_RESOLUTION_12BIT	= 0x7F
 	
 } DS18B20_ResolutionOfMeasurement;
 
@@ -187,7 +187,7 @@ typedef struct
 	///Measured temperature.
 	float Temperature; 
 	
-} DS18B20_ConvertedData_typedef;
+} DS18B20_ProcessedData_typedef;
 
 /*
  *	@brief Convertional data from the DS18B20 temperature sensor. 
@@ -203,18 +203,8 @@ typedef struct
 	///significant 8 bits contain a cyclic redundancy check (CRC) byte that is 
 	///calculated from the first 56 bits of the ROM code.
 	uint64_t RomLaserCode;
-	union
-	{
-		///Temperature.
-		int16_t Temperature;
-		struct 
-		{
-			///LSB and the MSB of the temperature register. These bytes are read-only.
-			uint8_t TemperatureLsb;
-			uint8_t TemperatureMsb;
-			
-		} partsTemperature;
-	};
+	///Temperature.
+	int16_t Temperature;
 	///
 	uint8_t ThRegister;
 	uint8_t TlRegister;	
@@ -251,7 +241,7 @@ typedef struct
 	///
 	volatile uint16_t *isReceiveComplete;
 	///Converted data from the scratchpad.
-	DS18B20_ConvertedData_typedef converted_data;
+	DS18B20_ProcessedData_typedef converted_data;
 	///Converted scratchpad data.
 	DS18B20_ScratchpadData_typedef scratchpad_data;
 	///Input raw data.
