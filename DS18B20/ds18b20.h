@@ -154,33 +154,53 @@ typedef enum
 
 
 /*
- *	@brief Tx, Rx and delay functions typedef pointers. 
- *	
- *	@param[in] *buffer :
- *	@param[in] size :
+ * @brief Init baud rate function typedef pointer.
+ *
+ * @param baud : Baud rate, exsample 9600, 115200.
  *
  **/
 typedef void(*usart_init)(uint32_t baud);
+
+/*
+ * @brief Remote control for the external strong pull up.
+ *
+ * @param pull_up : Zero is no pull up, more than zero is pull up enable.
+ *
+ **/
 typedef void(*parasite_power_pin_remote)(uint8_t pull_up);
-typedef void (*usart_txrx_data_fptr)(uint8_t *buffer, uint8_t size);
+
+/*
+ *	@brief Delay function typedef pointer. 
+ *	
+ *	@param period : Time in milliseconds.
+ *
+ **/
 typedef void(*onewire_delay_fptr)(uint32_t period);
+
+/*
+ *	@brief Tx, Rx function typedef pointer. 
+ *	
+ *	@param *buffer : Buffer for transmit or receive data.
+ *	@param size : Amount bytes of data.
+ *
+ **/
+typedef void(*usart_txrx_data_fptr)(uint8_t *buffer, uint8_t size);
 
 typedef struct
 {
-	///8-BIT family code (28h).
-	uint8_t FamilyCode;
+	///Each DS18B20 contains a unique 64–bit code stored in ROM. 
+	///The least significant 8 bits of the ROM code contain the DS18B20’s 1-Wire 
+	///family code: 28h. The next 48 bits contain a unique serial number. The most 
+	///significant 8 bits contain a cyclic redundancy check (CRC) byte that is 
+	///calculated from the first 56 bits of the ROM code.
 	union
 	{
-		///48-BIT serial number.
-		uint64_t Serialnumber;
-		uint64_t ArraySerialNumber[8];
+		uint64_t RomLaserCode;
 		struct
 		{
-			uint32_t SerialNumberLow;
-			uint32_t SerialNumberHigh;
-		} partsSerialNumber;
+			uint8_t arrayRomLaserCode[8];
+		} partsRomLaserCode;
 	};
-
 	///Power supply type.
 	///If it is logic one level, power supply mode is normal, otherwise parasite mode.
 	uint8_t PowerSupplyType;
@@ -227,8 +247,10 @@ typedef struct
  **/
 typedef struct
 {
-	uint8_t UART_TxBuffer[100];
-	uint8_t UART_RxBuffer[100];
+	///Offset for filling the buffer, must be initialised 0.
+	uint8_t UART_TxRxOffset;
+	uint8_t UART_TxBuffer[156];
+	uint8_t UART_RxBuffer[156];
 	
 } DS18B20_RawData_typedef;
 
@@ -239,7 +261,7 @@ typedef struct
 typedef struct
 {
 	///
-	volatile uint16_t *isReceiveComplete;
+	uint16_t *isReceiveComplete;
 	///Converted data from the scratchpad.
 	DS18B20_ProcessedData_typedef converted_data;
 	///Converted scratchpad data.
@@ -259,13 +281,33 @@ typedef struct
  *	@brief Public function prototype.
  *
  **/
-uint8_t DS18B20_ResetLine(DS18B20_GeneralDataInstance_typedef *device);
-void DS18B20_Get_LaserRomCode(DS18B20_GeneralDataInstance_typedef *device);
-void DS18B20_Get_Temperature(DS18B20_GeneralDataInstance_typedef *device, DS18B20_DataReadDepth dataDepth);
+
+///Resets 1 wire line and checks availability for any devices on the bus.
+///This function must be invoked first.
+uint8_t DS18B20_DeviceDetect(DS18B20_GeneralDataInstance_typedef *device);
+///Sets a unique 64–bit ROM code.
+void DS18B20_Set_LaserRomCode(DS18B20_GeneralDataInstance_typedef *device, uint64_t rom_code);
+///Reads a unique 64–bit code.
+uint64_t  DS18B20_Get_LaserRomCode(DS18B20_GeneralDataInstance_typedef *device);
+///Reads temperature from the sensor and converts the value according to the sensor resolution.
+void DS18B20_Get_Temperature(DS18B20_GeneralDataInstance_typedef *device,
+	DS18B20_FunctionCommandSet rom_cmd,
+	DS18B20_DataReadDepth dataDepth);
+///Determines the type of sensor power supply.
 void DS18B20_Get_PowerSupplyType(DS18B20_GeneralDataInstance_typedef *device);
+///Sets sensor setting (Th, Tl, sensor resolution).
 void DS18B20_Set_ThresholdAndControl(DS18B20_GeneralDataInstance_typedef *device,
-										int8_t tHigh,
-										int8_t tLow, 
-										DS18B20_ResolutionOfMeasurement resolution);
+	DS18B20_FunctionCommandSet rom_cmd,
+	int8_t tHigh,
+	int8_t tLow,
+	DS18B20_ResolutionOfMeasurement resolution);
+///Reads scratchpad memory of the DS18B20 temperature sensor.
+void DS18B20_ReadScratchpadBytes(DS18B20_GeneralDataInstance_typedef *device,
+	DS18B20_FunctionCommandSet rom_cmd,
+	uint8_t amountOfbytes);
+///Saves scratchpad data (Tl, Th, Configuration register) to the internal EEPROM memory. 
+void DS18B20_CopyScratchpadToEeprom(DS18B20_GeneralDataInstance_typedef *device, DS18B20_FunctionCommandSet rom_cmd);
+///Reads scratchpad data (Tl, Th, Configuration register) from the internal EEPROM to RAM memory.
+void DS18B20_RecallE2(DS18B20_GeneralDataInstance_typedef *device, DS18B20_FunctionCommandSet rom_cmd);
 
 #endif /* DS18B20_H_ */
