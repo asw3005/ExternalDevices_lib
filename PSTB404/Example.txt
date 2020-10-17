@@ -1,0 +1,80 @@
+/*
+ * @brief Displays time, data and temperature data.
+ *
+ **/
+static void Display_TaskImpl()
+{	
+	//Data struct.
+	//DS18B20_ConvertedData_typedef ds18b20_instance0;
+	float Temperature;
+	DS3231_Clock_typedef ds3231_instTime;
+	
+	///PSTB404 display's data struct.
+	PSTB404__GInstance_typedef pstb404_inst0 = { 
+			
+		.delay = HAL_Delay,
+		.transmit_data_fptr = UART2_Transmit_IT,
+		.receive_data_fptr = UART2_Receive_IT
+	};
+	
+	///Initialize screen.
+	//PSTB404_CharTest(&pstb404_inst0);	
+	PSTB404_ClrScreen(&pstb404_inst0);
+	
+	xSemaphoreTake(Indoor_SemaphoreHandle, 0);
+	xSemaphoreTake(Outdoor_SemaphoreHandle, 0);
+	
+	for (;;)
+	{		
+		if (xQueueReceive(TimeData_QueueHandle, &ds3231_instTime, 0) == pdPASS)
+		{
+			PSTB404_SendTime(&pstb404_inst0, PSTB404_LEFT_UP_WINDOW, 0, 0, ds3231_instTime.Seconds, ds3231_instTime.Minutes, ds3231_instTime.Hours);
+			PSTB404_SendDate(&pstb404_inst0, PSTB404_RIGHT_UP_WINDOW, ds3231_instTime.Date, ds3231_instTime.Month, ds3231_instTime.Year);
+		}
+		
+		if (xQueueReceive(TemperatureData_QueueHandle, &Temperature, 0) == pdPASS)
+		{
+			if (xSemaphoreTake(Indoor_SemaphoreHandle, 0) == pdPASS)
+			{
+				PSTB404_SendMessage(&pstb404_inst0, PSTB404_LEFT_DOWN_WINDOW, (uint8_t *) " Indoor ");
+			}
+			else PSTB404_SendMessage(&pstb404_inst0, PSTB404_LEFT_DOWN_WINDOW, (uint8_t *) " Outdoor");
+			
+			PSTB404_SendTemperatureFloat4_1(&pstb404_inst0, PSTB404_RIGHT_DOWN_WINDOW, Temperature);			
+		}		
+
+	}
+}
+
+/*
+ * #brief
+ *
+ **/
+static void DS3231_TaskImpl()
+{	
+	//Static variable.	
+	
+	///Create clock data instance.
+	DS3231_GDataInstance_typedef ds3231_inst0 = { 
+			
+		.delay = HAL_Delay,
+		.i2c_tx_data = I2C_Transmit_IT,
+		.i2c_rx_data = I2C_Receive_IT
+	};
+	
+	//DS3231_Set_Time(&ds3231_inst0, DS3231_CLOCK_FORMAT_24HOURS, 8, 11, 30);
+	//DS3231_Set_Date(&ds3231_inst0, 3, 14, 10, 20);
+	//DS3231_Set_Alarm1(&ds3231_inst0, DS3231_ALARM_HOURS_MINUTES_SECONDS_MATCH, DS3231_CLOCK_FORMAT_24HOURS, 0, 30, 15, 4);
+	//DS3231_Set_Alarm2(&ds3231_inst0, DS3231_ALARM_HOURS_MINUTES_SECONDS_MATCH, DS3231_CLOCK_FORMAT_24HOURS, 30, 15, 4);
+	DS3231_Set_ControlReg(&ds3231_inst0, 0, 0, 0, DS3231_SQW_1Hz, 0, 0, 0);
+	//DS3231_Get_TimeDate(&ds3231_inst0);	
+
+	
+	for(;/*|__|*/;)
+	{
+		//Get date and time.
+		DS3231_Get_TimeDate(&ds3231_inst0);			
+		xQueueSend(TimeData_QueueHandle, &ds3231_inst0.clock, 0);		
+		vTaskDelay(1000);	
+	}
+}

@@ -38,15 +38,16 @@ static enum {
  ** @retval zero -> Success / +ve value -> Warning / -ve value -> Error
  **/
 typedef int8_t(*htu21d_communication_fptr)(uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size);
+//typedef int8_t(*htu21d_communication_alt_fptr)(uint8_t DevAddress, uint8_t *pData, uint16_t Size);
 typedef void(*htu21d_delay_fptr)(uint32_t period);
 
 /**
  ** @brief TempHumPress struct
  **/
 typedef struct {
-	int32_t TemperatureC;
-	int32_t TemperatureF;
-	uint32_t HumidityRH;
+	float TemperatureC;
+	float TemperatureF;
+	float HumidityRH;
 	
 } TempHumStructHTU21D_typedef;
 
@@ -105,8 +106,8 @@ typedef struct {
  **/
 
 //Get temperature
-TempHumStructHTU21D_typedef* HTU21D_GetTemp(HTU21D_typedef *dev_htu21d);	
+void HTU21D_GetTemp(HTU21D_typedef *dev_htu21d);	
 //Get humidity
-TempHumStructHTU21D_typedef* HTU21D_GetHum(HTU21D_typedef *dev_htu21d); 		
+void HTU21D_GetHum(HTU21D_typedef *dev_htu21d); 		
 //Set configuration register
-void HTU21D_SetConfuguration(uint8_t measurement_resolution, uint8_t heater_en, HTU21D_typedef *dev_htu21d);
+void HTU21D_SetConfuguration(HTU21D_typedef *dev_htu21d, uint8_t measurement_resolution, uint8_t heater_en);

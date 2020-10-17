@@ -25,7 +25,7 @@
  ** @return Result of API execution status
  ** @retval zero -> Success / +ve value -> Warning / -ve value -> Error
  **/
-typedef int8_t(*pca9546_communication_fptr)(uint8_t dev_addr, uint8_t data, uint16_t len);
+typedef int8_t(*pca9546_communication_fptr)(uint8_t dev_addr, uint8_t *data, uint16_t len);
 typedef void(*pca9546_reset_pin_driver_fptr)(uint8_t drive_reset_pin);
 typedef void(*pca9546_delay_fptr)(uint32_t period);
 
@@ -34,11 +34,12 @@ typedef void(*pca9546_delay_fptr)(uint32_t period);
  **/
 typedef enum
 {
-	PCA9546_CHANNEL_BME280  =  PCA9546_CHANNEL_1,
-	PCA9546_CHANNEL_SI7021  =  PCA9546_CHANNEL_0,
-	PCA9546_CHANNEL_HTS221  =  PCA9546_CHANNEL_2,
-	PCA9546_CHANNEL_LPS22   =  PCA9546_CHANNEL_3,
-	PCA9546_CHANNEL_HTU21D  =  PCA9546_CHANNEL_1
+	PCA9546_CHANNEL_BME280  =	PCA9546_CHANNEL_0,
+	PCA9546_CHANNEL_BMP280	=	PCA9546_CHANNEL_0,
+	PCA9546_CHANNEL_SI7021  =	PCA9546_CHANNEL_0,
+	PCA9546_CHANNEL_HTS221  =	PCA9546_CHANNEL_2,
+	PCA9546_CHANNEL_LPS22   =	PCA9546_CHANNEL_3,
+	PCA9546_CHANNEL_HTU21D  =	PCA9546_CHANNEL_1
 	
 } PCA9546_Channel;
 
@@ -70,4 +71,4 @@ typedef struct
  **/
 
 //Select pca9546 channel
-void PCA9546_SelectChannel(PCA9546_Channel channel, PCA9546_Conf_typedef *dev_instance);
+void PCA9546_SelectChannel(PCA9546_Conf_typedef *dev_instance, PCA9546_Channel channel);
