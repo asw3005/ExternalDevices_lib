@@ -41,9 +41,7 @@ void PSTB404_ClrScreen(PSTB404__GInstance_typedef *device)
  *
  **/
 void PSTB404_ClrRegion(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region)
-{
-	uint16_t sum = 0;
-	
+{	
 	device->data_buffer.StartBlock = PSTB404_START_BLOCK;
 	device->data_buffer.SelectorBlock = screen_region;
 	device->data_buffer.MessageBlock[0] = ' ';
@@ -76,7 +74,6 @@ void PSTB404_ClrRegion(PSTB404__GInstance_typedef *device, PSTB404_Command scree
  **/
 void PSTB404_SendTime(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, uint8_t dot_mode, uint8_t lead_zero, uint8_t timeS, uint8_t timeM, uint8_t timeH)
 {
-	uint16_t sum = 0;
 	static uint8_t data[8];
 	
 	//PSTB404_ClrScreenPart(device, screen_region);
@@ -138,9 +135,7 @@ void PSTB404_SendTime(PSTB404__GInstance_typedef *device, PSTB404_Command screen
  *
  **/
 void PSTB404_SendDate(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region,uint8_t date, uint8_t month, uint8_t year)
-{
-	uint16_t sum = 0;
-	
+{	
 	device->data_buffer.StartBlock = PSTB404_START_BLOCK;
 	device->data_buffer.EndBlock = PSTB404_END_BLOCK;	
 	
@@ -180,7 +175,6 @@ void PSTB404_SendDate(PSTB404__GInstance_typedef *device, PSTB404_Command screen
  **/
 void PSTB404_SendTemperatureFloat4_1(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, float float4_1)
 {
-	uint16_t sum = 0;
 	uint16_t tmpNumber = 0;
 	
 	if (float4_1 < -40) float4_1 = -40.0f;
@@ -230,6 +224,45 @@ void PSTB404_SendTemperatureFloat4_1(PSTB404__GInstance_typedef *device, PSTB404
 	device->delay(150);	
 }
 
+
+/*
+ * @brief 
+ * 
+ * @param *device : Instance of PSTB404__GInstance_typedef struct.
+ * @param screen_region : It is the screen region from the PSTB404_Command enum.
+ * @param float4_1 : Float value, two integer, one fraction. 
+ *
+ **/
+void PSTB404_SendNumberTwoUnits(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, uint8_t number)
+{
+	device->data_buffer.StartBlock = PSTB404_START_BLOCK;
+	device->data_buffer.EndBlock = PSTB404_END_BLOCK;	
+	
+	///Writes value to buffer.
+	device->data_buffer.SelectorBlock = screen_region;				
+		
+	device->data_buffer.MessageBlock[0] = ' ';
+	device->data_buffer.MessageBlock[1] = ' ';
+	device->data_buffer.MessageBlock[2] = ' ';
+	
+	device->data_buffer.MessageBlock[4] = number % 10 + 48;
+	number /= 10;
+	device->data_buffer.MessageBlock[3] = number % 10 + 48; 
+	if (device->data_buffer.MessageBlock[3] == '0') device->data_buffer.MessageBlock[3] = ' ';
+	
+	device->data_buffer.MessageBlock[5] = ' ';
+	device->data_buffer.MessageBlock[6] = ' ';
+	device->data_buffer.MessageBlock[7] = ' ';
+
+	///Calculation of CRC.
+	PSTB404_CRCCalc(device);
+
+	//Transmits data from the buffer.
+	//device->receive_data_fptr(&device->data_buffer.Echo, 1);
+	device->transmit_data_fptr(&device->data_buffer.StartBlock, 12);
+	device->delay(150);	
+}
+
 /*
  * @brief 
  * 
@@ -240,8 +273,6 @@ void PSTB404_SendTemperatureFloat4_1(PSTB404__GInstance_typedef *device, PSTB404
  **/
 void PSTB404_SendMessage(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, uint8_t *message)
 {
-	uint16_t sum = 0;
-	
 	//PSTB404_ClrScreenPart(device, screen_region);
 	
 	device->data_buffer.StartBlock = PSTB404_START_BLOCK;
@@ -278,7 +309,6 @@ void PSTB404_SendMessage(PSTB404__GInstance_typedef *device, PSTB404_Command scr
  **/
 void PSTB404_CharTest(PSTB404__GInstance_typedef *device)
 {
-	uint16_t sum = 0;
 	uint8_t j = 0;
 	
 	PSTB404_ClrScreen(device);
@@ -302,7 +332,6 @@ void PSTB404_CharTest(PSTB404__GInstance_typedef *device)
 				//Transmits data from the buffer.
 				device->transmit_data_fptr(&device->data_buffer.StartBlock, 12);
 				device->delay(150);		
-				sum = 0;
 			}
 
 		}
@@ -322,7 +351,6 @@ void PSTB404_CharTest(PSTB404__GInstance_typedef *device)
 				//Transmits data from the buffer.
 				device->transmit_data_fptr(&device->data_buffer.StartBlock, 12);
 				device->delay(150);		
-				sum = 0;
 			 }
 		}	
 	}

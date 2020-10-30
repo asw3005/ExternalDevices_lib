@@ -33,21 +33,24 @@ static void DS3231_CheckReference(DS3231_GDataInstance_typedef *device);
  * @param hours : Amount of hours in the clock.
  *
  **/
-void DS3231_Set_Time(DS3231_GDataInstance_typedef *device, DS3231_ClockFormat clock_format, uint8_t hours, uint8_t minutes, uint8_t seconds)
+void DS3231_Set_Time(DS3231_GDataInstance_typedef *device, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
 	if (seconds > 59 || minutes > 59 || clock_format > 1) /*Time errore*/ return;
-	else if (clock_format == 1 && hours > 12) /*Time errore*/ return;
-	else if(clock_format == 0 && hours > 23) /*Time errore*/ return;
+	else if(clock_format == DS3231_CLOCK_FORMAT_12HOURS && hours > 12) /*Time errore*/ return;
+	else if(clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours > 23) /*Time errore*/ return;
 	
-	device->clock_reg.Seconds = ((seconds / 10) << 4) | (seconds % 10);
-	device->clock_reg.Minutes = ((minutes / 10) << 4) | (minutes % 10);
-	if (clock_format == 0 && hours >= 20)
+	//Hours set.
+	if (clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours >= 20)
 	{
 		device->clock_reg.Hours = ((hours / 10) << 5) | (hours % 10);
 	} else
 	{
-		device->clock_reg.Hours = ((hours / 10) << 4) | (hours % 10) | (clock_format << 6);
+		device->clock_reg.Hours = ((hours / 10) << 4) | (hours % 10) | (am_pm << 5) | (clock_format << 6);
 	}
+	//Minutes set.
+	device->clock_reg.Minutes = ((minutes / 10) << 4) | (minutes % 10);
+	//Seconds set.
+	device->clock_reg.Seconds = ((seconds / 10) << 4) | (seconds % 10);
 	
 	DS3231_WriteTimeReg(device);	
 }
@@ -86,26 +89,29 @@ void DS3231_Set_Date(DS3231_GDataInstance_typedef *device, uint8_t day, uint8_t 
  * @param day_date : Day or date in the calendar.
  *
  **/
-void DS3231_Set_Alarm1(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, uint8_t seconds, uint8_t minutes, uint8_t hours, uint8_t day_date)
+void DS3231_Set_Alarm1(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t day_date, uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
 	if (seconds > 59 || minutes > 59 || clock_format > 1) /*Time errore*/ return;
-	else if(clock_format == 1 && hours > 12) /*Time errore*/ return;
-	else if(clock_format == 0 && hours > 23) /*Time errore*/ return;
+	else if(clock_format == DS3231_CLOCK_FORMAT_12HOURS && hours > 12) /*Time errore*/ return;
+	else if(clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours > 23) /*Time errore*/ return;
 	if((alarm_condition & 0x10) == 0x10 && (day_date < 1 || day_date > 7)) /*Time errore*/ return;
 	else if(day_date < 1 || day_date > 31) /*Time errore*/ return;
 	
-	device->clock_reg.Alarm1Seconds = ((seconds / 10) << 4) | (seconds % 10) | ((alarm_condition & 0x01) << 7);
-	device->clock_reg.Alarm1Minutes = ((minutes / 10) << 4) | (minutes % 10) | ((alarm_condition & 0x02) << 7);
-	if (clock_format == 0 && hours >= 20)
+	//Day/date set.
+	device->clock_reg.Alarm1DayDate = ((day_date / 10) << 4) | (day_date % 10) | ((alarm_condition & 0x10) << 6) | ((alarm_condition & 0x08) << 7);
+	//Hours set.
+	if (clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours >= 20)
 	{
 		device->clock_reg.Alarm1Hours = ((hours / 10) << 5) | (hours % 10) | ((alarm_condition & 0x04) << 7);
 	} else
 	{
-		device->clock_reg.Alarm1Hours = ((hours / 10) << 4) | (hours % 10) | (clock_format << 6) | ((alarm_condition & 0x04) << 7);
+		device->clock_reg.Alarm1Hours = ((hours / 10) << 4) | (hours % 10) | (am_pm << 5) |  (clock_format << 6) | ((alarm_condition & 0x04) << 7);
 	}
-	
-	device->clock_reg.Alarm1DayDate = ((day_date / 10) << 4) | (day_date % 10) | ((alarm_condition & 0x10) << 6) | ((alarm_condition & 0x08) << 7);
-	
+	//Minutes set.
+	device->clock_reg.Alarm1Minutes = ((minutes / 10) << 4) | (minutes % 10) | ((alarm_condition & 0x02) << 7);
+	//Seconds set.
+	device->clock_reg.Alarm1Seconds = ((seconds / 10) << 4) | (seconds % 10) | ((alarm_condition & 0x01) << 7);
+		
 	DS3231_WriteAlarm1Reg(device);
 }
 
@@ -122,25 +128,28 @@ void DS3231_Set_Alarm1(DS3231_GDataInstance_typedef *device, DS3231_AlarmConditi
  * @param day_date : Day or date in the calendar.
  *
  **/
-void DS3231_Set_Alarm2(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, uint8_t minutes, uint8_t hours, uint8_t day_date)
+void DS3231_Set_Alarm2(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t day_date, uint8_t hours, uint8_t minutes)
 {
 	if (minutes > 59 || clock_format > 1) /*Time errore*/ return;
-	else if(clock_format == 1 && hours > 12) /*Time errore*/ return;
-	else if(clock_format == 0 && hours > 23) /*Time errore*/ return;
+	else if(clock_format == DS3231_CLOCK_FORMAT_12HOURS && hours > 12) /*Time errore*/ return;
+	else if(clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours > 23) /*Time errore*/ return;
 	if ((alarm_condition & 0x10) == 0x10 && (day_date < 1 || day_date > 7)) /*Time errore*/ return;
 	else if(day_date < 1 || day_date > 31) /*Time errore*/ return;
 	
-	device->clock_reg.Alarm2Minutes = ((minutes / 10) << 4) | (minutes % 10) | ((alarm_condition & 0x02) << 7);
-	if (clock_format == 0 && hours >= 20)
+	//Day/date set.
+	device->clock_reg.Alarm2DayDate = ((day_date / 10) << 4) | (day_date % 10) | ((alarm_condition & 0x10) << 6) | ((alarm_condition & 0x08) << 7);
+	//hours set.
+	if (clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours >= 20)
 	{
 		device->clock_reg.Alarm2Hours = ((hours / 10) << 5) | (hours % 10) | ((alarm_condition & 0x04) << 7);
 	}
 	else
 	{
-		device->clock_reg.Alarm2Hours = ((hours / 10) << 4) | (hours % 10) | (clock_format << 6) | ((alarm_condition & 0x04) << 7);
+		device->clock_reg.Alarm2Hours = ((hours / 10) << 4) | (hours % 10) | (am_pm << 5) |  (clock_format << 6) | ((alarm_condition & 0x04) << 7);
 	}
+	//Minutes set.
+	device->clock_reg.Alarm2Minutes = ((minutes / 10) << 4) | (minutes % 10) | ((alarm_condition & 0x02) << 7);
 	
-	device->clock_reg.Alarm2DayDate = ((day_date / 10) << 4) | (day_date % 10) | ((alarm_condition & 0x10) << 6) | ((alarm_condition & 0x08) << 7);
 	
 	DS3231_WriteAlarm2Reg(device);
 }
@@ -204,7 +213,8 @@ void DS3231_Get_TimeDate(DS3231_GDataInstance_typedef *device)
 	device->clock.Minutes = (device->clock_reg.Minutes & 0x0F) + ((device->clock_reg.Minutes & 0x70) >> 4) * 10;
 	if (device->clock_reg.Hours & 0x40)
 	{
-		device->clock.Hours = (device->clock_reg.Hours & 0x0F) + ((device->clock_reg.Hours & 0x10) >> 4) * 10;								
+		device->clock.Hours = (device->clock_reg.Hours & 0x0F) + ((device->clock_reg.Hours & 0x10) >> 4) * 10;	
+		device->clock.AmPm = (device->clock_reg.Hours & 0x20) >> 5;
 	}
 	else
 	{

@@ -125,8 +125,10 @@ void PSTB404_ClrRegion(PSTB404__GInstance_typedef *device, PSTB404_Command scree
 void PSTB404_CharTest(PSTB404__GInstance_typedef *device);
 void PSTB404_Test(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region);
 void PSTB404_SendTemperatureFloat4_1(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, float float4_1);
+void PSTB404_SendNumberTwoUnits(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, uint8_t number);
 void PSTB404_SendMessage(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, uint8_t *message);
 void PSTB404_SendTime(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, uint8_t dot_mode, uint8_t lead_zero, uint8_t timeS, uint8_t timeM, uint8_t timeH);
 void PSTB404_SendDate(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, uint8_t date, uint8_t month, uint8_t year);
+
 
 #endif /* PSTB404_H_ */

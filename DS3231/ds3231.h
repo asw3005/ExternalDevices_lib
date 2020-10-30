@@ -108,9 +108,38 @@ typedef enum
 typedef enum
 {
 	DS3231_CLOCK_FORMAT_24HOURS = 0,
-	DS3231_CLOCK_FORMAT_12HOURS
+	DS3231_CLOCK_FORMAT_12HOURS,
 	
 } DS3231_ClockFormat;
+
+/*
+ * @brief Clock hour of day.
+ *
+ **/
+typedef enum
+{
+	DS3231_DAYLIGHT_NONE = 0,
+	DS3231_DAYLIGHT_AM   = 0,
+	DS3231_DAYLIGHT_PM
+	
+} DS3231_HourOfDay;
+
+
+/*
+ * @brief Clock menu.
+ *
+ **/
+enum 
+{
+	CLOCK_EnterMenu,
+	CLOCK_SetHours,
+	CLOCK_SetMinutes,
+	CLOCK_SetDay,
+	CLOCK_SetDate,
+	CLOCK_SetMonth,
+	CLOCK_SetYear,
+	
+} CLOCK_MenuList;
 
 /*
  *	@brief Delay function typedef pointer. 
@@ -146,35 +175,9 @@ typedef struct
 	uint8_t Date;
 	uint8_t Month;
 	uint8_t Year;
+	uint8_t AmPm;
 	
 } DS3231_Clock_typedef;
-
-/*
- *	@brief Alarm 1 data.
- *
- **/
-typedef struct
-{
-	uint8_t Seconds;
-	uint8_t Minutes;
-	uint8_t Hours;
-	uint8_t Day;
-	uint8_t Date;
-	
-} DS3231_Alarm1_typedef;
-
-/*
- *	@brief Alarm 2 data.
- *
- **/
-typedef struct
-{
-	uint8_t Minutes;
-	uint8_t Hours;
-	uint8_t Day;
-	uint8_t Date;
-	
-} DS3231_Alarm2_typedef;
 
 /*
  *	@brief General clock data struct.
@@ -320,8 +323,6 @@ typedef struct
 {
 	///Local clock data.
 	DS3231_Clock_typedef clock;
-	DS3231_Alarm1_typedef alarm1;
-	DS3231_Alarm2_typedef alarm2;
 	///Clock registers.
 	DS3231_GClockData_typedef clock_reg;
 	//Pointers for the rx, tx delay functions.
@@ -335,10 +336,10 @@ typedef struct
  *	@brief Public function prototype.
  *
  **/
-void DS3231_Set_Time(DS3231_GDataInstance_typedef *device, DS3231_ClockFormat clock_format, uint8_t hours, uint8_t minutes, uint8_t seconds);
+void DS3231_Set_Time(DS3231_GDataInstance_typedef *device, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t hours, uint8_t minutes, uint8_t seconds);
 void DS3231_Set_Date(DS3231_GDataInstance_typedef *device, uint8_t day, uint8_t date, uint8_t month, uint8_t year);
-void DS3231_Set_Alarm1(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, uint8_t seconds, uint8_t minutes, uint8_t hours, uint8_t day_date);
-void DS3231_Set_Alarm2(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, uint8_t minutes, uint8_t hours, uint8_t day_date);
+void DS3231_Set_Alarm1(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t day_date, uint8_t hours, uint8_t minutes, uint8_t seconds);
+void DS3231_Set_Alarm2(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t day_date, uint8_t hours, uint8_t minutes);
 void DS3231_Set_ControlReg(DS3231_GDataInstance_typedef *device, uint8_t a1ie, uint8_t a2ie, uint8_t intcn, 
 	DS3231_SQWOutFreq rs2_rs1, 	uint8_t conv,  uint8_t bbsqw,  uint8_t eosc);
 void DS3231_Set_StatusReg(DS3231_GDataInstance_typedef *device, uint8_t a1f, uint8_t a2f, uint8_t en32khz);
