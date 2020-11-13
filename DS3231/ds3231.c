@@ -23,6 +23,12 @@ static void DS3231_WriteAlarm1Reg(DS3231_GDataInstance_typedef *device);
 static void DS3231_WriteAlarm2Reg(DS3231_GDataInstance_typedef *device);
 static void DS3231_WriteControlReg(DS3231_GDataInstance_typedef *device);
 static void DS3231_CheckReference(DS3231_GDataInstance_typedef *device);
+
+/*
+ * @brief Public function.
+ *
+ **/
+
 /*
  * @brief 
  * 
@@ -40,9 +46,9 @@ void DS3231_Set_Time(DS3231_GDataInstance_typedef *device, DS3231_ClockFormat cl
 	else if(clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours > 23) /*Time errore*/ return;
 	
 	//Hours set.
-	if (clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours >= 20)
+	if (hours >= 20)
 	{
-		device->clock_reg.Hours = ((hours / 10) << 5) | (hours % 10);
+		device->clock_reg.Hours = (1 << 5) | (0 << 4) | (hours % 10) | (clock_format << 6);
 	} else
 	{
 		device->clock_reg.Hours = ((hours / 10) << 4) | (hours % 10) | (am_pm << 5) | (clock_format << 6);
@@ -70,7 +76,15 @@ void DS3231_Set_Date(DS3231_GDataInstance_typedef *device, uint8_t day, uint8_t 
 	
 	device->clock_reg.Day = day;
 	device->clock_reg.Date = ((date / 10) << 4) | (date % 10);
-	device->clock_reg.MonthCentury = ((month / 10) << 4) | (month % 10);
+	if (month >= 10)
+	{
+		device->clock_reg.MonthCentury = (1 << 4) | (month % 10);
+	}
+	else
+	{
+		device->clock_reg.MonthCentury = (0 << 4) | (month % 10);
+	}
+	
 	device->clock_reg.Year = ((year / 10) << 4) | (year % 10);
 	
 	DS3231_WriteDateReg(device);	
@@ -100,9 +114,9 @@ void DS3231_Set_Alarm1(DS3231_GDataInstance_typedef *device, DS3231_AlarmConditi
 	//Day/date set.
 	device->clock_reg.Alarm1DayDate = ((day_date / 10) << 4) | (day_date % 10) | ((alarm_condition & 0x10) << 6) | ((alarm_condition & 0x08) << 7);
 	//Hours set.
-	if (clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours >= 20)
+	if (hours >= 20)
 	{
-		device->clock_reg.Alarm1Hours = ((hours / 10) << 5) | (hours % 10) | ((alarm_condition & 0x04) << 7);
+		device->clock_reg.Alarm1Hours = (1 << 5) | (0 << 4) | (hours % 10) | ((alarm_condition & 0x04) << 7);
 	} else
 	{
 		device->clock_reg.Alarm1Hours = ((hours / 10) << 4) | (hours % 10) | (am_pm << 5) |  (clock_format << 6) | ((alarm_condition & 0x04) << 7);
@@ -139,13 +153,12 @@ void DS3231_Set_Alarm2(DS3231_GDataInstance_typedef *device, DS3231_AlarmConditi
 	//Day/date set.
 	device->clock_reg.Alarm2DayDate = ((day_date / 10) << 4) | (day_date % 10) | ((alarm_condition & 0x10) << 6) | ((alarm_condition & 0x08) << 7);
 	//hours set.
-	if (clock_format == DS3231_CLOCK_FORMAT_24HOURS && hours >= 20)
+	if (hours >= 20)
 	{
-		device->clock_reg.Alarm2Hours = ((hours / 10) << 5) | (hours % 10) | ((alarm_condition & 0x04) << 7);
-	}
-	else
+		device->clock_reg.Alarm2Hours = (1 << 5) | (0 << 4) | (hours % 10) | ((alarm_condition & 0x04) << 7);
+	} else
 	{
-		device->clock_reg.Alarm2Hours = ((hours / 10) << 4) | (hours % 10) | (am_pm << 5) |  (clock_format << 6) | ((alarm_condition & 0x04) << 7);
+		device->clock_reg.Alarm2Hours = ((hours / 10) << 4) | (hours % 10) | (am_pm << 5) | (clock_format << 6) | ((alarm_condition & 0x04) << 7);
 	}
 	//Minutes set.
 	device->clock_reg.Alarm2Minutes = ((minutes / 10) << 4) | (minutes % 10) | ((alarm_condition & 0x02) << 7);
@@ -168,8 +181,8 @@ void DS3231_Set_Alarm2(DS3231_GDataInstance_typedef *device, DS3231_AlarmConditi
  * @param eosc : Enable Oscillator (EOSC). Default is 0. Active level is zero.
  *
  **/
-void DS3231_Set_ControlReg(DS3231_GDataInstance_typedef *device, uint8_t a1ie, uint8_t a2ie, uint8_t intcn, 
-	DS3231_SQWOutFreq rs2_rs1, 	uint8_t conv,  uint8_t bbsqw,  uint8_t eosc)
+void DS3231_Set_ControlReg(DS3231_GDataInstance_typedef *device, DS3231_AlarmInterrupt a1ie, DS3231_AlarmInterrupt a2ie, DS3231_IntSqwSelector intcn, 
+	DS3231_SQWRate rs2_rs1,	DS3231_ForceTConvertion conv,  DS3231_BatteryBacked bbsqw,  DS3231_Oscillator eosc)
 {
 	device->clock_reg.partsCtrlReg.A1IE = a1ie;
 	device->clock_reg.partsCtrlReg.A2IE = a2ie;
@@ -191,7 +204,7 @@ void DS3231_Set_ControlReg(DS3231_GDataInstance_typedef *device, uint8_t a1ie, u
  * @param en32khz : Enable 32kHz Output (EN32kHz). Default is 1.
  *
  **/
-void DS3231_Set_StatusReg(DS3231_GDataInstance_typedef *device, uint8_t a1f, uint8_t a2f, uint8_t en32khz)
+void DS3231_Set_StatusReg(DS3231_GDataInstance_typedef *device, uint8_t a1f, uint8_t a2f, DS3231_32kHzOutput en32khz)
 {
 	DS3231_ReadStatusReg(device);
 	device->clock_reg.partsStatReg.A1F = a1f;
@@ -252,7 +265,7 @@ void DS3231_Get_ControlReg(DS3231_GDataInstance_typedef *device)
  **/
 static void DS3231_ReadTimeDateReg(DS3231_GDataInstance_typedef *device)
 {
-	device->i2c_rx_data(DS3231_ADDR_SHIFTED, DS3231_SECONDS_REG, 1, (uint8_t *) &device->clock_reg.Seconds, 19);//7
+	device->i2c_rx_data(DS3231_ADDR_SHIFTED, DS3231_SECONDS_REG, 1, (uint8_t *) &device->clock_reg.Seconds, 7);//7
 	device->delay(5);	
 }
 

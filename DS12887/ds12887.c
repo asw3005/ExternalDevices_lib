@@ -146,7 +146,7 @@ void DS12887_Set_ControlRegA(DS12887_GDataInstance_typedef *device, DS12887_SQWI
  *		  For the all param see DS12887_GClockData_typedef.
  *		  
  * @param *device : Instance of DS12887_GDataInstance_typedef data struct.
- * @param daylight : Daylight Saving Enable (DSE).
+ * @param daylight : Daylight Saving Enable (DSE). Adjustments do not occur when the DSE bit is 0.
  * @param clock_format : The 24/#12 control bit. A 1 indicates the 24-hour mode, zero is 12.
  * @param data_mode : Data Mode (DM). A 1 in DM signifies binary data, while a 0 in DM specifies BCD data.
  * @param sqwe : Square-Wave Enable (SQWE). When the SQWE bit is set to 0, the SQW pin is held low, otherwise
@@ -157,8 +157,8 @@ void DS12887_Set_ControlRegA(DS12887_GDataInstance_typedef *device, DS12887_SQWI
  * @param set : See the ControlRegisterB in the DS12887_GClockData_typedef struct.
  *
  **/
-void DS12887_Set_ControlRegB(DS12887_GDataInstance_typedef *device, uint8_t daylight, uint8_t clock_format, uint8_t data_mode, 
-	uint8_t sqwe, uint8_t uie, uint8_t aie, uint8_t pie, uint8_t set)
+void DS12887_Set_ControlRegB(DS12887_GDataInstance_typedef *device, DS12887_DaylightSaving daylight, DS12887_ClockFormat clock_format, DS12887_DataFormat data_mode, 
+	DS12887_SquareWave sqwe, DS12887_UpdateEndedInterrupt uie, DS12887_AlarmInterrupt aie, DS12887_PeriodicInterrupt pie, DS12887_UpdateClockReg set)
 {
 	device->clock_reg.partsStatRegB.DSE = daylight;
 	device->clock_reg.partsStatRegB.FORMAT12_24 = clock_format;
@@ -221,6 +221,30 @@ void DS12887_Get_ControlRegC(DS12887_GDataInstance_typedef *device)
 void DS12887_Get_ControlRegD(DS12887_GDataInstance_typedef *device)
 {	
 	device->rx_data(DS12887_CONTROL_REG_D, &device->clock_reg.ControlRegisterD, 1);
+	device->delay(1);
+}
+
+/*
+ * @brief Read RAM block.
+ * 
+ * @param *device : Instance of DS12887_GDataInstance_typedef data struct.
+ *
+ **/
+void DS12887_ReadRamBlock(DS12887_GDataInstance_typedef *device)
+{	
+	device->rx_data(DS12887_RAM_BLOCK, (uint8_t *) &device->clock_reg.RamBlock, 114);
+	device->delay(1);
+}
+
+/*
+ * @brief  Write RAM block.
+ * 
+ * @param *device : Instance of DS12887_GDataInstance_typedef data struct.
+ *
+ **/
+void DS12887_WriteRamBlock(DS12887_GDataInstance_typedef *device)
+{	
+	device->tx_data(DS12887_RAM_BLOCK, (uint8_t *) &device->clock_reg.RamBlock, 114);
 	device->delay(1);
 }
 

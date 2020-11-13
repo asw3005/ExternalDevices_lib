@@ -4,9 +4,10 @@
  *
  **/
 
-#include "stm32l4xx_hal.h"
+#include "stm32f1xx_hal.h"
 #include "ds18b20.h"
-//#include "calcCRC.h"
+#include "calcCRC.h"
+#include "stdio.h"
 
 #pragma region PrivateFunctionPrototype
 
@@ -80,7 +81,7 @@ uint64_t DS18B20_Get_LaserRomCode(DS18B20_GeneralDataInstance_typedef *device)
 	DS18B20_ResetDevice(device);	
 	DS18B20_ConvByteToBit(device, ONEWIRE_READ_ROM, 0);
 	///Write read time slots.
-	for(uint8_t i = 0 ; i < 64 ; i++)
+	for (uint8_t i = 0; i < 64; i++)
 	{
 		device->raw_data.UART_TxBuffer[8 + i] = ONEWIRE_READ_TIME_SLOT;
 	}
@@ -90,7 +91,7 @@ uint64_t DS18B20_Get_LaserRomCode(DS18B20_GeneralDataInstance_typedef *device)
 	device->uart_tx_data(device->raw_data.UART_TxBuffer, 72);
 	device->delay(15);
 	///Parse raw data, converting bits to byte.
-	for(uint8_t bufferCounter = 0 ; bufferCounter < 64 ; bufferCounter += 8)
+	for (uint8_t bufferCounter = 0; bufferCounter < 64; bufferCounter += 8)
 	{			
 		for (uint8_t bitCounter = 0; bitCounter < 8; bitCounter++)
 		{
@@ -118,17 +119,18 @@ uint64_t DS18B20_Get_LaserRomCode(DS18B20_GeneralDataInstance_typedef *device)
  * @param dataDepth : This means how many bytes of data to read.
  *
  **/
-void DS18B20_Get_Temperature(DS18B20_GeneralDataInstance_typedef *device,
-	DS18B20_FunctionCommandSet rom_cmd,
-	DS18B20_DataReadDepth dataDepth)
+void DS18B20_Get_Temperature(DS18B20_GeneralDataInstance_typedef *device, DS18B20_FunctionCommandSet rom_cmd,
+								DS18B20_DataReadDepth dataDepth)
 {
 	//uint8_t crc8 = 0;
+	float temperature = 0;
 
 	DS18B20_ConvertT(device, rom_cmd);
 	DS18B20_ReadScratchpadBytes(device, rom_cmd, dataDepth);
-
+	if ((device->scratchpad_data.Temperature & 0xF800) == 0)
+		device->converted_data.Temperature = (device->scratchpad_data.Temperature & 0x87FF) * 0.0625f;
+	else device->converted_data.Temperature = -((~device->scratchpad_data.Temperature + 1) * 0.0625);
 	//crc8  = CalculateCRC8(&device->scratchpad_data.partsTemperature.TemperatureLsb, 8);
-	device->converted_data.Temperature = (device->scratchpad_data.Temperature & 0x87FF) * 0.0625f;
 }
 
 /*
@@ -139,9 +141,8 @@ void DS18B20_Get_Temperature(DS18B20_GeneralDataInstance_typedef *device,
  * @param amountOfBytes : It is amount of bytes, that reading from the scratchpad memory.
  *
  **/
-void DS18B20_ReadScratchpadBytes(DS18B20_GeneralDataInstance_typedef *device,
-	DS18B20_FunctionCommandSet rom_cmd,
-	uint8_t amountOfbytes)
+void DS18B20_ReadScratchpadBytes(DS18B20_GeneralDataInstance_typedef *device, DS18B20_FunctionCommandSet rom_cmd,
+									uint8_t amountOfbytes)
 {
 	uint8_t rxByte = 0;
 	uint8_t readDataOffset;
@@ -158,7 +159,7 @@ void DS18B20_ReadScratchpadBytes(DS18B20_GeneralDataInstance_typedef *device,
 	DS18B20_ConvByteToBit(device, DS18B20_READ_SCRATCHPAD, device->raw_data.UART_TxRxOffset);
 	readDataOffset = device->raw_data.UART_TxRxOffset;
 	///Write read time slots.
-	for(uint8_t i = 0 ; i < amountOfbytes ; i++)
+	for(uint8_t i = 0 ; i < amountOfbytes; i++)
 	{
 		//device->raw_data.UART_TxBuffer[device->raw_data.UART_TxRxOffset + i] = ONEWIRE_READ_TIME_SLOT;
 		DS18B20_ConvByteToBit(device, ONEWIRE_READ_TIME_SLOT, device->raw_data.UART_TxRxOffset);
@@ -272,11 +273,8 @@ void DS18B20_Get_PowerSupplyType(DS18B20_GeneralDataInstance_typedef *device)
  * @param resolution : Resolution of sensor's measurement.
  *
  **/
-void DS18B20_Set_ThresholdAndControl(DS18B20_GeneralDataInstance_typedef *device,
-	DS18B20_FunctionCommandSet rom_cmd, 
-	int8_t tHigh,
-	int8_t tLow,
-	DS18B20_ResolutionOfMeasurement resolution)
+void DS18B20_Set_ThresholdAndControl(DS18B20_GeneralDataInstance_typedef *device, DS18B20_FunctionCommandSet rom_cmd, 
+										int8_t tHigh, int8_t tLow, DS18B20_ResolutionOfMeasurement resolution)
 {
 	DS18B20_ResetDevice(device);
 	//Write skip or match rom command to the buffer.
@@ -292,6 +290,79 @@ void DS18B20_Set_ThresholdAndControl(DS18B20_GeneralDataInstance_typedef *device
 	device->delay(20);
 }
 
+
+/*
+ * @brief Search active devices on the bus and reads its ROM code.
+ * 
+ * @param *device : It is the instance of general data struct.
+ *
+ **/
+void DS18B20_SearchDevice(DS18B20_GeneralDataInstance_typedef *device)
+{
+	uint8_t readDataOffset;
+	
+	device->raw_data.UART_TxRxOffset = 0;	
+	
+	if (DS18B20_DeviceDetect(device))
+	{
+		//Write search ROM command.
+		DS18B20_ConvByteToBit(device, ONEWIRE_SEARCH_ROM, device->raw_data.UART_TxRxOffset);
+		
+		//
+		DS18B20_ConvByteToBit(device, ONEWIRE_READ_TIME_SLOT, device->raw_data.UART_TxRxOffset);
+		DS18B20_ConvByteToBit(device, ONEWIRE_READ_TIME_SLOT, device->raw_data.UART_TxRxOffset);
+		
+		DS18B20_ConvByteToBit(device, ONEWIRE_READ_TIME_SLOT, device->raw_data.UART_TxRxOffset);
+		
+		device->uart_init_baud(ONEWIRE_BAUD_RATE_COMMUNICATION_TXRX);
+		device->uart_rx_data(device->raw_data.UART_RxBuffer, device->raw_data.UART_TxRxOffset);
+		device->uart_tx_data(device->raw_data.UART_TxBuffer, device->raw_data.UART_TxRxOffset);
+		device->delay(20);
+	}
+
+	
+	
+	
+
+}
+
+///DS18B20 function.
+//static void printObjectData(DS18B20_GeneralDataInstance_typedef *device, uint8_t *char_buffer)
+//{
+//	uint8_t messageLength;
+//	
+//	messageLength = sprintf((char*)char_buffer,
+//		"Serial number %0*X%0*X%0*X%0*X%0*X%0*X%0*X%0*Xh\r\n", 
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[7],
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[6],
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[5],
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[4],
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[3],
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[2],
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[1],
+//		2,
+//		device->converted_data.partsRomLaserCode.arrayRomLaserCode[0]);
+//	HAL_UART_Transmit_IT(&huart2, char_buffer, messageLength);
+//	HAL_Delay(10);	
+//	
+//	messageLength = sprintf((char*)char_buffer, "Th =  %0*d\r\n", 2, device->scratchpad_data.ThRegister);
+//	HAL_UART_Transmit_IT(&huart2, char_buffer, messageLength);
+//	HAL_Delay(10);
+//	messageLength = sprintf((char*)char_buffer, "Tl =  %0*d\r\n", 2, device->scratchpad_data.TlRegister);
+//	HAL_UART_Transmit_IT(&huart2, char_buffer, messageLength);
+//	HAL_Delay(10);
+//	messageLength = sprintf((char*)char_buffer, "Cfg =  %0*X\r\n", 2, device->scratchpad_data.ConfigurationRegister);
+//	HAL_UART_Transmit_IT(&huart2, char_buffer, messageLength);
+//	HAL_Delay(10);
+//}
+
 #pragma endregion
 
 #pragma region PrivateFunction
@@ -304,7 +375,7 @@ void DS18B20_Set_ThresholdAndControl(DS18B20_GeneralDataInstance_typedef *device
  **/
 static void DS18B20_ResetDevice(DS18B20_GeneralDataInstance_typedef *device)
 {	
-	device->raw_data.UART_TxBuffer[0] = ONEWIRE_SEND_RESET_PULSE;    //
+	device->raw_data.UART_TxBuffer[0] = ONEWIRE_SEND_RESET_PULSE;   //
 	///Data transfer.
 	device->uart_init_baud(ONEWIRE_BAUD_RATE_RESET_TXRX);
 	device->uart_rx_data(device->raw_data.UART_RxBuffer, 1);
@@ -335,29 +406,29 @@ static void DS18B20_ConvertT(DS18B20_GeneralDataInstance_typedef *device, DS18B2
 	if(device->converted_data.PowerSupplyType <= ONEWIRE_READ_ZERO_STOP_VALUE)
 	{
 		while (*device->isReceiveComplete > 0)
-		{
-			///Wait transmition complete.	
-			__NOP();				
-		}
+			{
+				///Wait transmition complete.	
+				__NOP();				
+			}
 		///Strong pull up is here.
 		device->strong_pull_up(DS18B20_STRONG_PULL_UP_EN);
 	}
 	
 	///Depending on  the thermometer resolution configuration bits.
 	switch(device->scratchpad_data.ConfigurationRegister)
-	{
-	case DS18B20_MEASUREMENT_RESOLUTION_9BIT : delay = 100;
-		break;
-	case DS18B20_MEASUREMENT_RESOLUTION_10BIT :	delay = 200;
-		break;
-	case DS18B20_MEASUREMENT_RESOLUTION_11BIT : delay = 400;
-		break;
-	case DS18B20_MEASUREMENT_RESOLUTION_12BIT :	delay = 750;
-		break;		
+		{
+		case DS18B20_MEASUREMENT_RESOLUTION_9BIT : delay = 100;
+			break;
+		case DS18B20_MEASUREMENT_RESOLUTION_10BIT :	delay = 200;
+			break;
+		case DS18B20_MEASUREMENT_RESOLUTION_11BIT : delay = 400;
+			break;
+		case DS18B20_MEASUREMENT_RESOLUTION_12BIT :	delay = 750;
+			break;		
 		///Default delay is MAX
 		default : delay = 750;
-		break;
-	}
+			break;
+		}
 	device->delay(delay);
 	if (device->converted_data.PowerSupplyType <= ONEWIRE_READ_ZERO_STOP_VALUE)
 	{

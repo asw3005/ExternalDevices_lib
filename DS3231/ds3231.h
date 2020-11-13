@@ -87,6 +87,29 @@ typedef enum
 	
 } DS3231_AlarmCondition;
 
+/*
+ * @brief Alarm interrupt enable.
+ *
+ **/
+typedef enum
+{
+	DS3231_ALARM1_INTERRUPT_DIS,
+	DS3231_ALARM1_INTERRUPT_EN,
+	DS3231_ALARM2_INTERRUPT_SIS = 0,
+	DS3231_ALARM2_INTERRUPT_EN
+	
+} DS3231_AlarmInterrupt;
+
+/*
+ * @brief INT/SQW signal selecting on the INT/SQW pin.
+ *
+ **/
+typedef enum
+{
+	DS3231_SQW_EN,
+	DS3231_ALARM_INT_EN,
+	
+} DS3231_IntSqwSelector;
 
 /*
  * @brief SQW output frequency.
@@ -94,15 +117,59 @@ typedef enum
  **/
 typedef enum
 {
-	DS3231_SQW_1Hz = 0,
+	DS3231_SQW_1Hz,
 	DS3231_SQW_1_024kHz,
 	DS3231_SQW_4_096kHz,
 	DS3231_SQW_8_192kHz
 	
-} DS3231_SQWOutFreq;
+} DS3231_SQWRate;
 
 /*
- * @brief SQW output frequency.
+ * @brief Initiate temperature convertion.
+ *
+ **/
+typedef enum
+{
+	DS3231_CONVERTION_STOP,
+	DS3231_CONVERTION_START
+	
+} DS3231_ForceTConvertion;
+
+/*
+ * @brief Battery-backed square-wave enable.
+ *
+ **/
+typedef enum
+{
+	DS3231_BBQW_DIS,
+	DS3231_BBQW_EN
+	
+} DS3231_BatteryBacked;
+
+/*
+ * @brief Oscillator #en/dis when RTC powered on the battery.
+ *
+ **/
+typedef enum
+{
+	DS3231_OSC_EN,
+	DS3231_OSC_DIS
+	
+} DS3231_Oscillator;
+
+/*
+ * @brief Enable 32kHz output.
+ *
+ **/
+typedef enum
+{
+	DS3231_32kHz_DIS,
+	DS3231_32kHz_EN
+	
+} DS3231_32kHzOutput;
+	
+/*
+ * @brief Clock format.
  *
  **/
 typedef enum
@@ -118,28 +185,11 @@ typedef enum
  **/
 typedef enum
 {
-	DS3231_DAYLIGHT_NONE = 0,
-	DS3231_DAYLIGHT_AM   = 0,
-	DS3231_DAYLIGHT_PM
+	DS3231_HOUR_OF_DAY_NONE = 0,
+	DS3231_HOUR_OF_DAY_AM   = 0,
+	DS3231_HOUR_OF_DAY_PM
 	
 } DS3231_HourOfDay;
-
-
-/*
- * @brief Clock menu.
- *
- **/
-enum 
-{
-	CLOCK_EnterMenu,
-	CLOCK_SetHours,
-	CLOCK_SetMinutes,
-	CLOCK_SetDay,
-	CLOCK_SetDate,
-	CLOCK_SetMonth,
-	CLOCK_SetYear,
-	
-} CLOCK_MenuList;
 
 /*
  *	@brief Delay function typedef pointer. 
@@ -252,7 +302,7 @@ typedef struct __attribute__((aligned(1), packed))
 			uint8_t CONV	: 1;
 			///Battery-Backed Square-Wave Enable (BBSQW).  Default is 0.
 			///When set to logic 1 with INTCN = 0 and VCC < VPF, this bit enables the square wave.
-			///When BBSQW is logic 0, the INT / SQW pin goes high impedance when VCC < VPF.This bit 
+			///When BBSQW is logic 0, the INT / SQW pin goes high impedance when VCC < VPF. This bit 
 			///is disabled(logic 0) when power is first applied.
 			uint8_t BBSQW	: 1;
 			///Enable Oscillator (EOSC). Default is 0. Active level is zero.
@@ -285,7 +335,7 @@ typedef struct __attribute__((aligned(1), packed))
 			///is in the 1 - minute idle state.
 			uint8_t BSY			: 1;
 			///Enable 32kHz Output (EN32kHz). Default is 1.
-			///This bit controls the status of the 32kHz pin.When set to logic 1, the 32kHz pin is enabled 
+			///This bit controls the status of the 32kHz pin. When set to logic 1, the 32kHz pin is enabled 
 			///and outputs a 32.768kHz squarewave signal. When set to logic 0, the 32kHz pin goes to a high 
 			///-impedance state.The initial power - up state of this bit is logic 1, and a 32.768kHz square
 			///-wave signal appears at the 32kHz pin after a power source is applied to the DS3231(if the 
@@ -340,9 +390,9 @@ void DS3231_Set_Time(DS3231_GDataInstance_typedef *device, DS3231_ClockFormat cl
 void DS3231_Set_Date(DS3231_GDataInstance_typedef *device, uint8_t day, uint8_t date, uint8_t month, uint8_t year);
 void DS3231_Set_Alarm1(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t day_date, uint8_t hours, uint8_t minutes, uint8_t seconds);
 void DS3231_Set_Alarm2(DS3231_GDataInstance_typedef *device, DS3231_AlarmCondition alarm_condition, DS3231_ClockFormat clock_format, DS3231_HourOfDay am_pm, uint8_t day_date, uint8_t hours, uint8_t minutes);
-void DS3231_Set_ControlReg(DS3231_GDataInstance_typedef *device, uint8_t a1ie, uint8_t a2ie, uint8_t intcn, 
-	DS3231_SQWOutFreq rs2_rs1, 	uint8_t conv,  uint8_t bbsqw,  uint8_t eosc);
-void DS3231_Set_StatusReg(DS3231_GDataInstance_typedef *device, uint8_t a1f, uint8_t a2f, uint8_t en32khz);
+void DS3231_Set_ControlReg(DS3231_GDataInstance_typedef *device, DS3231_AlarmInterrupt a1ie, DS3231_AlarmInterrupt a2ie, DS3231_IntSqwSelector intcn, 
+	DS3231_SQWRate rs2_rs1,	DS3231_ForceTConvertion conv,  DS3231_BatteryBacked bbsqw,  DS3231_Oscillator eosc);
+void DS3231_Set_StatusReg(DS3231_GDataInstance_typedef *device, uint8_t a1f, uint8_t a2f, DS3231_32kHzOutput en32khz);
 
 void DS3231_Get_TimeDate(DS3231_GDataInstance_typedef *device);
 void DS3231_Get_ControlReg(DS3231_GDataInstance_typedef *device);

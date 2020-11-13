@@ -15,6 +15,56 @@
 #endif //NULL
 
 /*
+ * @brief Hardware dependent part.
+ *
+ **/
+#define ADDRESS_PORT GPIOA
+#define CONTROL_PORT GPIOA
+///When connected to VCC, Motorola bus timing is selected.When connected to GND or left disconnected, 
+///Intel bus timing is selected.
+#define BUS_TIMING_SEL_PIN	GPIO_PIN_1
+///Active-Low Chip-Select Input. The chip-select signal must be asserted low for a bus cycle in the 
+///device to be accessed.CS must be kept in the active state during DS and AS for Motorola timing and 
+///during DS and R / W for Intel timing.
+#define CHIP_SELECT_PIN		GPIO_PIN_1
+///A positive-going address-strobe pulse serves to demultiplex the bus.The falling edge of AS causes 
+///the address to be latched within the device.The next rising edge that occurs on the AS bus clears the
+///address regardless of whether CS is asserted.
+#define ADDRESS_STROBE_PIN  GPIO_PIN_1
+///When the MOT pin is connected to VCC for Motorola timing, R / W is at a level that indicates whether 
+///the current cycle is a read or write.A read cycle is indicated with a high level on R/W while DS is high.
+///A write cycle is indicated when R / W is low during DS. When the MOT pin is connected to GND for Intel 
+///timing, the R / W signal is an active-low signal. In this mode, the R / W pin operates in a similar fashion
+///as the write-enable signal(WE) on generic RAMs.Data are latched on the rising edge of the signal.
+#define READ_WRITE_PIN		GPIO_PIN_1
+///W hen the MOT pinis connected to VCC , Motorola bus timing is sel ected. In this mode, DS is a positive pulse
+///during the latter portion of the bus cycle and is called data strobe. During read cycles, DS signifies the 
+///time that the device is to drive the bidirectional bus. In write cycles, the trailing edge of DS causes
+///the device to latch the written data. When the MOT pin is connected to GND, Intel bus timing is selected.
+///DS identifies the time period when the device drives the bus with read data. In this mode, the DS pin operates
+///in a similar fashion as the output enable(OE) signal on a generic RAM.
+#define DATA_STROBE_PIN		GPIO_PIN_1
+///Active-Low Reset Input. The RESET pin has no effect on the clock, calendar, or RAM.On power - up, the RESET
+///pin can be held low for a time to allow the power supply to stabilize.The amount of time that RESET is held
+///low is dependent on the application. However, if RESET is used on power - up, the time RESET is low should
+///exceed 200ms to ensure that the internal timer that controls the device on powerup has timed out. When RESET
+///is low and VCC is above VPF, the following occurs: 
+///A. Periodic interrupt - enable(PIE) bit is cleared to 0.
+///B. Alarm interrupt - enable(AIE) bit is cleared to 0.
+///C. Update - ended interrupt - enable(UIE) bit is cleared to 0.
+///D. Periodic - interrupt flag(PF) bit is cleared to 0.
+///E. Alarm - interrupt flag(AF) bit is cleared to 0.
+///F. Update - ended interrupt flag(UF) bit is cleared to 0.
+///G. Interrupt - request status flag(IRQF) bit is cleared to 0.
+///H. IRQ pin is in the high - impedance state.
+///I. The device is not accessible until RESET is returned high.
+///J. Square - wave output - enable(SQWE) bit is cleared to 0.
+///In a typical application, RESET can be connected to VCC.This connection allows the device to go in and out of 
+///power fail without affecting any of the control registers.
+#define RESET_PIN			GPIO_PIN_1
+
+
+/*
  * @brief DS12887 register map.
  *
  **/
@@ -48,9 +98,8 @@ typedef enum
 	DS12887_CONTROL_REG_C,
 	DS12887_CONTROL_REG_D,
 	
-	///RAM 0Eh-32h
-	DS12887_RAM_REG_START,
-	DS12887_RAM_REG1_STOP				= 0x7F
+	///RAM 0Eh-32h, 114 bytes, stop address is 0x7F
+	DS12887_RAM_BLOCK
 	
 } DS12887_RegisterMap;
 
@@ -86,10 +135,20 @@ typedef enum
 typedef enum
 {
 	DS12887_OSC_ON							= 2,//010
-	DS12887_OSC_ON_COUNTDOWN_CHAIN_RESET	= 6,//11x
-	
+	DS12887_OSC_ON_COUNTDOWN_CHAIN_RESET	= 6,//11x	
 	
 } DS12887_OscillatorOnOff;
+
+/*
+ * @brief Daylight saving bit.
+ *
+ **/
+typedef enum
+{
+	DS12887_DAYLIGHT_DIS,
+	DS12887_DAYLIGHT_EN
+	
+} DS12887_DaylightSaving;
 
 /*
  * @brief Clock format.
@@ -114,32 +173,71 @@ typedef enum
 } DS12887_DataFormat;
 
 /*
+ * @brief Square wave output en/dis.
+ *
+ **/
+typedef enum
+{
+	DS12887_SQW_DIS,
+	DS12887_SQW_EN
+	
+} DS12887_SquareWave;
+
+/*
+ * @brief Update ended interrupt enable.
+ *
+ **/
+typedef enum
+{
+	DS12887_UPDATE_ENDED_INTERRUPT_DIS,
+	DS12887_UPDATE_ENDED_INTERRUPT_EN	
+	
+} DS12887_UpdateEndedInterrupt;
+
+/*
+ * @brief Alarm interrupt enable.
+ *
+ **/
+typedef enum
+{
+	DS12887_ALARM_INTERRUPT_DIS,
+	DS12887_ALARM_INTERRUPT_EN	
+	
+} DS12887_AlarmInterrupt;
+
+/*
+ * @brief Periodic interrupt enable.
+ *
+ **/
+typedef enum
+{
+	DS12887_PERIODIC_INTERRUPT_DIS,
+	DS12887_PERIODIC_INTERRUPT_EN	
+	
+} DS12887_PeriodicInterrupt;
+
+/*
+ * @brief Update inhibited.
+ *
+ **/
+typedef enum
+{
+	DS12887_UPDATE_NORMAL,
+	DS12887_UPDATE_INHIBITED	
+	
+} DS12887_UpdateClockReg;
+
+/*
  * @brief Clock hour of day.
  *
  **/
 typedef enum
 {
-	DS12887_DAYLIGHT_NONE = 0,
-	DS12887_DAYLIGHT_AM   = 0,
-	DS12887_DAYLIGHT_PM
+	DS12887_HOUR_OF_DAY_NONE = 0,
+	DS12887_HOUR_OF_DAY_NONE_AM   = 0,
+	DS12887_HOUR_OF_DAY_NONE_PM
 	
 } DS12887_HourOfDay;
-
-/*
- * @brief Clock menu.
- *
- **/
-enum 
-{
-	CLOCK_EnterMenu,
-	CLOCK_SetHours,
-	CLOCK_SetMinutes,
-	CLOCK_SetDay,
-	CLOCK_SetDate,
-	CLOCK_SetMonth,
-	CLOCK_SetYear,
-	
-} DS12887_ClockMenuList;
 
 /*
  *	@brief Delay function typedef pointer. 
@@ -268,14 +366,14 @@ typedef struct __attribute__((aligned(1), packed))
 			uint8_t UIE			: 1;
 			//Alarm Interrupt Enable (AIE).
 			//This bit is a read / write bit that, when set to 1, permits the alarm flag (AF) bit in Register C to
-			//assert IRQ.An alarm interrupt occurs for each second that the three time bytes equal the three alarm
+			//assert IRQ. An alarm interrupt occurs for each second that the three time bytes equal the three alarm
 			//bytes, including a don’t - care alarm code of binary 11XXXXXX. The AF bit does not initiate the IRQ
 			//signal when the AIE bit is set to 0. The internal functions of the device do not affect the AIE bit,
 			//but is cleared to 0 on RESET.
 			uint8_t AIE			: 1;
 			//Periodic Interrupt Enable (PIE).
 			//The PIE bit is a read / write bit that allows the periodic interrupt flag(PF) bit in Register C to drive
-			//the IRQ pin low.When the PIE bit is set to 1, periodic interrupts are generated by driving the IRQ
+			//the IRQ pin low. When the PIE bit is set to 1, periodic interrupts are generated by driving the IRQ
 			//pin low at a rate specified by the RS3–RS0 bits of Register A. A 0 in the PIE bit blocks the IRQ output
 			//from being driven by a periodic interrupt, but the PF bit is still set at the periodic rate.PIE is 
 			//not modified by any internal device functions, but is cleared to 0 on RESET.
@@ -342,7 +440,7 @@ typedef struct __attribute__((aligned(1), packed))
 	};
 	
 	//RAM memory block A
-	uint8_t RAM_BLOCK[114];
+	uint8_t RamBlock[114];
 	
 } DS12887_GClockData_typedef;
 
@@ -367,6 +465,17 @@ typedef struct
  *	@brief Public function prototype.
  *
  **/
+void DS12887_Set_Time(DS12887_GDataInstance_typedef *device, DS12887_HourOfDay am_pm, uint8_t hours, uint8_t minutes, uint8_t seconds);
+void DS12887_Set_Date(DS12887_GDataInstance_typedef *device, uint8_t day, uint8_t date, uint8_t month, uint8_t year);
+void DS12887_Set_Alarm(DS12887_GDataInstance_typedef *device, DS12887_HourOfDay am_pm, uint8_t hours, uint8_t minutes, uint8_t seconds);
+void DS12887_Set_ControlRegA(DS12887_GDataInstance_typedef *device, DS12887_SQWIntFreq rs3_0, DS12887_OscillatorOnOff dv2_0);
+void DS12887_Set_ControlRegB(DS12887_GDataInstance_typedef *device, DS12887_DaylightSaving daylight, DS12887_ClockFormat clock_format, DS12887_DataFormat data_mode, 
+	DS12887_SquareWave sqwe, DS12887_UpdateEndedInterrupt uie, DS12887_AlarmInterrupt aie, DS12887_PeriodicInterrupt pie, DS12887_UpdateClockReg set);
+void DS12887_Get_TimeDate(DS12887_GDataInstance_typedef *device);
+void DS12887_Get_ControlRegC(DS12887_GDataInstance_typedef *device);
+void DS12887_Get_ControlRegD(DS12887_GDataInstance_typedef *device);
+void DS12887_ReadRamBlock(DS12887_GDataInstance_typedef *device);
+void DS12887_WriteRamBlock(DS12887_GDataInstance_typedef *device);
 
 
 #endif /* DS12887_H_ */
