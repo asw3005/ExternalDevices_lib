@@ -176,10 +176,13 @@ void PSTB404_SendDate(PSTB404__GInstance_typedef *device, PSTB404_Command screen
 void PSTB404_SendTemperatureFloat4_1(PSTB404__GInstance_typedef *device, PSTB404_Command screen_region, float float4_1)
 {
 	uint16_t tmpNumber = 0;
+	float convertedFloat = ((float)((int16_t)(float4_1 * 10))) / 10;
 	
-	if (float4_1 < -40) float4_1 = -40.0f;
-	else if (float4_1 > 80) float4_1 = 80.0f;
-	tmpNumber = (uint16_t)(float4_1 * 10);
+	if (convertedFloat < -40) convertedFloat = -40.0f;
+	else if (convertedFloat > 80) convertedFloat = 80.0f;
+	if (convertedFloat >= 0)
+		tmpNumber = (uint16_t)(convertedFloat * 10);
+	else tmpNumber = (uint16_t)((-convertedFloat) * 10);
 	
 	device->data_buffer.StartBlock = PSTB404_START_BLOCK;
 	device->data_buffer.EndBlock = PSTB404_END_BLOCK;	
@@ -202,15 +205,15 @@ void PSTB404_SendTemperatureFloat4_1(PSTB404__GInstance_typedef *device, PSTB404
 	device->data_buffer.MessageBlock[6] = 'C';	
 
 	//Minus simbol and leading zero transformation.
-	if (float4_1 < 10 && float4_1 >= 0)
+	if (convertedFloat < 10 && convertedFloat >= 0)
 	{
 		device->data_buffer.MessageBlock[1] = ' ';
 	}
-	else if (float4_1 < 0 && float4_1 > -10)
+	else if (convertedFloat < 0 && convertedFloat > -10)
 	{
 		device->data_buffer.MessageBlock[1] = '-';		
 	}
-	else if (float4_1 <= -10)
+	else if (convertedFloat <= -10)
 	{
 		device->data_buffer.MessageBlock[0] = '-';
 	}
@@ -219,7 +222,6 @@ void PSTB404_SendTemperatureFloat4_1(PSTB404__GInstance_typedef *device, PSTB404
 	PSTB404_CRCCalc(device);
 
 	//Transmits data from the buffer.
-	//device->receive_data_fptr(&device->data_buffer.Echo, 1);
 	device->transmit_data_fptr(&device->data_buffer.StartBlock, 12);
 	device->delay(150);	
 }

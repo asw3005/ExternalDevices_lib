@@ -16,7 +16,7 @@ static void DS12887_ReadControlReg(DS12887_GDataInstance_typedef *device);
 static void DS12887_WriteTimeDateReg(DS12887_GDataInstance_typedef *device);
 static void DS12887_WriteControlReg(DS12887_GDataInstance_typedef *device);
 static void DS12887_CheckReference(DS12887_GDataInstance_typedef *device);
-
+static uint8_t DS12887_BitSwap(uint8_t byte);
 
 /*
  * @brief 
@@ -114,11 +114,11 @@ void DS12887_Set_Alarm(DS12887_GDataInstance_typedef *device, DS12887_HourOfDay 
 		device->clock_reg.SecondsAlarm = seconds;
 	}	
 	
-	device->tx_data(DS12887_SECONDS_REG, &device->clock_reg.Seconds, 1);
+	device->tx_data(DS12887_ALARM_SECONDS_REG, &device->clock_reg.SecondsAlarm, 1);
 	device->delay(1);
-	device->tx_data(DS12887_MINUTES_REG, &device->clock_reg.Minutes, 1);
+	device->tx_data(DS12887_ALARM_MINUTES_REG, &device->clock_reg.MinutesAlarm, 1);
 	device->delay(1);
-	device->tx_data(DS12887_HOURS_REG, &device->clock_reg.Hours, 1);
+	device->tx_data(DS12887_ALARM_HOURS_REG, &device->clock_reg.HoursAlarm, 1);
 	device->delay(1);
 }
 
@@ -248,10 +248,10 @@ void DS12887_WriteRamBlock(DS12887_GDataInstance_typedef *device)
 	device->delay(1);
 }
 
-/*
- * @brief Private function.
- *
- **/
+
+
+
+/*Static functions.*/
 
 /*
  * @brief  Check the object reference.
@@ -269,5 +269,202 @@ static void DS12887_CheckReference(DS12887_GDataInstance_typedef *device)
 		}
 	}
 }
+
+/*
+ * @brief Private function.
+ *
+ **/
+
+static uint8_t DS12887_BitSwap(uint8_t byte)
+{
+	uint8_t tempByte = 0;
+	
+	__NOP();
+	for (uint8_t i = 0; i < 8; i++)
+	{
+		tempByte |= ((byte & (0x01 << i)) >> i) << (7 - i);
+		
+	}	
+	return tempByte;
+}
+
+
+
+
+/*Hardware dependent function for write and read byte(s).*/
+
+/*
+ * @brief Write byte. Intel 8080 protocol.
+ *
+ **/
+void DS12887_WriteI(uint8_t MemAddress, uint8_t *pData, uint8_t size)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	
+
+	/*Configure GPIO pins : PAPin PAPin PAPin PAPin
+						 PAPin PAPin PAPin PAPin */
+	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3
+	                        | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(ADDRESS_PORT, &GPIO_InitStruct);
+	
+	for (uint8_t i = 0; i < size; i++)
+	{	
+		//Asserting chip select condition and sets data, r/w and address pins to HIGH state.
+		HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, READ_WRITE_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_RESET);	
+		__NOP(); __NOP(); __NOP(); __NOP();	
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_SET);	
+		
+		//Sets address and latch it.
+		ADDRESS_PORT->BSRR = 0x00FF0000;
+		ADDRESS_PORT->BSRR = DS12887_BitSwap(MemAddress + i);
+		__NOP(); __NOP(); __NOP(); __NOP();	
+		HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_RESET);
+		__NOP(); __NOP(); __NOP(); __NOP(); 					//90nS wait
+	
+		//Sets data and writes it.
+		ADDRESS_PORT->BSRR = 0x00FF0000;
+		/*Im my bread board data signals are swaped. AD0 = AD7, AD1 = AD6 and e.c.*/
+		/*If you use direct order, the swap function is not needed.*/
+		ADDRESS_PORT->BSRR = DS12887_BitSwap(*pData);
+		HAL_GPIO_WritePin(CONTROL_PORT, READ_WRITE_PIN, GPIO_PIN_RESET);
+		__NOP(); __NOP(); __NOP(); __NOP(); __NOP();  							//150nS wait
+		__NOP(); __NOP(); __NOP(); __NOP(); __NOP();  							//150nS wait
+		HAL_GPIO_WritePin(CONTROL_PORT, READ_WRITE_PIN, GPIO_PIN_SET);
+		pData++;
+	
+		//Release CS and AS.
+		HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_SET);
+	}
+}
+
+/*
+ * @brief Read byte. Intel 8080 protocol.
+ *
+ **/
+void DS12887_ReadI(uint8_t MemAddress, uint8_t *pData, uint8_t size)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+
+	for (uint8_t i = 0; i < size; i++)
+	{	
+		/*Configure GPIO pins : PAPin PAPin PAPin PAPin
+							 PAPin PAPin PAPin PAPin */
+		GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3
+		                        | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+		GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		HAL_GPIO_Init(ADDRESS_PORT, &GPIO_InitStruct);
+	
+		//Asserting chip select condition and sets data, r/w and address pins to HIGH state.
+		HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, READ_WRITE_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_RESET);
+	
+		__NOP(); __NOP(); __NOP(); __NOP();	
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_SET);	
+		//Sets address and latch it.	
+		ADDRESS_PORT->BSRR = 0x00FF0000;
+		/*Im my bread board data signals are swaped. AD0 = AD7, AD1 = AD6 and e.c.*/
+		/*If you use direct order, the swap function is not needed.*/
+		ADDRESS_PORT->BSRR = DS12887_BitSwap(MemAddress + i);
+		__NOP(); __NOP(); __NOP(); __NOP();	
+		HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_RESET);	
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_RESET);
+		__NOP(); __NOP(); __NOP(); __NOP();  					//90nS wait
+	
+		//Reads data.	
+		/*Configure GPIO pins : PAPin PAPin PAPin PAPin
+							 PAPin PAPin PAPin PAPin */
+		GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3
+							 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+		GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+		GPIO_InitStruct.Pull = GPIO_PULLUP;
+		HAL_GPIO_Init(ADDRESS_PORT, &GPIO_InitStruct);	
+	
+		HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_RESET);
+		__NOP(); __NOP(); __NOP(); __NOP(); __NOP();   							//150nS wait
+		__NOP(); __NOP(); __NOP(); __NOP(); __NOP();   							//150nS wait
+		/*Im my bread board data signals are swaped. AD0 = AD7, AD1 = AD6 and e.c.*/
+		 /*If you use direct order, the swap function is not needed.*/
+		*pData = DS12887_BitSwap((uint8_t)(ADDRESS_PORT->IDR));     	//writes the least significant of sixteen bits.
+		HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_SET);
+		pData++;	
+	
+		//Release CS and AS.
+		HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_SET);
+	}
+}
+
+
+//void DS12887_ReadM(uint8_t MemAddress, uint8_t *pData, uint8_t size)
+//{
+//	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+//	
+//	/*Configure GPIO pins : PAPin PAPin PAPin PAPin
+//						 PAPin PAPin PAPin PAPin */
+//	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3
+//	                        | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//	HAL_GPIO_Init(ADDRESS_PORT, &GPIO_InitStruct);
+//	
+//	//Asserting chip select condition and sets data, r/w and address pins to HIGH state.
+//	
+//	HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(CONTROL_PORT, READ_WRITE_PIN, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);	
+//	HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_RESET);
+//	
+//	HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_RESET);	
+//	HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_SET);
+//	__NOP(); __NOP(); __NOP(); 
+//	//Sets address.
+//	HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_RESET);	
+//	//ADDRESS_PORT->ODR = DS12887_BitSwap(MemAddress);
+//	ADDRESS_PORT->ODR = MemAddress;
+//	__NOP();	__NOP();
+//	HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_RESET);
+//	__NOP(); __NOP();
+//	
+//	//Reads data.
+//	HAL_GPIO_WritePin(CONTROL_PORT, READ_WRITE_PIN, GPIO_PIN_SET);
+//	__NOP(); __NOP();
+//	HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_SET);	
+//	/*Configure GPIO pins : PAPin PAPin PAPin PAPin
+//					 PAPin PAPin PAPin PAPin */
+//					GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3
+//					                        | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+//	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+//	GPIO_InitStruct.Pull = GPIO_PULLUP;
+//	HAL_GPIO_Init(ADDRESS_PORT, &GPIO_InitStruct);	
+//	__NOP(); __NOP(); __NOP(); __NOP();
+//	
+//	*pData = DS12887_BitSwap((uint8_t)(ADDRESS_PORT->IDR));     	//writes the least significant of sixteen bits.
+//	pData++;	
+//	
+//	HAL_GPIO_WritePin(CONTROL_PORT, DATA_STROBE_PIN, GPIO_PIN_RESET);
+//	HAL_GPIO_WritePin(CONTROL_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);	
+//	HAL_GPIO_WritePin(CONTROL_PORT, ADDRESS_STROBE_PIN, GPIO_PIN_SET);
+//
+//}
+
+
+
+
+
+
 
 

@@ -1,0 +1,285 @@
+Декодер
+
+//*****************************************************************************************
+
+module DECODER_7SEG										
+(
+input  wire [3:0] Digit_Hex,						
+output reg[6:0] Seg_Data								
+);
+
+always @(Digit_Hex)								
+   begin
+	case(Digit_Hex)									
+			4'b0000: Seg_Data = 7'b1000000; 		
+			4'b0001: Seg_Data = 7'b1111001; 		
+			4'b0010: Seg_Data = 7'b0100100; 		
+			4'b0011: Seg_Data = 7'b0110000; 		
+			4'b0100: Seg_Data = 7'b0011001; 		
+			4'b0101: Seg_Data = 7'b0010010; 		
+			4'b0110: Seg_Data = 7'b0000010; 		
+			4'b0111: Seg_Data = 7'b1111000; 		
+			4'b1000: Seg_Data = 7'b0000000; 		
+			4'b1001: Seg_Data = 7'b0010000; 		
+			4'b1010: Seg_Data = 7'b0001000; 		
+			4'b1011: Seg_Data = 7'b0000011; 		
+			4'b1100: Seg_Data = 7'b1000110; 		
+			4'b1101: Seg_Data = 7'b0100001; 		
+			4'b1110: Seg_Data = 7'b0000110; 		
+			4'b1111: Seg_Data = 7'b0001110; 		
+			default: Seg_Data = 7'b1111111; 		 
+	endcase
+   end
+	
+endmodule
+
+
+//*****************************************************************************************
+//
+module DinamicIndication
+(
+input wire [6:0] DigitCode0,			
+input wire [6:0] DigitCode1,			
+input wire [6:0] DigitCode2,			
+//input wire [6:0] DigitCode3,
+
+input wire ClockDinamic,				
+
+output reg [6:0] SegCode,				
+output reg [2:0] OutDigit				
+);
+
+reg [1:0]  Select;						
+
+always @(posedge ClockDinamic)			
+begin
+	if (Select == 2'd2)					
+		begin
+			Select = 1'd0;				
+		end
+	else
+		begin
+			Select = Select + 1'd1;		
+		end
+end
+
+always @(Select)						
+begin
+
+	case(Select)						
+		0: OutDigit <= 3'b001; 			
+		1: OutDigit <= 3'b010; 			
+		2: OutDigit <= 3'b100; 			
+		default: OutDigit <= 3'bzzz; 	
+	endcase
+end
+
+always @(Select or DigitCode0 or DigitCode1 or DigitCode2) 
+begin
+
+	case(Select)										 
+		0: SegCode <= DigitCode0;		
+		1: SegCode <= DigitCode1; 		
+		2: SegCode <= DigitCode2; 		
+		default: SegCode <= 7'bzzzzzzz; 
+	endcase
+end
+
+
+endmodule
+
+
+Счётчик
+
+//*****************************************************************************************
+//
+
+module Counter								
+(
+input wire Clock,							
+input wire Reset,							
+output wire  CarryOut,						
+output reg [3:0] CounterOut					
+);
+
+//reg [3:0] count;
+//parameter MODULE = 4'd5;
+
+always @(posedge Clock or negedge Reset)	
+begin
+	if (!Reset)								
+		begin
+		CounterOut  <= 4'b0000;				
+		end
+	else									
+	begin		
+	if(CounterOut == 4'b1001)				
+		begin
+		CounterOut <= 4'b0000;				
+		end
+	else 									
+		begin
+		CounterOut <= CounterOut + 4'b0001;	
+		end
+	end
+end
+	
+assign CarryOut = (CounterOut == 4'b0000);
+
+endmodule
+
+
+
+
+//*****************************************************************************************
+//
+
+module ShiftRegister
+(
+input wire DataIn,												
+input wire Clock,												
+input wire Lath,												выход													
+input wire ResetOut,											
+input wire ResetReg,											
+output wire [6:0] DataOut										
+);
+
+parameter DEFOLTIDICATION = 7'b1111111;
+
+reg [6:0] InternalData;											
+reg [6:0] InternalDataLatch;									
+
+always @(posedge Clock or negedge ResetReg)
+begin
+	if (!ResetReg)
+		begin
+			InternalData <= DEFOLTIDICATION;							
+		end
+	else
+		begin
+			InternalData <= {InternalData[5:0], DataIn}; 	// LSB			
+		end
+end
+
+always @(posedge Lath or negedge ResetOut)
+begin
+	if (!ResetOut)
+		begin
+			InternalDataLatch <= DEFOLTIDICATION;			
+		end
+	else
+		begin
+			InternalDataLatch <= InternalData;
+		end
+end
+
+assign DataOut = InternalDataLatch;
+
+endmodule 
+
+
+
+
+
+//*****************************************************************************************
+//
+
+module InverterOut_50Puls					
+(
+input wire Clock,			
+output reg CounterOut						
+);
+
+reg [5:0] count;
+
+always @(posedge Clock)	
+begin
+	begin		
+	if(count == 6'b110001)					
+		begin
+		count <= 6'b000000;						
+		CounterOut <= (~(CounterOut));
+		end
+	else 											
+		begin
+		count <= count + 6'b000001;			
+		end
+	end
+end
+
+endmodule
+
+//*****************************************************************************************
+//
+
+module Counter_64								
+(
+input wire Clock,									
+output reg CounterOut						
+);
+
+reg [4:0] count;
+
+always @(posedge Clock)							
+begin
+	begin		
+	if(count == 5'b11111)					
+		begin
+		count <= 5'b00000;						
+		CounterOut <= (~(CounterOut));
+		end
+	else 											
+		begin
+		count <= count + 5'b00001;			единицу
+		end
+	end
+end
+
+endmodule
+
+
+
+//*****************************************************************************************
+//
+
+module CounterInput												
+(
+input wire [15:0] InCh,						// 
+output wire TimerOut						// 
+);
+
+assign TimerOut = InCh[0]|InCh[1]|InCh[2]|InCh[3]|InCh[4]|InCh[5]|InCh[6]|InCh[7]|InCh[8]|InCh[9]|InCh[10]|InCh[11]|InCh[12]|InCh[13]|InCh[14]|InCh[15];
+ 
+endmodule
+
+
+/*Generate*/
+
+parameter numberALine = 16;
+parameter numberBLine = 16;
+
+genvar i, j;
+
+generate
+
+for(j = 0; j < numberALine; j = j + 1) 
+begin: genALine
+	for(i = 0; i < numberBLine; i = i + 1) 
+		begin: genBLine
+		
+			counter record(
+			.aChannel(inA[j]),
+			.bChannel(inB[i]),
+			.refClock(refClockCounter),
+			.enCounter(enCounter),
+			.rstCounter(rstCounter),
+			.readDataClock(readDataClock),
+			.cntOutValue(wireCntOut[j*numberALine + i])
+			);
+
+		end
+end
+		
+endgenerate
+
+

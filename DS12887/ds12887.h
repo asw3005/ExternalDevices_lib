@@ -19,33 +19,33 @@
  *
  **/
 #define ADDRESS_PORT GPIOA
-#define CONTROL_PORT GPIOA
+#define CONTROL_PORT GPIOB
 ///When connected to VCC, Motorola bus timing is selected.When connected to GND or left disconnected, 
 ///Intel bus timing is selected.
-#define BUS_TIMING_SEL_PIN	GPIO_PIN_1
+#define BUS_TIMING_SEL_PIN	GPIO_PIN_1 //It has an Intel state without use MCU pin.
 ///Active-Low Chip-Select Input. The chip-select signal must be asserted low for a bus cycle in the 
-///device to be accessed.CS must be kept in the active state during DS and AS for Motorola timing and 
+///device to be accessed. CS must be kept in the active state during DS and AS for Motorola timing and 
 ///during DS and R / W for Intel timing.
-#define CHIP_SELECT_PIN		GPIO_PIN_1
-///A positive-going address-strobe pulse serves to demultiplex the bus.The falling edge of AS causes 
+#define CHIP_SELECT_PIN		GPIO_PIN_0
+///A positive-going address-strobe pulse serves to demultiplex the bus. The falling edge of AS causes 
 ///the address to be latched within the device.The next rising edge that occurs on the AS bus clears the
 ///address regardless of whether CS is asserted.
 #define ADDRESS_STROBE_PIN  GPIO_PIN_1
-///When the MOT pin is connected to VCC for Motorola timing, R / W is at a level that indicates whether 
-///the current cycle is a read or write.A read cycle is indicated with a high level on R/W while DS is high.
-///A write cycle is indicated when R / W is low during DS. When the MOT pin is connected to GND for Intel 
-///timing, the R / W signal is an active-low signal. In this mode, the R / W pin operates in a similar fashion
+///When the MOT pin is connected to VCC for Motorola timing, R/W is at a level that indicates whether 
+///the current cycle is a read or write. A read cycle is indicated with a high level on R/W while DS is high.
+///A write cycle is indicated when R/W is low during DS. When the MOT pin is connected to GND for Intel 
+///timing, the R/W signal is an active-low signal. In this mode, the R/W pin operates in a similar fashion
 ///as the write-enable signal(WE) on generic RAMs.Data are latched on the rising edge of the signal.
-#define READ_WRITE_PIN		GPIO_PIN_1
+#define READ_WRITE_PIN		GPIO_PIN_10
 ///W hen the MOT pinis connected to VCC , Motorola bus timing is sel ected. In this mode, DS is a positive pulse
 ///during the latter portion of the bus cycle and is called data strobe. During read cycles, DS signifies the 
 ///time that the device is to drive the bidirectional bus. In write cycles, the trailing edge of DS causes
 ///the device to latch the written data. When the MOT pin is connected to GND, Intel bus timing is selected.
 ///DS identifies the time period when the device drives the bus with read data. In this mode, the DS pin operates
 ///in a similar fashion as the output enable(OE) signal on a generic RAM.
-#define DATA_STROBE_PIN		GPIO_PIN_1
-///Active-Low Reset Input. The RESET pin has no effect on the clock, calendar, or RAM.On power - up, the RESET
-///pin can be held low for a time to allow the power supply to stabilize.The amount of time that RESET is held
+#define DATA_STROBE_PIN		GPIO_PIN_11
+///Active-Low Reset Input. The RESET pin has no effect on the clock, calendar, or RAM. On power - up, the RESET
+///pin can be held low for a time to allow the power supply to stabilize. The amount of time that RESET is held
 ///low is dependent on the application. However, if RESET is used on power - up, the time RESET is low should
 ///exceed 200ms to ensure that the internal timer that controls the device on powerup has timed out. When RESET
 ///is low and VCC is above VPF, the following occurs: 
@@ -59,9 +59,9 @@
 ///H. IRQ pin is in the high - impedance state.
 ///I. The device is not accessible until RESET is returned high.
 ///J. Square - wave output - enable(SQWE) bit is cleared to 0.
-///In a typical application, RESET can be connected to VCC.This connection allows the device to go in and out of 
+///In a typical application, RESET can be connected to VCC. This connection allows the device to go in and out of 
 ///power fail without affecting any of the control registers.
-#define RESET_PIN			GPIO_PIN_1
+#define RESET_PIN			GPIO_PIN_1 
 
 
 /*
@@ -90,7 +90,7 @@ typedef enum
 	///00-59.
 	DS12887_ALARM_MINUTES_REG			= 0x03,
 	///1-12 for the 12 hours format + #AM/PM, 00-23 for the 24 hours format.
-	DS12887_ALARM_HOURS					= 0x05,
+	DS12887_ALARM_HOURS_REG				= 0x05,
 
 	///Control, status, aging and temperature registers.
 	DS12887_CONTROL_REG_A				= 0x0A,
@@ -255,7 +255,7 @@ typedef void(*delay_fptr)(uint32_t period);
  *  @param  Size : Amount of data to be sent.
  *
  **/
-typedef void(*txrx_data_fptr)(uint16_t MemAddress, uint8_t *pData, uint8_t Size);
+typedef void(*txrx_data_fptr)(uint8_t MemAddress, uint8_t *pData, uint8_t Size);
 
 /*
  *	@brief Clock data.
@@ -476,6 +476,13 @@ void DS12887_Get_ControlRegC(DS12887_GDataInstance_typedef *device);
 void DS12887_Get_ControlRegD(DS12887_GDataInstance_typedef *device);
 void DS12887_ReadRamBlock(DS12887_GDataInstance_typedef *device);
 void DS12887_WriteRamBlock(DS12887_GDataInstance_typedef *device);
+
+/*
+ * @brief Hardware dependent function for write and read byte(s).
+ *
+ **/
+void DS12887_WriteI(uint8_t MemAddress, uint8_t *pData, uint8_t size);
+void DS12887_ReadI(uint8_t MemAddress, uint8_t *pData, uint8_t size);
 
 
 #endif /* DS12887_H_ */
