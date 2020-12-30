@@ -31,6 +31,8 @@ static uint8_t DS12887_BitSwap(uint8_t byte);
  **/
 void DS12887_Set_Time(DS12887_GDataInstance_typedef *device, DS12887_HourOfDay am_pm, uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
+	device->rx_data(DS12887_CONTROL_REG_B, &device->clock_reg.ControlRegisterB, 1);
+	
 	if (seconds > 59 || minutes > 59) /*Time errore*/ return;
 	else if((device->clock_reg.ControlRegisterB & 0x02) == DS12887_CLOCK_FORMAT_12HOURS && hours > 12) /*Time errore*/ return;
 	else if((device->clock_reg.ControlRegisterB & 0x02) == DS12887_CLOCK_FORMAT_24HOURS && hours > 23) /*Time errore*/ return;
@@ -96,6 +98,8 @@ void DS12887_Set_Date(DS12887_GDataInstance_typedef *device, uint8_t day, uint8_
  **/
 void DS12887_Set_Alarm(DS12887_GDataInstance_typedef *device, DS12887_HourOfDay am_pm, uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
+	device->rx_data(DS12887_CONTROL_REG_B, &device->clock_reg.ControlRegisterB, 1);
+	
 	if (seconds > 59 || minutes > 59) /*Time errore*/ return;
 	else if((device->clock_reg.ControlRegisterB & 0x02) == DS12887_CLOCK_FORMAT_12HOURS && hours > 12) /*Time errore*/ return;
 	else if((device->clock_reg.ControlRegisterB & 0x02) == DS12887_CLOCK_FORMAT_24HOURS && hours > 23) /*Time errore*/ return;
@@ -183,6 +187,7 @@ void DS12887_Get_TimeDate(DS12887_GDataInstance_typedef *device)
 {
 	device->rx_data(DS12887_SECONDS_REG, &device->clock_reg.Seconds, 10);
 	device->delay(1);
+	device->rx_data(DS12887_CONTROL_REG_B, &device->clock_reg.ControlRegisterB, 1);
 	
 	device->clock.Seconds = (device->clock_reg.Seconds & 0x0F) + ((device->clock_reg.Seconds & 0x70) >> 4) * 10;
 	device->clock.Minutes = (device->clock_reg.Minutes & 0x0F) + ((device->clock_reg.Minutes & 0x70) >> 4) * 10;

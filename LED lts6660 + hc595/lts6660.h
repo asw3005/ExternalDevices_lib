@@ -33,30 +33,28 @@ typedef enum
 	LTS6660_POSITION_SEVEN,
 	LTS6660_POSITION_EIGHT,
 	LTS6660_POSOTION_NINE,
-	LTS6660_MAX_POSITION = NUMBER_OF_DIGITS,
+	LTS6660_MAX_POSITION = NUMBER_OF_DIGITS - 1,
 	LTS6660_POSITION_MAX_THREEDIG = 2,
 	LTS6660_POSITION_MAX_FOURDIG = 3
 	
 } LTS6660_Position;
 
 /*
- * @brief Massive of number.
+ * @brief Blink mask.
  *
  **/
-typedef enum
+typedef enum 
 {
-	LTS6660_NUMBER_ZERO = 0,
-	LTS6660_NUMBER_ONE,
-	LTS6660_NUMBER_TWO,
-	LTS6660_NUMBER_THREE,
-	LTS6660_NUMBER_FOUR,
-	LTS6660_NUMBER_FIVE,
-	LTS6660_NUMBER_SIX,
-	LTS6660_NUMBER_SEVEN,
-	LTS6660_NUMBER_EIGHT,
-	LTS6660_NUMBER_NINE
+	LTS6660_DISPLAY_TIME,
+	LTS6660_SET_HOURS,
+	LTS6660_SET_MINUTES,
 	
-} LTS6660_Numbers;
+	LTS6660_SET_DAY,
+	LTS6660_SET_DATE,
+	LTS6660_SET_MONTH,
+	LTS6660_SET_YEAR,
+	
+} LTS6660_Mask;
 
 typedef struct
 {
@@ -98,13 +96,14 @@ typedef struct
 	latch_remote_fptr latch_pin_fptr;
 	tx_data_fptr transmit_data_fptr;
 	
-} LTS6660_GInstance_typedef;
+} LTS6660_GInstance_t;
 
 /*
  * @brief Public function prototype.
  *
  **/
-void LTS6660_ClrScreen(LTS6660_GInstance_typedef *device);
-void LTS6660_Set_Number(LTS6660_GInstance_typedef *device, LTS6660_Numbers number, LTS6660_Position position);
-void LTS6660_DisplayTc(LTS6660_GInstance_typedef *device, float number);
+void LTS6660_ClrScreen(LTS6660_GInstance_t *device);
+void LTS6660_Send_Number(LTS6660_GInstance_t *device, LTS6660_Position position, uint8_t number);
+void LTS6660_Send_TimeDate(LTS6660_GInstance_t *device, const uint8_t hours_date, const uint8_t minutes_month, const uint8_t seconds_year, const LTS6660_Mask blinking);
+void LTS6660_Send_TemperatureC(LTS6660_GInstance_t *device, float number);
 #endif /* LTS6660_H_ */
