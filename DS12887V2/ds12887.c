@@ -7,8 +7,6 @@
 #include "stm32f1xx_hal.h"
 #include "ds12887.h"
 
-
-
 /*
  * @brief Private function prototype.
  *
@@ -263,6 +261,8 @@ void DS12887_WriteRamBlock(DS12887_GDataInstance_typedef *device)
 	device->delay(1);
 }
 
+#ifndef USE_DATA_RW_FSMC
+
 /*
  * @brief Config the control pins.
  *
@@ -289,6 +289,7 @@ void DS12887_ConfigControlPins(void)
 	HAL_GPIO_Init(ADDR_STROBE_PIN_PORT, &GPIO_InitStruct);
 }
 
+#endif /*USE_DATA_RW_FSMC*/
 
 /*Static functions.*/
 

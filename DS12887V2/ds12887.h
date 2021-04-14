@@ -10,6 +10,8 @@
 
 #include "stm32f1xx_hal.h"
 
+/* NOTE! You should be defined you way to transmit data  to your RTC device. 
+   It can be either FSMC or I80 emulator transmission data. */
 #define USE_DATA_RW_FSMC
 
 #ifndef NULL

@@ -129,7 +129,7 @@ void DS18B20_Get_Temperature(DS18B20_GeneralDataInstance_typedef *device, DS18B2
 	DS18B20_ReadScratchpadBytes(device, rom_cmd, dataDepth);
 	if ((device->scratchpad_data.Temperature & 0xF800) == 0)
 		device->converted_data.Temperature = (device->scratchpad_data.Temperature & 0x87FF) * 0.0625f;
-	else device->converted_data.Temperature = -((~device->scratchpad_data.Temperature + 1) * 0.0625);
+	else device->converted_data.Temperature = -((~device->scratchpad_data.Temperature + 1) * 0.0625f);
 	//crc8  = CalculateCRC8(&device->scratchpad_data.partsTemperature.TemperatureLsb, 8);
 }
 
