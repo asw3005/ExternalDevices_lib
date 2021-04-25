@@ -1,5 +1,5 @@
 /*
- *	@brief One wire mediator.
+ *	@brief DS18B20 driver.
  *	Created 03.08.21
  *
  **/
@@ -9,21 +9,47 @@
 //#include "calcCRC.h"
 #include "stdio.h"
 
-#include "ds2484.h"
+/* Define your favorite hardware interface :) */
+//#define UART_COMMUNICATION
+#define I2C_COMMUNICATION
+
+/* Select your I2C interface. */
+#ifdef I2C_COMMUNICATION
+	#define DS2484
+	//#define DS2482
+#endif
+
+/* Selector of interfaces. */
+#ifdef UART_COMMUNICATION
 #include "one_wire_uart.h"
-
+/* Public variables. */
+extern UART_HandleTypeDef huart1;
 /* Private function prototypes. */
-static void DS18B20_SendSkipMatchRom(DS18B20_GInst_t *device, ONE_WIRE_CommandSet rom_cmd);
-static void DS18B20_ConvertT(DS18B20_GInst_t *device, ONE_WIRE_CommandSet rom_cmd);
+static void UART_ParasitePinRemote(uint8_t pull_up);
+void UART_Init_Baud(uint32_t baud);
+static int8_t UART_TxData(uint8_t *buffer, uint16_t size);
+static int8_t UART_RxData(uint8_t *buffer, uint16_t size);
+/* Private variables. */
+static UART_1WireGInst_t uart_ginst = { 
+		
+	.strong_pull_up = UART_ParasitePinRemote,
+	.isReceiveComplete = (uint16_t *) &huart1.TxXferCount,
+	.uart_init_baud = UART_Init_Baud,	
+	.uart_rx_data = UART_RxData,
+	.uart_tx_data = UART_TxData,
+	.delay = HAL_Delay
+};
 
-/*  */
-static int8_t I2C_TxData(uint8_t address, uint8_t *buffer, uint16_t size);
-static int8_t I2C_RxData(uint8_t address, uint8_t *buffer, uint16_t size);
-
+#else 
+#ifdef I2C_COMMUNICATION
 /* Public variables. */
 extern I2C_HandleTypeDef hi2c1;
-
+static int8_t I2C_TxData(uint8_t address, uint8_t *buffer, uint16_t size);
+static int8_t I2C_RxData(uint8_t address, uint8_t *buffer, uint16_t size);
 /* Private variables. */
+#ifdef DS2484
+
+#include "ds2484.h"
 static DS2484_GInst_t ds2484_ginst = { 
 		
 	.isReceiveComplete = (uint16_t *) &hi2c1.XferCount,
@@ -31,6 +57,30 @@ static DS2484_GInst_t ds2484_ginst = {
 	.i2c_tx_data = I2C_TxData,
 	.i2c_rx_data = I2C_RxData,
 };
+
+#else
+#ifdef DS2482
+
+#include "ds2482.h"
+static DS2482_GInst_t ds2482_ginst = { 
+		
+	.isReceiveComplete = (uint16_t *) &hi2c1.XferCount,
+	.delay = HAL_Delay,
+	.i2c_tx_data = I2C_TxData,
+	.i2c_rx_data = I2C_RxData,
+};	
+
+#endif 
+#endif
+#endif
+#endif
+
+
+/* Private function prototypes. */
+static void DS18B20_SendSkipMatchRom(DS18B20_GInst_t *device, ONE_WIRE_CommandSet rom_cmd);
+static void DS18B20_ConvertT(DS18B20_GInst_t *device, ONE_WIRE_CommandSet rom_cmd);
+
+
 
 /*
  * @brief Resets 1 wire line and checks availability for any devices on the bus.
@@ -69,7 +119,7 @@ void DS18B20_Set_LaserRomCode(DS18B20_GInst_t *device, uint64_t rom_code)
  * @param retval : 64–bit code ROM code.
  *
  **/
-uint64_t DS18B20_Get_LaserRomCode(DS18B20_GInst_t *device)
+uint64_t DS18B20_Get_LaserRomCode (DS18B20_GInst_t *device)
 {
 	uint8_t tx_command = ONEWIRE_READ_ROM;
 	
@@ -309,12 +359,33 @@ static void DS18B20_SendSkipMatchRom(DS18B20_GInst_t *device, ONE_WIRE_CommandSe
 /* Second layer functions. */
 
 /*
+ * @brief User delay.
+ *
+ **/
+void DS18B20_Delay(uint32_t period)
+{
+	HAL_Delay(period);
+}
+
+
+/*
  * @brief Reset 1-Wire bus.
  *
  **/
 uint8_t DS18B20_1WireReset(void)
-{
+{	
+#ifdef DS2484
 	return DS2484_1WireReset(&ds2484_ginst);
+#else
+#ifdef DS2482
+	return 0;
+	//return DS2482_1WireReset(&ds2484_ginst);
+#else
+#ifdef UART_COMMUNICATION		 
+	return UART_1WireReset(&uart_ginst);	
+#endif /* DS2484 */
+#endif /* DS2482 */
+#endif /* UART_COMMUNICATION */
 }
 
 /*
@@ -325,7 +396,17 @@ uint8_t DS18B20_1WireReset(void)
  **/
 void DS18B20_SPU(uint8_t state)
 {
+#ifdef DS2484
 	DS2484_1WireSPU(&ds2484_ginst, state);
+#else
+#ifdef DS2482
+	DS2482_1WireSPU(&ds2482_ginst, state);
+#else
+#ifdef UART_COMMUNICATION		 
+	UART_1WireSPU(uart_ginst);	
+#endif /* DS2484 */
+#endif /* DS2482 */
+#endif /* UART_COMMUNICATION */	
 }
 
 /*
@@ -334,7 +415,17 @@ void DS18B20_SPU(uint8_t state)
  **/
 uint8_t DS18B20_TxData(uint8_t *buffer, uint16_t size)
 {
+#ifdef DS2484
 	return DS2484_1WireWriteData(&ds2484_ginst, buffer, size);
+#else
+#ifdef DS2482
+	return DS2482_1WireWriteData(&ds2482_ginst, buffer, size);
+#else
+#ifdef UART_COMMUNICATION		 
+	//return UART_1WireWriteData(&uart_ginst, buffer, size);	
+#endif /* DS2484 */
+#endif /* DS2482 */
+#endif /* UART_COMMUNICATION */		
 }
 
 /*
@@ -343,22 +434,25 @@ uint8_t DS18B20_TxData(uint8_t *buffer, uint16_t size)
  **/
 uint8_t DS18B20_RxData(uint8_t *buffer, uint16_t size)
 {
+#ifdef DS2484
 	DS2484_1WireReadData(&ds2484_ginst, buffer, size);
 	return 0;
+#else
+#ifdef DS2482	
+	DS2482_1WireReadData(&ds2482_ginst, buffer, size);
+	return 0;
+#else
+#ifdef UART_COMMUNICATION		 
+	//return UART_1WireReadData(&uart_ginst, buffer, size);	
+	return 0;
+#endif /* DS2484 */
+#endif /* DS2482 */
+#endif /* UART_COMMUNICATION */		
 }
-
-/*
- * @brief User delay.
- *
- **/
-void DS18B20_Delay(uint32_t period)
-{
-	HAL_Delay(period);
-}
-
 
 /* Hardware dependent functions. */
 
+#ifdef I2C_COMMUNICATION
 /*
  * @brief I2C transmit data.
  *
@@ -366,7 +460,8 @@ void DS18B20_Delay(uint32_t period)
 static int8_t I2C_TxData(uint8_t address, uint8_t *buffer, uint16_t size)
 {
 	return HAL_I2C_Master_Transmit(&hi2c1, address, buffer, size, 10);
-	//return HAL_I2C_Master_Transmit_DMA(&hi2c1, DS2484_ADDR_SHIFTED, buffer, size);
+	//HAL_I2C_Master_Transmit_IT(&hi2c1, address, buffer, size);
+	//HAL_I2C_Master_Transmit_DMA(&hi2c1, address, buffer, size);
 }
 
 /*
@@ -376,9 +471,80 @@ static int8_t I2C_TxData(uint8_t address, uint8_t *buffer, uint16_t size)
 static int8_t I2C_RxData(uint8_t address, uint8_t *buffer, uint16_t size)
 {
 	return HAL_I2C_Master_Receive(&hi2c1, address, buffer, size, 10);
-	//return HAL_I2C_Master_Receive_DMA(&hi2c1, DS2484_ADDR_SHIFTED, buffer, size);
+	//HAL_I2C_Master_Receive_IT(&hi2c1, address, buffer, size);
+	//HAL_I2C_Master_Receive_DMA(&hi2c1, address, buffer, size);
 }
 
+#else
+#ifdef UART_COMMUNICATION
+
+/*
+ * @brief DS18B20 parasitic power supply control.
+ *
+ **/
+static void UART_ParasitePinRemote(uint8_t pull_up)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	
+	GPIO_InitStruct.Pin = GPIO_PIN_10;
+	if (pull_up > 0)
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	}
+	else
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	}
+	
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+}
+
+/*
+ * brief Reconfig UART baud rate function.
+ *
+ **/
+void UART_Init_Baud(uint32_t baud)
+{
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = baud;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	if (HAL_UART_Init(&huart1) != HAL_OK)
+	{
+		for (;;) ;
+		//Error_Handler();
+	}
+}
+
+/*
+ * @brief UART transmit data.
+ *
+ **/
+static int8_t UART_TxData(uint8_t *buffer, uint16_t size)
+{
+	//HAL_UART_Transmit_IT(&huart1, buffer, size);
+	//HAL_UART_Transmit_DMA(&huart1, buffer, size);
+	return 0;
+}
+
+/*
+ * @brief UART receive data.
+ *
+ **/
+static int8_t UART_RxData(uint8_t *buffer, uint16_t size)
+{
+	//HAL_UART_Receive_IT(&huart1, buffer, size);
+	//HAL_UART_Receive_DMA(&huart1, buffer, size);
+	return 0;
+}
+
+#endif /* UART_COMMUNICATION */
+#endif /* I2C_COMMUNICATION */
 
 //static void printObjectData(DS18B20_GeneralDataInstance_typedef *device, uint8_t *char_buffer)
 //{

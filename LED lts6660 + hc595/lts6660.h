@@ -106,4 +106,5 @@ void LTS6660_ClrScreen(LTS6660_GInstance_t *device);
 void LTS6660_Send_Number(LTS6660_GInstance_t *device, LTS6660_Position position, uint8_t number);
 void LTS6660_Send_TimeDate(LTS6660_GInstance_t *device, const uint8_t hours_date, const uint8_t minutes_month, const uint8_t seconds_year, const LTS6660_Mask blinking);
 void LTS6660_Send_TemperatureC(LTS6660_GInstance_t *device, float number);
+void LTS6660_MenuScreen(LTS6660_GInstance_t *device, uint8_t state);
 #endif /* LTS6660_H_ */

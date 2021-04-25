@@ -36,7 +36,23 @@ static const uint8_t LTS6660_CHARACTERS[] = {
 	0xFF	// ' ' Active LOW, active high level is 0x00 //15
 };
 
+/* Constants for the menu. */
+static const uint8_t LTS6660_MENU_CONST[] = {
+		
+		//1G  //2F					  //3				4//				  //5		  //6
+		0xEF, 0xDF, 0xDE, 0xD6, 0xD2, 0xBF, 0xBB, 0xB3, 0xFE, 0xF6, 0xF2, 0xBF, 0xBB, 0xEF 
+	};
+
+static const uint8_t LTS6660_MENU_CONST1[] = {
+		
+		//1G  //2F	//3	  4//	//5	  //6
+		0xEF, 0x0E, 0xAE, 0xAE, 0xA2, 0xEF 
+	};
+
 static const uint8_t LTS6660_ERROR_CODE[] = "Error";	//5
+
+/* Private function prototype. */
+static void LTS6660_SendData(LTS6660_GInstance_t *device);
 
 /*
  * @brief 
@@ -205,6 +221,52 @@ void LTS6660_Send_TemperatureC(LTS6660_GInstance_t *device, float number)
 	device->data_buffer.data[1] = 0xC6;//'°'
 	device->data_buffer.data[0] = 0x1E;//'C'	
 	
+	device->transmit_data_fptr(device->data_buffer.data, NUMBER_OF_DIGITS);
+	device->delay(1);
+	device->latch_pin_fptr(0);
+}
+
+/*
+ * @brief Menu entering/exiting screen.
+ *
+ **/
+void LTS6660_MenuScreen(LTS6660_GInstance_t *device,  uint8_t state)
+{
+	/* Cleare buffer. */
+	for (uint8_t i = 0; i < 6; i++)	{
+		device->data_buffer.data[i] = 0xFF;
+	}
+	
+	if (state) {
+		
+		device->data_buffer.data[5] = LTS6660_MENU_CONST1[0];
+		device->data_buffer.data[0] = LTS6660_MENU_CONST1[5];
+		LTS6660_SendData(device);
+		device->delay(300);
+		
+		device->data_buffer.data[4] = LTS6660_MENU_CONST1[1];
+		device->data_buffer.data[1] = LTS6660_MENU_CONST1[4];
+		LTS6660_SendData(device);
+		device->delay(300);
+		
+		device->data_buffer.data[3] = LTS6660_MENU_CONST1[2];
+		device->data_buffer.data[2] = LTS6660_MENU_CONST1[3];
+		LTS6660_SendData(device);
+		device->delay(300);
+		
+	} else {
+		
+		
+		
+	}
+}
+
+/*
+ * @brief Send buffered data to the screen.
+ *
+ **/
+static void LTS6660_SendData(LTS6660_GInstance_t *device)
+{
 	device->transmit_data_fptr(device->data_buffer.data, NUMBER_OF_DIGITS);
 	device->delay(1);
 	device->latch_pin_fptr(0);
