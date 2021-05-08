@@ -15,8 +15,8 @@
 
 /* Select your I2C interface. */
 #ifdef I2C_COMMUNICATION
-	#define DS2484
-	//#define DS2482
+	//#define DS2484
+	#define DS2482
 #endif
 
 /* Selector of interfaces. */
@@ -65,6 +65,8 @@ static DS2484_GInst_t ds2484_ginst = {
 static DS2482_GInst_t ds2482_ginst = { 
 		
 	.isReceiveComplete = (uint16_t *) &hi2c1.XferCount,
+	/* Default address. */
+	.Address = DS2482_ADDR0_SHIFTED,
 	.delay = HAL_Delay,
 	.i2c_tx_data = I2C_TxData,
 	.i2c_rx_data = I2C_RxData,
@@ -358,6 +360,31 @@ static void DS18B20_SendSkipMatchRom(DS18B20_GInst_t *device, ONE_WIRE_CommandSe
 
 /* Second layer functions. */
 
+#ifdef DS2482
+/*
+ * @brief Set device address if the DS2482 I2C to 1-Wire bridge is used.
+ * 
+ * @param i2c_device : it's address selector from 1 to 4 that means DS2482 addrees on the I2C bus.
+ * Address is already has been shefted  here for the STM library requirements.
+ * There is four varients of addresses. See the DS2484_Address enum in the ds2482.h file. 
+ *
+ **/
+void DS18B20_SelectDevice(uint8_t i2c_device)
+{
+	switch (i2c_device) {		
+	case 1: ds2482_ginst.Address = DS2482_ADDR0_SHIFTED;
+		break;
+	case 2: ds2482_ginst.Address = DS2482_ADDR1_SHIFTED;
+		break;
+	case 3: ds2482_ginst.Address = DS2482_ADDR2_SHIFTED;
+		break;
+	case 4: ds2482_ginst.Address = DS2482_ADDR3_SHIFTED;
+		break;
+	default: break;
+	}
+}
+#endif /*DS2482*/
+
 /*
  * @brief User delay.
  *
@@ -378,8 +405,7 @@ uint8_t DS18B20_1WireReset(void)
 	return DS2484_1WireReset(&ds2484_ginst);
 #else
 #ifdef DS2482
-	return 0;
-	//return DS2482_1WireReset(&ds2484_ginst);
+	return DS2482_1WireReset(&ds2482_ginst);
 #else
 #ifdef UART_COMMUNICATION		 
 	return UART_1WireReset(&uart_ginst);	

@@ -14,14 +14,25 @@
 #define NULL (void *)0	
 #endif //NULL
 
+#define DS2482_ErrTimeout				0x01
+#define DS2482_NoErrTimeout				0x00
+
 /**
  ** @brief Device address
  **/
-#define DS2482_ADDR						0x18
-#define DS2482_ADDR_SHIFTED             0x30     
+typedef enum
+{
+	DS2482_ADDR0		 = 0x18,
+	DS2482_ADDR1		 = 0x19,
+	DS2482_ADDR2		 = 0x1A,
+	DS2482_ADDR3		 = 0x1B,
+	DS2482_ADDR0_SHIFTED = (DS2482_ADDR0 << 1),     
+	DS2482_ADDR1_SHIFTED = (DS2482_ADDR1 << 1),  
+	DS2482_ADDR2_SHIFTED = (DS2482_ADDR2 << 1),  
+	DS2482_ADDR3_SHIFTED = (DS2482_ADDR3 << 1)
+		
+} DS2484_Address;
 
-#define DS2482_ErrTimeout				0x01
-#define DS2482_NoErrTimeout				0x00
 /*
  * @brief Valid read pointer codes.
  *
@@ -62,6 +73,7 @@ typedef void(*delay_fptr)(uint32_t period);
 /*
  *	@brief Tx, Rx function typedef pointer. 
  *	
+ *  @param address : device address on the I2C bus.
  *	@param *buffer : Buffer for transmit or receive data.
  *	@param size : Amount bytes of data.
  *
@@ -176,13 +188,13 @@ typedef struct
  **/
 typedef struct
 {
-	//Pointer to the counter of left data.
+	/* Device I2C address. */
+	uint8_t Address;
+	/* Pointer to the counter of left data. */
 	uint16_t* isReceiveComplete;
-	//
+	/**/
 	DS2482_DataCommunication_t data_struct;
-	//Internal registers, status and configuration.
-	//DS2484_InternalReg internal_reg;
-	//Pointers for the rx, tx delay functions.
+	/* Pointers for the rx, tx delay functions. */
 	delay_fptr delay;
 	ds2482_rxtx_fptr i2c_tx_data;
 	ds2482_rxtx_fptr i2c_rx_data;
@@ -200,7 +212,7 @@ uint8_t DS2482_1WireReadByte(DS2482_GInst_t *device);
 uint8_t DS2482_1WireWriteData(DS2482_GInst_t *device, uint8_t* data, uint8_t size);
 void DS2482_1WireReadData(DS2482_GInst_t *device, uint8_t* data, uint8_t size);
 
-/* Device functions. */
+/* Functions of the device. */
 void DS2482_DeviceReset(DS2482_GInst_t *device);
 void DS2482_WriteDeviceConfiguration(DS2482_GInst_t *device, uint8_t apu, uint8_t spu, uint8_t onews);
 

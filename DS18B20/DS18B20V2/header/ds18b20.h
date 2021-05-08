@@ -274,11 +274,12 @@ void DS18B20_CopyScratchpadToEeprom(DS18B20_GInst_t *device, ONE_WIRE_CommandSet
 void DS18B20_RecallE2(DS18B20_GInst_t *device, ONE_WIRE_CommandSet rom_cmd);
 
 /* Second layer functions. */
+void DS18B20_Delay(uint32_t period);
+void DS18B20_SelectDevice(uint8_t i2c_device);
 uint8_t DS18B20_1WireReset(void);
 void DS18B20_SPU(uint8_t state);
 uint8_t DS18B20_TxData(uint8_t *buffer, uint16_t size);
 uint8_t DS18B20_RxData(uint8_t *buffer, uint16_t size);
-void DS18B20_Delay(uint32_t period);
 
 /* Hardware dependent functions. */
 

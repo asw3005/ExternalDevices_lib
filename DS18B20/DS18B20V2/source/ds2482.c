@@ -33,7 +33,7 @@ uint8_t DS2482_1WireReset(DS2482_GInst_t *device)
 	DS2482_StatusReg_t status_reg = { 0 };
 	
 	device->data_struct.Command = DS2482_1W_RESET;
-	device->i2c_tx_data(DS2482_ADDR_SHIFTED, &device->data_struct.Command, 1);	
+	device->i2c_tx_data(device->Address, &device->data_struct.Command, 1);	
 	DS2482_RxTxComplete(device);
 	/* Wait not less than 480uS. */
 	if (DS2482_1WireWaitBusy(device) == DS2482_ErrTimeout) return 0;
@@ -85,7 +85,7 @@ void DS2482_1WireSPU(DS2482_GInst_t *device, uint8_t state)
 	DS2482_CFGReg_t cfg_byte;
 	
 	DS2482_SetReadPointer(device, DS2482_CFG_PREG);
-	device->i2c_rx_data(DS2482_ADDR_SHIFTED, &cfg_byte.CFGReg, 1);	
+	device->i2c_rx_data(device->Address, &cfg_byte.CFGReg, 1);	
 	DS2482_RxTxComplete(device);
 	cfg_byte.SPU = state;
 	DS2482_WriteDeviceConfiguration(device, cfg_byte.APU, cfg_byte.SPU, cfg_byte.ONEWS);
@@ -102,7 +102,7 @@ void DS2482_1WireAPU(DS2482_GInst_t *device, uint8_t state)
 	DS2482_CFGReg_t cfg_byte;
 	
 	DS2482_SetReadPointer(device, DS2482_CFG_PREG);
-	device->i2c_rx_data(DS2482_ADDR_SHIFTED, &cfg_byte.CFGReg, 1);	
+	device->i2c_rx_data(device->Address, &cfg_byte.CFGReg, 1);	
 	DS2482_RxTxComplete(device);
 	cfg_byte.APU = state;
 	DS2482_WriteDeviceConfiguration(device, cfg_byte.APU, cfg_byte.SPU, cfg_byte.ONEWS);
@@ -124,7 +124,7 @@ uint8_t DS2482_1WireSingleBit(DS2482_GInst_t *device, uint8_t time_slot_value)
 	if (time_slot_value) device->data_struct.TxDataByte[0] = 0x80;
 	else device->data_struct.TxDataByte[0] = 0x00;
 	
-	device->i2c_tx_data(DS2482_ADDR_SHIFTED, &device->data_struct.Command, 2);	
+	device->i2c_tx_data(device->Address, &device->data_struct.Command, 2);	
 	DS2482_RxTxComplete(device);
 	/* Wait until all 1-wire communications end.*/
 	return DS2482_1WireWaitBusy(device);
@@ -143,7 +143,7 @@ uint8_t DS2482_1WireWriteByte(DS2482_GInst_t *device, uint8_t byte)
 {		
 	device->data_struct.Command = DS2482_1W_WRITE_BYTE;
 	device->data_struct.TxDataByte[0] = byte;
-	device->i2c_tx_data(DS2482_ADDR_SHIFTED, &device->data_struct.Command, 2);	
+	device->i2c_tx_data(device->Address, &device->data_struct.Command, 2);	
 	DS2482_RxTxComplete(device);	
 	/* Wait until all 1-wire communications end.*/
 	return DS2482_1WireWaitBusy(device);
@@ -160,13 +160,13 @@ uint8_t DS2482_1WireWriteByte(DS2482_GInst_t *device, uint8_t byte)
 uint8_t DS2482_1WireReadByte(DS2482_GInst_t *device)
 {		
 	device->data_struct.Command = DS2482_1W_READ_BYTE;
-	device->i2c_tx_data(DS2482_ADDR_SHIFTED, &device->data_struct.Command, 1);	
+	device->i2c_tx_data(device->Address, &device->data_struct.Command, 1);	
 	DS2482_RxTxComplete(device);	
 	/* Wait until all 1-wire communications end.*/
 	DS2482_1WireWaitBusy(device);
 	/* Set pointer REG to the data byte. */
 	DS2482_SetReadPointer(device, DS2482_READ_DATA_PREG); 
-	device->i2c_rx_data(DS2482_ADDR_SHIFTED, device->data_struct.RxDataByte, 1);
+	device->i2c_rx_data(device->Address, device->data_struct.RxDataByte, 1);
 	DS2482_RxTxComplete(device);
 	return device->data_struct.RxDataByte[0];
 }
@@ -181,7 +181,7 @@ uint8_t DS2482_1WireReadByte(DS2482_GInst_t *device)
 void DS2482_DeviceReset(DS2482_GInst_t *device)
 {		
 	device->data_struct.Command = DS2482_DEVICE_RESET;
-	device->i2c_tx_data(DS2482_ADDR_SHIFTED, &device->data_struct.Command, 1);	
+	device->i2c_tx_data(device->Address, &device->data_struct.Command, 1);	
 	DS2482_RxTxComplete(device);		
 } 
 
@@ -206,7 +206,7 @@ void DS2482_WriteDeviceConfiguration(DS2482_GInst_t *device, uint8_t apu, uint8_
 	
 	device->data_struct.Command = DS2482_WRITE_DEVICE_CONFIGURATION;
 	device->data_struct.TxDataByte[0] = cfg_byte.CFGReg;
-	device->i2c_tx_data(DS2482_ADDR_SHIFTED, &device->data_struct.Command, 2);	
+	device->i2c_tx_data(device->Address, &device->data_struct.Command, 2);	
 	DS2482_RxTxComplete(device);		
 } 
 
@@ -225,7 +225,7 @@ static uint8_t DS2482_1WireWaitBusy(DS2482_GInst_t *device)
 	do {
 		cntTimeOut--;
 		if (cntTimeOut == 0) return DS2482_ErrTimeout;
-		device->i2c_rx_data(DS2482_ADDR_SHIFTED, &status_reg.StatusReg, 1);
+		device->i2c_rx_data(device->Address, &status_reg.StatusReg, 1);
 		DS2482_RxTxComplete(device);
 		
 	} while (status_reg.ONEWB);
@@ -240,7 +240,7 @@ static DS2482_StatusReg_t DS2482_ReadStatusReg(DS2482_GInst_t *device)
 {		
 	DS2482_StatusReg_t status_reg = { 0 };
 	
-	device->i2c_rx_data(DS2482_ADDR_SHIFTED, &status_reg.StatusReg, 1);
+	device->i2c_rx_data(device->Address, &status_reg.StatusReg, 1);
 	DS2482_RxTxComplete(device);
 	return status_reg;
 } 
@@ -254,7 +254,7 @@ static void DS2482_SetReadPointer(DS2482_GInst_t *device, DS2482_PReadCode pcode
 {		
 	device->data_struct.Command = DS2482_SET_READ_POINTER;
 	device->data_struct.TxDataByte[0] = pcode;
-	device->i2c_tx_data(DS2482_ADDR_SHIFTED, &device->data_struct.Command, 2);	
+	device->i2c_tx_data(device->Address, &device->data_struct.Command, 2);	
 	DS2482_RxTxComplete(device);		
 } 
 
