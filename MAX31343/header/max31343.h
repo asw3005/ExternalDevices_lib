@@ -133,6 +133,22 @@ typedef enum
 } MAX31343_Alarm2Mask;
 
 /*
+ * @brief SQW output frequency.
+ *
+ **/
+typedef enum
+{
+	MAX31343_SQW_1Hz,
+	MAX31343_SQW_2Hz,
+	MAX31343_SQW_4Hz,
+	MAX31343_SQW_8Hz,
+	MAX31343_SQW_16Hz,
+	/* Range from 0x05 to 0x07. */
+	MAX31343_SQW_32Hz,
+	
+} MAX31343_SQWRate;
+
+/*
  * @brief CLKO output frequency.
  *
  **/
@@ -150,22 +166,6 @@ typedef enum
 	MAX31343_CLKO_32kHz
 	
 } MAX31343_CLKORate;
-
-/*
- * @brief SQW output frequency.
- *
- **/
-typedef enum
-{
-	MAX31343_SQW_1Hz,
-	MAX31343_SQW_2Hz,
-	MAX31343_SQW_4Hz,
-	MAX31343_SQW_8Hz,
-	MAX31343_SQW_16Hz,
-	/* Range from 0x05 to 0x07. */
-	MAX31343_SQW_32Hz,
-	
-} MAX31343_SQWRate;
 
 /*
  * @brief Timer frequency.
@@ -467,7 +467,7 @@ typedef union
 		/* RTC seconds value. Reset state is 0. */
 		uint8_t SECONDS		: 4;
 		/* RTC seconds in multiples of 10. Reset state is 0. */
-		uint8_t SECOND10	: 3;
+		uint8_t SECONDS10	: 3;
 		/* Don't care. */
 		uint8_t RESERVED0	: 1;
 	};		
@@ -591,7 +591,7 @@ typedef union
 		/* Alarm 1 seconds value. Reset state is 0. */
 		uint8_t SECONDS		: 4;
 		/* Alarm 1 seconds in multiples of 10. Reset state is 0. */
-		uint8_t SECOND10	: 3;
+		uint8_t SECONDS10	: 3;
 		/* Alarm 1 mask bit for seconds. */
 		uint8_t A1M1		: 1;
 	};	
@@ -872,7 +872,10 @@ typedef union
  **/
 typedef struct
 {
-
+	/* Clock data. */
+	MAX31343_Clock_t clock;
+	/* Alarm 1 data. */
+	/* Alarm 2 data. */
 	/* Pointers for the rx, tx delay functions. */
 	delay_fptr delay;
 	i2c_txrx_data_fptr i2c_tx_data;
