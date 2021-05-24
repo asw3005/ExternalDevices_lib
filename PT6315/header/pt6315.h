@@ -15,7 +15,7 @@
 #endif //NULL
 
 /* Invertion the LED port polarity. */
-#define LED_PORT_INVERTION
+//#define LED_PORT_INVERTION
 
 /* Max and MIN values. */
 #define PT6315_MIN_NUMBER_OF_SEG (uint8_t) 1
@@ -144,10 +144,10 @@ typedef void(*delay_fptr)(uint32_t period);
 /*
  * @brief Remote control for the latch pin.
  *
- * @param pull_up : Zero is pull down, more than zero is pull up.
+ * @param state : Zero is pull down, more than zero is pull up.
  *
  **/
-typedef void(*latch_remote_fptr)(uint8_t pull);
+typedef void(*latch_remote_fptr)(uint8_t state);
 
 /*
  *	@brief Tx, Rx function typedef pointer. 
@@ -308,10 +308,13 @@ typedef struct
 } PT6315_GInst_t;
 
 /* Public function prototypes. */
-void PT6315_SetResetRAM(PT6315_GInst_t device, uint8_t segment, uint8_t dig, uint8_t state);
-void PT6315_ReadKeys(PT6315_GInst_t device);
-void PT6315_LedEn(PT6315_GInst_t device, uint8_t number, uint8_t state);
-void PT6315_WriteRAM(PT6315_GInst_t device);
+void PT6315_Init(PT6315_GInst_t *device);
+void PT6315_SetResetRAMBuff(PT6315_GInst_t *device, uint8_t segment, uint8_t dig, uint8_t state);
+uint8_t PT6315_ReadRAMBuff(PT6315_GInst_t *device, uint8_t segment, uint8_t dig);
+void PT6315_ReadKeys(PT6315_GInst_t *device);
+void PT6315_LedEn(PT6315_GInst_t *device, uint8_t number, uint8_t state);
+void PT6315_SetBrightness(PT6315_GInst_t *device, PT6315_DisplayControlCmd level);
+void PT6315_WriteRAM(PT6315_GInst_t *device);
 
 
 #endif /* PT6315_H_ */
