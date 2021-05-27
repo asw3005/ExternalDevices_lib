@@ -39,7 +39,7 @@ static void PT6315_SetAddress(PT6315_GInst_t *device, uint8_t address);
 void PT6315_Init(PT6315_GInst_t *device)
 {
 	PT6315_SendModeCmd(device, PT6315_12DIG_16SEG);
-	PT6315_SendControlCmd(device, PT6315_DISPLAY_ON, PT6315_PULSE_WIDTH_11_16);
+	PT6315_SendControlCmd(device, PT6315_DISPLAY_ON, PT6315_PULSE_WIDTH_1_16);
 	
 	for (uint8_t i = 0; i < 12; i++) {
 		for (uint8_t j = 0; j < 3; j++) {
@@ -125,10 +125,17 @@ uint8_t PT6315_ReadRAMBuff(PT6315_GInst_t *device, uint8_t segment, uint8_t dig)
  **/
 void PT6315_ReadKeys(PT6315_GInst_t *device)
 {
-	PT6315_SendDataSetCmd(device, PT6315_NORMAL_MODE, PT6315_INC_ADDR, PT6315_READ_KEY);
-	device->latch_control_fptr(0);
-	device->spi_rx_data_fptr((uint8_t *)&device->keys, 4);
-	device->delay_fptr(1);	
+	PT6315_DataSetCmd_t data_set_cmd;
+	
+	data_set_cmd.CMD = PT6315_DATA_CMD;
+	data_set_cmd.SETTINGS_MODE = PT6315_NORMAL_MODE;
+	data_set_cmd.ADDR_MODE = PT6315_INC_ADDR;
+	data_set_cmd.DATA_RW_MODE = PT6315_READ_KEY;
+	
+	device->latch_control_fptr(0);	
+	device->spi_tx_data_fptr(&data_set_cmd.DataSettingCmd, 1);	
+	device->spi_rx_data_fptr((uint8_t *)&device->keys, 4);	
+	//device->delay_fptr(1);
 	device->latch_control_fptr(1);
 }
 

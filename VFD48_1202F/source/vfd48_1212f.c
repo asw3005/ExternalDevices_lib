@@ -1,6 +1,6 @@
 /*
  *	@brief VFD48_1202F driver.
- *	Created 04.24.21
+ *	Created 04.24.21 by asw3005
  *
  **/
 
@@ -11,14 +11,7 @@
 /* Public variables. */
 extern SPI_HandleTypeDef hspi2; 
 
-/* Private function prototypes. */
-//static void SPI_Latch(uint8_t state);
-//static int8_t SPI_TxData(uint8_t *buffer, uint16_t size);
-//static int8_t SPI_RxData(uint8_t *buffer, uint16_t size);
-
-
 /* Private variables. */
-
 /* Dot symbol. */
 static const uint8_t VFD48_CLOCK_DOT[2] = { 1, 1 };
 
@@ -82,13 +75,10 @@ static PT6315_GInst_t pt6315_ginst = {
 /* Private function prototypes. */
 
 
-
-
-
 /* Public functions. */
 
 /*
- * @brief
+ * @brief Cleare RAM into the external VFD driver and drow the clock face.
  * 
  * @param device : instance of the VFD48_GInst_t struct.
  *
@@ -103,13 +93,100 @@ void VFD48_Init(VFD48_GInst_t *device)
 	}
 }
 
+
+
+/*
+ * @brief Drives the clock, its arrows.
+ * 
+ * @param device : instance of the VFD48_GInst_t struct.
+ * @param hours : values from 0 to 23.
+ * @param minutes : values from 0 to 59.
+ * @param seconds : values from 0 to 59.
+ *
+ **/
+void VFD48_SetTime(VFD48_GInst_t *device, uint8_t hours, uint8_t minutes, uint8_t seconds)
+{
+	/* Hour offset and previous state in the points of Clock. */
+	uint8_t HourOffset = 0;
+	static uint8_t HourState = 0, MinState = 0, SecState = 0, LedState = 0;
+	
+	uint8_t keys_code = 0;
+	/* Hour arrow. */
+	HourOffset = (minutes / 12);	
+	device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[HourState][0], VFD48_CLOCK_HANDS_DOWN[HourState][1], 0);
+	if (hours < 12) {	
+		device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[(hours * 5) + HourOffset][0], VFD48_CLOCK_HANDS_DOWN[(hours * 5) + HourOffset][1], 1);
+		HourState = (hours * 5) + HourOffset;
+	}
+	else {
+		device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[((hours - 12) * 5) + HourOffset][0], VFD48_CLOCK_HANDS_DOWN[((hours - 12) * 5) + HourOffset][1], 1);
+		HourState = ((hours - 12) * 5) + HourOffset;
+	}
+	
+	/* Minute arrow. */
+	if (MinState == HourState) {
+		device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[MinState][0], VFD48_CLOCK_HANDS_UP[MinState][1], 0);
+	}
+	else {
+		device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[MinState][0], VFD48_CLOCK_HANDS_DOWN[MinState][1], 0);
+		device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[MinState][0], VFD48_CLOCK_HANDS_UP[MinState][1], 0);
+	}
+
+	device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[minutes][0], VFD48_CLOCK_HANDS_DOWN[minutes][1], 1);
+	device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[minutes][0], VFD48_CLOCK_HANDS_UP[minutes][1], 1);
+	MinState = minutes;
+	
+	/* Second arrow. */
+	if (SecState == HourState) {
+		if (SecState != MinState) {
+			device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[SecState][0], VFD48_CLOCK_HANDS_UP[SecState][1], 0);
+		}
+	}
+	else if (SecState != MinState) {
+		device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[SecState][0], VFD48_CLOCK_HANDS_DOWN[SecState][1], 0);
+		device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[SecState][0], VFD48_CLOCK_HANDS_UP[SecState][1], 0);
+	}
+
+	device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[seconds][0], VFD48_CLOCK_HANDS_DOWN[seconds][1], 1);
+	device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[seconds][0], VFD48_CLOCK_HANDS_UP[seconds][1], 1);
+	SecState = seconds;	
+
+	/* Toggle the led 1 on the board every time when it called.*/
+	if (LedState) {
+		PT6315_LedEn(&pt6315_ginst, 1, 1);
+		LedState = 0;		
+	}
+	else {
+		PT6315_LedEn(&pt6315_ginst, 1, 0);
+		LedState = 1;
+	}
+	
+	/* Refresh display RAM. */
+	device->display_data_fptr();
+}
+
+/*
+ * @brief Set/reset dot on the screen.
+ * 
+ * @param device : instance of the VFD48_GInst_t struct.
+ * @param state : if 1 the dot on the screen is lightning, if 0 does not.
+ *
+ **/
+void VFD48_DotState(VFD48_GInst_t *device, uint8_t state)
+{
+	/* Dot setting/resetting. */
+	device->tx_data_fptr(VFD48_CLOCK_DOT[0], VFD48_CLOCK_DOT[1], state);
+	/* Refresh display RAM. */
+	device->display_data_fptr();
+}
+
 /*
  * @brief Screen test function.
  * 
  * @param device : instance of the VFD48_GInst_t struct.
  *
  **/
-void VFD48_TestScreen(VFD48_GInst_t *device)
+void VFD48_TestScreen0(VFD48_GInst_t *device)
 {
 	
 	/* Displays dot. */
@@ -158,69 +235,37 @@ void VFD48_TestScreen(VFD48_GInst_t *device)
 }
 
 /*
- * @brief
+ * @brief Screen test function. Emulates the clock, fast mode.
  * 
- * @param device : instance of the VFD48_GInst_t struct.
  *
  **/
-void VFD48_SetTime(VFD48_GInst_t *device, uint8_t hours, uint8_t minutes, uint8_t seconds)
+void VFD48_TestScreen1(VFD48_GInst_t *device)
 {
-	/* Hour offset and previous state in the points of Clock. */
-	uint8_t HourOffset = 0;
-	static uint8_t HourState = 0, MinState = 0, SecState = 0, LedState = 0;
+	/*Clock Variables. */
+	static uint8_t hour = 0, min = 0, sec = 0, keys_code = 0;
 	
-	
-	/* Hour arrow. */
-	HourOffset = (minutes / 12);	
-	device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[HourState][0], VFD48_CLOCK_HANDS_DOWN[HourState][1], 0);
-	if (hours < 12) {	
-		device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[(hours * 5) + HourOffset][0], VFD48_CLOCK_HANDS_DOWN[(hours * 5) + HourOffset][1], 1);
-		HourState = (hours * 5) + HourOffset;
-	} else {
-		device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[((hours - 12) * 5) + HourOffset][0], VFD48_CLOCK_HANDS_DOWN[((hours - 12) * 5) + HourOffset][1], 1);
-		HourState = ((hours - 12) * 5) + HourOffset;
+	/* Clock is running now. */
+	VFD48_SetTime(device, hour, min, sec);		
+	sec++;
+	if (hour > 23) hour = 0;		
+	if (sec > 59)
+	{
+		sec = 0;
+		min++;
+	}
+			
+	if (min > 59) {
+		min = 0; 
+		hour++;			
 	}
 	
-	/* Minute arrow. */
-		if (MinState == HourState) {
-			device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[MinState][0], VFD48_CLOCK_HANDS_UP[MinState][1], 0);
-		} else {
-				device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[MinState][0], VFD48_CLOCK_HANDS_DOWN[MinState][1], 0);
-				device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[MinState][0], VFD48_CLOCK_HANDS_UP[MinState][1], 0);
-		}
-
-	device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[minutes][0], VFD48_CLOCK_HANDS_DOWN[minutes][1], 1);
-	device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[minutes][0], VFD48_CLOCK_HANDS_UP[minutes][1], 1);
-	MinState = minutes;
-	
-	/* Second arrow. */
-	if (SecState == HourState) {
-		if (SecState != MinState) {
-			device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[SecState][0], VFD48_CLOCK_HANDS_UP[SecState][1], 0);
-		}
-	}
-	else if (SecState != MinState) {
-		device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[SecState][0], VFD48_CLOCK_HANDS_DOWN[SecState][1], 0);
-		device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[SecState][0], VFD48_CLOCK_HANDS_UP[SecState][1], 0);
-	}
-
-	device->tx_data_fptr(VFD48_CLOCK_HANDS_DOWN[seconds][0], VFD48_CLOCK_HANDS_DOWN[seconds][1], 1);
-	device->tx_data_fptr(VFD48_CLOCK_HANDS_UP[seconds][0], VFD48_CLOCK_HANDS_UP[seconds][1], 1);
-	SecState = seconds;	
-
-	/* Toggle the led 1 on the board every time when it called.*/
-	if (LedState) {
-		PT6315_LedEn(&pt6315_ginst, 1, 1);
-		LedState = 0;		
-	} else {
-		PT6315_LedEn(&pt6315_ginst, 1, 0);
-		LedState = 1;
-	}
-	
-	/* Refresh display RAM. */
-	device->display_data_fptr();
-	/* Delay for debug purpoise. */
-	device->delay_fptr(250);	
+	/* Little delay for the clock. */
+	device->delay_fptr(250);
+	/* Read keys. */
+	PT6315_ReadKeys(&pt6315_ginst);	
+	keys_code = pt6315_ginst.keys.SG1_4KS1_4Keys.COL1_KEY1;
+	keys_code |= pt6315_ginst.keys.SG1_4KS1_4Keys.COL1_KEY2;
+	keys_code |= pt6315_ginst.keys.SG1_4KS1_4Keys.COL2_KEY1;
 }
 
 /*
@@ -246,6 +291,10 @@ void VFD48_DisplayData(void)
 
 /*
  * @brief Transmit data to the buffer.
+ * 
+ * @param segment : number of segment of the display.
+ * @param dig : number of greed of the display.
+ * @param state : state of the segment, if 0 the segment is off, if 1 the segment is on.
  *
  **/
 uint8_t VFD48_TxData(uint8_t segment, uint8_t dig, uint8_t state)
@@ -256,6 +305,10 @@ uint8_t VFD48_TxData(uint8_t segment, uint8_t dig, uint8_t state)
 
 /*
  * @brief Receive data from the buffer.
+ * 
+ * @param segment : number of segment of the display.
+ * @param dig : number of greed of the display.
+ * @return : state of the particular segment in the screen RAM.
  *
  **/
 uint8_t VFD48_RxData(uint8_t segment, uint8_t dig)
@@ -305,8 +358,6 @@ int8_t SPI_TxData(uint8_t *buffer, uint16_t size)
 int8_t SPI_RxData(uint8_t *buffer, uint16_t size)
 {
 	return HAL_SPI_Receive(&hspi2, buffer, size, 100);
-	//HAL_SPI_Receive_IT(&hspi2, buffer, size);
+	//return HAL_SPI_Receive_IT(&hspi2, buffer, size);
 	//HAL_SPI_Receive_DMA(&hspi2, buffer, size);
 }
-
-

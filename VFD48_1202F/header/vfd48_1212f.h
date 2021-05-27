@@ -1,6 +1,6 @@
 /*
  *	@brief VFD48_1202F driver.
- *	Created 04.24.21
+ *	Created 04.24.21 by asw3005
  *	VFD48_1202F_H_
  *	
  **/
@@ -13,6 +13,9 @@
 #ifndef NULL
 #define NULL (void *)0	
 #endif //NULL
+
+/* Definations. */
+//#define PT6315_DEBUG_MODE
 
 /*
  * @brief Levels of brightness og the display.
@@ -83,8 +86,10 @@ typedef struct
 
 /* Public function prototypes. */
 void VFD48_Init(VFD48_GInst_t *device);
-void VFD48_TestScreen(VFD48_GInst_t *device);
+void VFD48_TestScreen0(VFD48_GInst_t *device);
+void VFD48_TestScreen1(VFD48_GInst_t *device);
 void VFD48_SetTime(VFD48_GInst_t *device, uint8_t hours, uint8_t minutes, uint8_t seconds);
+void VFD48_DotState(VFD48_GInst_t *device, uint8_t state);
 
 /* Second layer functions. */
 uint8_t VFD48_RxData(uint8_t segment, uint8_t dig);
