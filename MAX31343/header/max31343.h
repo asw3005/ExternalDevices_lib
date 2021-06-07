@@ -883,8 +883,33 @@ typedef struct
 	
 } MAX31343_GIns_t;
 
-/* Public function prototype. */
+/* Public function prototypes. */
 
+/*Time functions. */
+void MAX31343_SetTime(MAX31343_GIns_t *device, uint8_t hours, uint8_t minutes, uint8_t seconds);
+void MAX31343_SetDate(MAX31343_GIns_t *device, uint8_t day, uint8_t date, uint8_t month, uint8_t year, uint8_t century);
+void DS3231_SetAlarm1(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uint8_t year, uint8_t month, uint8_t date,
+					uint8_t hours, uint8_t minutes, uint8_t seconds);
+void DS3231_SetAlarm2(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uint8_t date, uint8_t hours, uint8_t minutes);
+void DS3231_GetTimeDate(MAX31343_GIns_t *device);
+void MAX31343_TimerInit(MAX31343_GIns_t *device, uint8_t cnt_data);
+void DS3231_WriteTimerCfg(MAX31343_GIns_t *device, uint8_t te, MAX31343_TFSRate tfs, uint8_t trpt, uint8_t tpause);
+
+
+/* Configuration functions. */
+void MAX31343_RTCReset(MAX31343_GIns_t *device);
+uint8_t MAX31343_ReadStatusReg(MAX31343_GIns_t *device);
+uint8_t MAX31343_ReadTimCntReg(MAX31343_GIns_t *device);
+uint8_t MAX31343_ReadTemp(MAX31343_GIns_t *device);
+void MAX31343_ReadRAM(MAX31343_GIns_t *device, uint8_t* data, uint8_t size, uint8_t offset);
+void MAX31343_WriteIntEnReg(MAX31343_GIns_t *device, uint8_t a1ie, uint8_t a2ie, uint8_t tie, uint8_t tsie, uint8_t pfaile,
+	uint8_t dosf);
+void DS3231_WriteRTCConfig1(MAX31343_GIns_t *device, uint8_t enosc, uint8_t i2c_timeout, uint8_t dataret);
+void DS3231_WriteRTCConfig2(MAX31343_GIns_t *device, uint8_t enclko, MAX31343_CLKORate clko_hz, MAX31343_SQWRate sqw_hz);
+void MAX31343_PwrMgmt(MAX31343_GIns_t *device, uint8_t dman_sel, uint8_t dvback_sel, MAX31343_PFVTVoltage pfvt);
+void MAX31343_TrickleReg(MAX31343_GIns_t *device, MAX31343_TCHEEnable tche, MAX31343_DTRICKLEPath dtrickle);
+void MAX31343_TSConfig(MAX31343_GIns_t *device, uint8_t automode, uint8_t oneshotmode, MAX31343_TTSINTInterval ttsint);
+void MAX31343_WriteRAM(MAX31343_GIns_t *device, uint8_t* data, uint8_t size, uint8_t offset);
 
 
 #endif /* MAX31343_H_ */

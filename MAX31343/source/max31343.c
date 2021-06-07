@@ -228,7 +228,7 @@ void DS3231_SetAlarm2(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uin
  **/
 uint8_t MAX31343_ReadStatusReg(MAX31343_GIns_t *device)
 {
-	MAX31343_StatusReg_t StatusReg;
+	static MAX31343_StatusReg_t StatusReg;
 	
 	device->i2c_rx_data(MAX31343_ADDR_SHIFTED, MAX31343_STATUS_REG, 1, (uint8_t*)&StatusReg, sizeof(StatusReg));
 	device->delay(1);
@@ -308,7 +308,7 @@ void DS3231_WriteRTCConfig1(MAX31343_GIns_t *device, uint8_t enosc, uint8_t i2c_
  *		  
  * @param *device : Instance of MAX31343_GIns_t data struct.
  * @param enclko : 0 disables the clock on CLKO, 1 enables clock on CLKO.
- * @param clko_hz : uncompensated clock frequency output, see the MAX31343_CLKORate.
+ * @param clko_hz : uncompensated clock frequency output, see the MAX31343_CLKORate enum.
  * @param sqw_hz : output clock on SQW, see the MAX31343_SQWRate.
  *
  **/
@@ -328,7 +328,7 @@ void DS3231_WriteRTCConfig2(MAX31343_GIns_t *device, uint8_t enclko, MAX31343_CL
  * @brief Write timer configuation register.
  *		  
  * @param te : timer is reset when set to zero, otherwise (set to 1) timer starts counting down from the value programmed in Timer_Init.
- * @param tfs : timer frequency selection, see the MAX31343_TFSRate.
+ * @param tfs : timer frequency selection, see the MAX31343_TFSRate enum.
  * @param trpt : when zero countdown timer will halt once it reaches zero, when one countdown timer reloads the value from the timer initial 
  * register upon reaching zero and continues counting.
  * @param tpause : if 0 the timer continues to count down from the paused count value as per programming, if 1 the timer is paused, however, 
@@ -372,17 +372,125 @@ uint8_t MAX31343_ReadTimCntReg(MAX31343_GIns_t *device)
  * @param cnt_data : count down timer initial value. 
  *
  **/
-void MAX31343_TimInit(MAX31343_GIns_t *device, uint8_t cnt_data)
+void MAX31343_TimerInit(MAX31343_GIns_t *device, uint8_t cnt_data)
 {
 	device->i2c_tx_data(MAX31343_ADDR_SHIFTED, MAX31343_RTC_RST, 1, (uint8_t*)&cnt_data, 1);
 	device->delay(1);
 }
 
-
 /*
- * @brief Private function.
+ * @brief Writes value to the power management configuration register.
+ * 
+ * @param *device : Instance of MAX31343_GIns_t data struct.
+ * @param dman_sel : if zero internal circuit decides whether to use VCC or VBACKUP as supply, if one User decides whether to use VCC or 
+ * VBACKUP as supply by setting D_VBACK_SEL bit.
+ * @param dvback_sel : if zero the circuit uses VCC as supply, if one it uses Vbackup as supply.
+ * @param pfvt : power fail threshold value. See the MAX31343_PFVTVoltage enum.
  *
  **/
+void MAX31343_PwrMgmt(MAX31343_GIns_t *device, uint8_t dman_sel, uint8_t dvback_sel, MAX31343_PFVTVoltage pfvt)
+{
+	MAX31343_PwrMgmt_t PwrMgmt;
+	
+	PwrMgmt.D_MAN_SEL = dman_sel;
+	PwrMgmt.D_VBACK_SEL = dvback_sel;
+	PwrMgmt.PFVT = pfvt;	
+	
+	device->i2c_tx_data(MAX31343_ADDR_SHIFTED, MAX31343_PWR_MGMT, 1, (uint8_t*)&PwrMgmt, sizeof(PwrMgmt));
+	device->delay(1);
+}
+
+/*
+ * @brief Writes value to the trickle charge configuration register.
+ * 
+ * @param *device : Instance of MAX31343_GIns_t data struct.
+ * @param tche : trickle charger enable, see the MAX31343_TCHEEnable enum.
+ * @param dtrickle : sets the charging path for trickle charger, see the MAX31343_DTRICKLEPath enum.
+ *
+ **/
+void MAX31343_TrickleReg(MAX31343_GIns_t *device, MAX31343_TCHEEnable tche, MAX31343_DTRICKLEPath dtrickle)
+{
+	MAX31343_TrickleReg_t TrickleReg;
+	
+	TrickleReg.TCHE = tche;
+	TrickleReg.D_TRICKLE = dtrickle;
+	
+	device->i2c_tx_data(MAX31343_ADDR_SHIFTED, MAX31343_PWR_MGMT, 1, (uint8_t*)&TrickleReg, sizeof(TrickleReg));
+	device->delay(1);
+}
+
+/*
+ * @brief Reads temperature registers.
+ * 
+ * @param *device : Instance of MAX31343_GIns_t data struct.
+ * @return value of temperature registers.
+ *
+ **/
+uint8_t MAX31343_ReadTemp(MAX31343_GIns_t *device)
+{
+	static MAX31343_TempReg_t TempReg;
+	
+	device->i2c_rx_data(MAX31343_ADDR_SHIFTED, MAX31343_TEMP_MSB, 1, (uint8_t*)&TempReg, sizeof(TempReg));
+	device->delay(1);
+	
+	return (uint8_t)&TempReg;
+}
+
+/*
+ * @brief Writes value to the trickle charge configuration register.
+ * 
+ * @param *device : Instance of MAX31343_GIns_t data struct.
+ * @param automode : if 0 automatic measurement mode is disabled, if 1 it is disabled.
+ * @param oneshotmode : 0 no temperature measurement requested, 1 temperature measurement requested.
+ * @param ttsint : set temperature measurement interval to specified time for automatic mode of temperature measurement and compensation.
+ * See the MAX31343_TTSINTInterval enum.
+ *
+ **/
+void MAX31343_TSConfig(MAX31343_GIns_t *device, uint8_t automode, uint8_t oneshotmode, MAX31343_TTSINTInterval ttsint)
+{
+	MAX31343_TsCfgReg_t TSConfig;
+	
+	TSConfig.AUTOMODE = automode;
+	TSConfig.ONESHOTMODE = oneshotmode;
+	TSConfig.TTSINT = ttsint;
+	
+	device->i2c_tx_data(MAX31343_ADDR_SHIFTED, MAX31343_TS_CFG, 1, (uint8_t*)&TSConfig, sizeof(TSConfig));
+	device->delay(1);
+}
+
+/*
+ * @brief Reads RAM registers.
+ * 
+ * @param *device : Instance of MAX31343_GIns_t data struct.
+ * @param data* : pointer to the data.
+ * @param size : size of data bytes will be transmitted.
+ * @param offset : offset the RAM address.
+ *
+ **/
+void MAX31343_WriteRAM(MAX31343_GIns_t *device, uint8_t* data, uint8_t size, uint8_t offset)
+{	
+	if (size > 64) return;
+	device->i2c_tx_data(MAX31343_ADDR_SHIFTED, MAX31343_RAM_START + offset, 1, data, size);
+	device->delay(1);
+}
+
+/*
+ * @brief Reads RAM registers.
+ * 
+ * @param *device : Instance of MAX31343_GIns_t data struct.
+ * @param data* : pointer to the data.
+ * @param size : size of data bytes will be received.
+ * @param offset : offset the RAM address.
+ *
+ **/
+void MAX31343_ReadRAM(MAX31343_GIns_t *device, uint8_t* data, uint8_t size, uint8_t offset)
+{	
+	if (size > 64) return;
+	device->i2c_rx_data(MAX31343_ADDR_SHIFTED, MAX31343_RAM_START + offset, 1, data, size);
+	device->delay(1);
+}
+
+/* Private functions. */
 
 
 /*
