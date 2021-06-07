@@ -37,10 +37,10 @@ typedef enum
 	MAX31343_INT_EN_REG,
 	/* RTC reset. */
 	MAX31343_RTC_RST,
-	/* RTC config 0. */
-	MAX31343_RTC_CFG0,
 	/* RTC config 1. */
 	MAX31343_RTC_CFG1,
+	/* RTC config 2. */
+	MAX31343_RTC_CFG2,
 	/* Timer config. */
 	MAX31343_TIMER_CFG,
 	/* Seconds configuration register, range is 00-59 */
