@@ -224,7 +224,9 @@ static uint8_t DS2482_1WireWaitBusy(DS2482_GInst_t *device)
 
 	do {
 		cntTimeOut--;
-		if (cntTimeOut == 0) return DS2482_ErrTimeout;
+		if (cntTimeOut == 0) {
+			return DS2482_ErrTimeout;
+		}
 		device->i2c_rx_data(device->Address, &status_reg.StatusReg, 1);
 		DS2482_RxTxComplete(device);
 		

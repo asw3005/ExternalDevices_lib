@@ -8,8 +8,6 @@
 #include "max31343.h"
 
 /* Private function prototype. */
-
-
 /* Public function. */
  
 
@@ -34,8 +32,10 @@ void MAX31343_SetTime(MAX31343_GIns_t *device, uint8_t hours, uint8_t minutes, u
 	
 	if (seconds > 59 || minutes > 59 || hours > 23) /* Time error. */ return;	
 	
-	Time_s.Hours.HOUR = hours % 10;
-	Time_s.Hours.HOUR10 = hours / 10;
+	Time_s.Hours.HOUR = hours % 10;	
+	if (hours > 9) {
+		Time_s.Hours.HOUR10 = hours / 10;
+	}	
 	Time_s.Minutes.MINUTES = minutes % 10;
 	Time_s.Minutes.MINUTES10 = minutes / 10;
 	Time_s.Seconds.SECONDS = seconds % 10;
@@ -88,7 +88,7 @@ void MAX31343_SetDate(MAX31343_GIns_t *device, uint8_t day, uint8_t date, uint8_
  * @param *device : Instance of MAX31343_GIns_t data struct.
  *
  **/
-void DS3231_GetTimeDate(MAX31343_GIns_t *device)
+void MAX31343_GetTimeDate(MAX31343_GIns_t *device)
 {
 	struct TimeDate_t
 	{
@@ -126,7 +126,7 @@ void DS3231_GetTimeDate(MAX31343_GIns_t *device)
  * @param day_date : day or date in the calendar.
  *
  **/
-void DS3231_SetAlarm1(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uint8_t year, uint8_t month, uint8_t date,
+void MAX31343_SetAlarm1(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uint8_t year, uint8_t month, uint8_t date,
 					uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
 	struct Alarm1_t
@@ -185,7 +185,7 @@ void DS3231_SetAlarm1(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uin
  * @param day_date : Day or date in the calendar.
  *
  **/
-void DS3231_SetAlarm2(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uint8_t date, uint8_t hours, uint8_t minutes)
+void MAX31343_SetAlarm2(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uint8_t date, uint8_t hours, uint8_t minutes)
 {
 	struct Alarm2_t
 	{
@@ -226,14 +226,14 @@ void DS3231_SetAlarm2(MAX31343_GIns_t *device, MAX31343_Alarm1Mask alarm_en, uin
  * @return : status register value of type of MAX31343_StatusReg_t.
  *
  **/
-uint8_t MAX31343_ReadStatusReg(MAX31343_GIns_t *device)
+uint8_t* MAX31343_ReadStatusReg(MAX31343_GIns_t *device)
 {
 	static MAX31343_StatusReg_t StatusReg;
 	
 	device->i2c_rx_data(MAX31343_ADDR_SHIFTED, MAX31343_STATUS_REG, 1, (uint8_t*)&StatusReg, sizeof(StatusReg));
 	device->delay(1);
 
-	return (uint8_t)&StatusReg;
+	return (uint8_t*)&StatusReg;
 }
 
 /*
@@ -284,12 +284,12 @@ void MAX31343_RTCReset(MAX31343_GIns_t *device)
  * @brief Write RTC configuation register 1.
  *		  
  * @param *device : Instance of MAX31343_GIns_t data struct.
- * @param enosc : when 0 the oscillator is disable, when 1 the oscillator is enabled.
- * @param i2c_timeout : 1 enables the i2c timeout, 0 isn't.        
- * @param dataret : if 1 the data retention mode is enabled, if 0 the notmal operation mode is enabled.
+ * @param enosc : when 0 the oscillator is disable, when 1 the oscillator is enabled (default 1). 
+ * @param i2c_timeout : 1 enables the i2c timeout, 0 isn't (default 1).        
+ * @param dataret : if 1 the data retention mode is enabled, if 0 the notmal operation mode is enabled (default 0).
  *
  **/
-void DS3231_WriteRTCConfig1(MAX31343_GIns_t *device, uint8_t enosc, uint8_t i2c_timeout, uint8_t dataret)
+void MAX31343_WriteRTCConfig1(MAX31343_GIns_t *device, uint8_t enosc, uint8_t i2c_timeout, uint8_t dataret)
 {
 	MAX31343_RtcCfgReg1_t RtcCfgReg1;
 	
@@ -307,12 +307,12 @@ void DS3231_WriteRTCConfig1(MAX31343_GIns_t *device, uint8_t enosc, uint8_t i2c_
  * @brief Write RTC configuation register 2.
  *		  
  * @param *device : Instance of MAX31343_GIns_t data struct.
- * @param enclko : 0 disables the clock on CLKO, 1 enables clock on CLKO.
- * @param clko_hz : uncompensated clock frequency output, see the MAX31343_CLKORate enum.
- * @param sqw_hz : output clock on SQW, see the MAX31343_SQWRate.
+ * @param enclko : 0 disables the clock on CLKO, 1 enables clock on CLKO (default 0).
+ * @param clko_hz : uncompensated clock frequency output, see the MAX31343_CLKORate enum (default 0x08).
+ * @param sqw_hz : output clock on SQW, see the MAX31343_SQWRate (default 0).
  *
  **/
-void DS3231_WriteRTCConfig2(MAX31343_GIns_t *device, uint8_t enclko, MAX31343_CLKORate clko_hz, MAX31343_SQWRate sqw_hz)
+void MAX31343_WriteRTCConfig2(MAX31343_GIns_t *device, uint8_t enclko, MAX31343_CLKORate clko_hz, MAX31343_SQWRate sqw_hz)
 {
 	MAX31343_RtcCfgReg2_t RtcCfgReg2;
 	
@@ -335,7 +335,7 @@ void DS3231_WriteRTCConfig2(MAX31343_GIns_t *device, uint8_t enclko, MAX31343_CL
  * the count value is retained. When this bit is reset back to 0, count down continues from the paused value.
  *
  **/
-void DS3231_WriteTimerCfg(MAX31343_GIns_t *device, uint8_t te, MAX31343_TFSRate tfs, uint8_t trpt, uint8_t tpause)
+void MAX31343_WriteTimerCfg(MAX31343_GIns_t *device, uint8_t te, MAX31343_TFSRate tfs, uint8_t trpt, uint8_t tpause)
 {
 	MAX31343_TimerCfgReg_t TimerCfg;
 	
@@ -426,14 +426,14 @@ void MAX31343_TrickleReg(MAX31343_GIns_t *device, MAX31343_TCHEEnable tche, MAX3
  * @return value of temperature registers.
  *
  **/
-uint8_t MAX31343_ReadTemp(MAX31343_GIns_t *device)
+uint8_t* MAX31343_ReadTemp(MAX31343_GIns_t *device)
 {
 	static MAX31343_TempReg_t TempReg;
 	
 	device->i2c_rx_data(MAX31343_ADDR_SHIFTED, MAX31343_TEMP_MSB, 1, (uint8_t*)&TempReg, sizeof(TempReg));
 	device->delay(1);
 	
-	return (uint8_t)&TempReg;
+	return (uint8_t*)&TempReg;
 }
 
 /*
@@ -490,6 +490,9 @@ void MAX31343_ReadRAM(MAX31343_GIns_t *device, uint8_t* data, uint8_t size, uint
 	device->delay(1);
 }
 
+
+
+
 /* Private functions. */
 
 
@@ -499,13 +502,13 @@ void MAX31343_ReadRAM(MAX31343_GIns_t *device, uint8_t* data, uint8_t size, uint
  * @param *device : Instance of MAX31343_GIns_t data struct. 
  *
  **/
-static void DS3231_CheckReference(MAX31343_GIns_t *device)
+static void MAX31343_CheckReference(MAX31343_GIns_t *device)
 {
 	if (device == NULL || device->delay == NULL || device->i2c_rx_data == NULL || device->i2c_tx_data == NULL)
 	{
 		for (;;)
 		{
-			///Errore. Object or function is not found. Check the object reference and function pointers.
+			///Error. Object or function is not found. Check the object reference and function pointers.
 		}
 	}
 }
