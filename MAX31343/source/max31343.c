@@ -33,9 +33,7 @@ void MAX31343_SetTime(MAX31343_GIns_t *device, uint8_t hours, uint8_t minutes, u
 	if (seconds > 59 || minutes > 59 || hours > 23) /* Time error. */ return;	
 	
 	Time_s.Hours.HOUR = hours % 10;	
-	if (hours > 9) {
-		Time_s.Hours.HOUR10 = hours / 10;
-	}	
+	Time_s.Hours.HOUR10 = hours / 10;
 	Time_s.Minutes.MINUTES = minutes % 10;
 	Time_s.Minutes.MINUTES10 = minutes / 10;
 	Time_s.Seconds.SECONDS = seconds % 10;
