@@ -5,6 +5,51 @@
  **/
 
 #include "ads867x.h"
+#include "spi.h"
+
+/* External variables. */
+extern SPI_HandleTypeDef hspi1;
+
+
+/* Private function prototypes. */
+static void ADS867x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
+
+/*
+ * @brief ADC init function.
+ *
+ **/
+void ADS867x_Init(void) {
+	
+	/* General data struct of ADC unit. */
+	ADS867x_GInst_t ads8671 = { 		
+		.delay = HAL_Delay,
+		.spi_tx = ADS867x_SPI_Tx,
+		.spi_rx = ADS867x_SPI_Rx
+	};
+	
+	/* Set SPI configuration and GPIO function of SDO1 pin. */
+	//ADS867x_SdoCtrl(&ads8671, 0, 0, ADS867x_SDO1_GPO);	
+	/* Enable LED on the ADC's pin. */
+	//ADS867x_SdoPinSetReset(&ads8671, 1);	
+	/* Enable ADC's test data sequence. */
+	ADS867x_DataOutCtrl(&ads8671, ADS867x_CONVDATA, 0, 0, ADS867x_ACTIVE_IN_DO_NOT_INCL, ADS867x_ACTIVE_VDD_DO_NOT_INCL, 0);
+	/* Selecting ADC input range. */
+	ADS867x_RangeSel(&ads8671, ADS867x_P1_25VREF, 0);
+}
+
+float ADS867x_GetVoltage(void) {
+	
+	/* General data struct of ADC unit. */
+	ADS867x_GInst_t ads8671 = { 
+		.tx_byte_cnt = &hspi1.TxXferCount,
+		.rx_byte_cnt = &hspi1.RxXferCount,
+		.delay = HAL_Delay,
+		.spi_tx = ADS867x_SPI_Tx,
+		.spi_rx = ADS867x_SPI_Rx
+	};
+
+	return  ADS867x_INPUT_RANGE * ADS867x_VALUE_OF_DIVISION * (uint16_t)(ADS867x_ReadADC(&ads8671).DataWord >> 18);
+}
 
 /*
  * @brief Sets low threshold for the input alarm.
@@ -15,6 +60,8 @@
  **/
 ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device)
 {
+	uint16_t timeout = 10000;
+	
 	ADS867x_OutputDataWord_t DataWord;
 	
 	device->data.ADDRESS = ADS867x_NOP;
@@ -22,9 +69,20 @@ ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device)
 	device->data.REG_DATA_LSB = ADS867x_NOP;
 	device->data.REG_DATA_MSB = ADS867x_NOP;
 	device->spi_tx(&device->data.Command, 4);
-	device->delay(1);
+	
+	while (*device->tx_byte_cnt > 0) {
+		timeout--;
+		if (timeout == 0) { __NOP(); break; }
+	}	
+	
+	//device->delay(1);
 	device->spi_rx(&device->data.Command, 4);
-	device->delay(1);
+	timeout = 1000;
+	while (*device->rx_byte_cnt > 0) {
+		timeout--;
+		if (timeout == 0) { __NOP(); break; }
+	}	
+	//device->delay(1);
 	
 	DataWord.DataWord_LSW_LSB = device->data.REG_DATA_LSB;
 	DataWord.DataWord_LSW_MSB = device->data.REG_DATA_MSB;
@@ -35,36 +93,27 @@ ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device)
 }
 
 /*
- * @brief Write/read device address.
+ * @brief Write/read device register.
  * 
  * @param *device : Instance of the general data struct ADS867x_GInst_t.
  * @param operation : 0 is write operation, all other combinations are read.
  * @param address : Device address that you wish.
  *
  **/
-int8_t ADS867x_WRAddress(ADS867x_GInst_t* device, uint8_t operation, uint8_t address)
+uint16_t ADS867x_W_R_REG(ADS867x_GInst_t* device, uint8_t operation, uint8_t address)
 {
-	//ADS867x_DevId_t DevIdReg;	
-	//DevIdReg.DEVICE_ADDR = address;
+	uint16_t Data = 0;
 	
-	device->data.ADDRESS = ADS867x_DEVICE_ID_HSW;
-	if (!operation) {
-		device->data.COMMAND = ADS867x_WRITE_LSB;
-		device->data.REG_DATA_MSB = 0;
-		device->data.REG_DATA_LSB = address;
-		device->spi_tx(&device->data.Command, 4);
-		return -1;
-	}
-	else {
-		device->data.COMMAND = ADS867x_READ_HWORD;
-		device->data.REG_DATA_LSB = 0;
-		device->data.REG_DATA_MSB = 0;
-		device->spi_tx(&device->data.Command, 4);
-		device->delay(1);
-		device->spi_rx((uint8_t*)&device->data, 2);
-		device->delay(1);
-		return device->data.REG_DATA_LSB;
-	}	
+	device->data.ADDRESS = address;
+	device->data.COMMAND = ADS867x_READ_HWORD;
+	device->data.REG_DATA_LSB = 0;
+	device->data.REG_DATA_MSB = 0;
+	device->spi_tx(&device->data.Command, 4);
+	
+	device->delay(1);
+	device->spi_rx((uint8_t*)&device->data, 2);
+	device->delay(1);
+	return Data  = (device->data.REG_DATA_MSB << 8) | device->data.REG_DATA_LSB;	
 }
 
 /*
@@ -300,3 +349,46 @@ void ADS867x_SetAlarmLTh(ADS867x_GInst_t* device, uint16_t inp_alrm_low_th)
 	device->spi_tx(&device->data.Command, 4);	
 }
 
+
+/* Hardware dependent functions. */
+
+/*
+ * @brief
+ *
+ **/
+void ADS867x_SPI_Tx(uint8_t *pData, uint8_t size) {
+	
+	ADS867x_SPI_CS(CS_ADC_GPIO_Port, CS_ADC_Pin, 0);
+	HAL_SPI_Transmit(&hspi1, pData, size, 10);
+	ADS867x_SPI_CS(CS_ADC_GPIO_Port, CS_ADC_Pin, 1);
+}
+
+/*
+ * @brief
+ * 
+ *
+ **/
+void ADS867x_SPI_Rx(uint8_t *pData, uint8_t size) {
+	
+	ADS867x_SPI_CS(CS_ADC_GPIO_Port, CS_ADC_Pin, 0);
+	HAL_SPI_Receive(&hspi1, pData, size, 10);
+	ADS867x_SPI_CS(CS_ADC_GPIO_Port, CS_ADC_Pin, 1);
+}
+
+/*
+ * @brief SPI chip select.
+ * 
+ * @param gpio : Either CS_ADC_GPIO_Port or CS_DAC_GPIO_Port.
+ * @param gpio_pin : Either CS_ADC_Pin or CS_DAC_Pin.
+ * @param state : Either GPIO_PIN_SET or GPIO_PIN_RESET.
+ *
+ **/
+static void ADS867x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state) {
+	
+	if (state > 0) {
+		gpio->BSRR = gpio_pin;
+	}
+	else {
+		gpio->BSRR = gpio_pin << 16;
+	}	
+}

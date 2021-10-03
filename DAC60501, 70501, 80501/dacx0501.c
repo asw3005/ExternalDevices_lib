@@ -5,11 +5,38 @@
  **/
 
 #include "dacx0501.h"
+#include "spi.h"
+
+/* External variables. */
+extern SPI_HandleTypeDef hspi1;
 
 /* Private function prototypes. */
 static void DACx0501_CheckRef(void* reference);
+static void DACx0501_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
 
 /* SPI set of functions. */
+
+/*
+ * @brief Set DAC voltage.
+ * 
+ * @param voltage : Voltage from 0 to 5000 mV.
+ *
+ **/
+void DAC60501_SetVoltage(float voltage) {
+	
+	uint16_t dac_data = 0;
+	
+	/* General data struct of DAC unit. */
+	DACx0501_GInst_t dac60501 = { 			
+		.delay = HAL_Delay,		
+		.spi_tx = DACx0501_SPI_Tx
+	};
+	
+	dac_data = (uint16_t)(voltage * DAC60501_VALUE_OF_DIVISION) - 1;
+	if (dac_data > DAC60501_12BIT) { dac_data = DAC60501_12BIT; }
+	
+	DACx0501_SPI_WriteData(&dac60501, DACx0501_DAC60501, dac_data);
+}
 
 /*
  * @brief Enable or disable dac sync function.
@@ -57,10 +84,10 @@ void DACx0501_SPI_Config(DACx0501_GInst_t *device, uint8_t dac_pwdwn, uint8_t re
  * @brief Selecting gain of buffer and divider for the reference voltage.
  * 
  * @param *device : Instance of general data struct DACx0501_GInst_t.
- * @param buff_gain : When set to 1, the buffer amplifier for corresponding DAC has a gain of 2. When cleared to 0, the buffer amplifier
- *        for corresponding DAC has a gain of 1.
+ * @param buff_gain : When set to 1 (default), the buffer amplifier for corresponding DAC has a gain of 2. When cleared to 0, the buffer 
+ *		  amplifier for corresponding DAC has a gain of 1.
  * @param ref_div : When REF-DIV set to 1, the reference voltage is internally divided by a factor of 2. When REF-DIV is cleared
- *        to 0, the reference voltage is unaffected.
+ *        to 0 (default), the reference voltage is unaffected.
  *
  **/
 void DACx0501_SPI_Gain(DACx0501_GInst_t *device, uint8_t buff_gain, uint8_t ref_div) {
@@ -80,9 +107,9 @@ void DACx0501_SPI_Gain(DACx0501_GInst_t *device, uint8_t buff_gain, uint8_t ref_
  * @brief Starts soft-reset and synchronous mode control.
  *
  * @param *device : Instance of general data struct DACx0501_GInst_t.
- * @param soft_reset : When set to the reserved code of DACx0501_SOFT_RESET of the DACx0501_Command unum (binary 1010), this bit
+ * @param soft_reset : When set to the reserved code of DACx0501_SOFT_RESET of the DACx0501_Command enum (binary 1010), this bit
  *        resets the device to the default state. These bits are self resetting. 
- * @param ldac : Set this bit to 1 to synchronously load the DAC in synchronous mode, This bit is self resetting.
+ * @param ldac : Set this bit to 1 to synchronously load the DAC in synchronous mode. This bit is self resetting.
  *
  **/
 void DACx0501_SPI_Trigger(DACx0501_GInst_t *device, uint8_t soft_reset, uint8_t ldac) {
@@ -309,3 +336,33 @@ static void DACx0501_CheckRef(void* reference) {
 }
 
 
+/* Hardware dependent functions. */
+
+/*
+ * @brief
+ *
+ **/
+void DACx0501_SPI_Tx(uint8_t *pData, uint8_t size) {
+	
+	DACx0501_SPI_CS(CS_DAC_GPIO_Port, CS_DAC_Pin, 0);
+	HAL_SPI_Transmit(&hspi1, pData, size, 10);
+	DACx0501_SPI_CS(CS_DAC_GPIO_Port, CS_DAC_Pin, 1);
+}
+
+/*
+ * @brief SPI chip select.
+ * 
+ * @param gpio : Either CS_ADC_GPIO_Port or CS_DAC_GPIO_Port.
+ * @param gpio_pin : Either CS_ADC_Pin or CS_DAC_Pin.
+ * @param state : Either GPIO_PIN_SET or GPIO_PIN_RESET.
+ *
+ **/
+static void DACx0501_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state) {
+	
+	if (state > 0) {
+		gpio->BSRR = gpio_pin;
+	}
+	else {
+		gpio->BSRR = gpio_pin << 16;
+	}	
+}

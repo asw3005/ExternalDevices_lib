@@ -18,7 +18,27 @@
 #define SPI_COMMUNICATION
 //#define I2C_COMMUNICATION
 
+/* GPIO configuration. */
+#define CS_DAC_Pin					GPIO_PIN_1
+#define CS_DAC_GPIO_Port			GPIOB
 
+/* DAC constants. */
+#define DAC60501_VALUE_OF_DIVISION	0.8192f
+#define DAC70501_VALUE_OF_DIVISION	3.2768f
+#define DAC80501_VALUE_OF_DIVISION	13.1072f
+
+/*
+ * @brief DAC resolution values.
+ *
+ **/
+typedef enum {
+	
+	DAC60501_12BIT = 4095,
+	DAC70501_14BIT = 16383,
+	DAC80501_16BIT = 65535
+	
+	
+} DACx0501_RESOLUTION;
 
 /*
  * @brief Slave addrreses if you are using I2C bus (addresses are shifted 1 bit to the left).
@@ -280,6 +300,9 @@ typedef struct {
 
 /* Public function prototypes. */
 
+void DAC60501_SetVoltage(float voltage);
+
+
 /* SPI functions. */
 void DACx0501_SPI_Sync(DACx0501_GInst_t *device, uint8_t dac_sync);
 void DACx0501_SPI_Config(DACx0501_GInst_t *device, uint8_t dac_pwdwn, uint8_t ref_pwdwn);
@@ -296,5 +319,9 @@ void DACx0501_I2C_WriteData(DACx0501_GInst_t *device, DACx0501_I2C_Addr address,
 
 DACx0501_Devid_t DACx0501_I2C_ReadDevId(DACx0501_GInst_t *device, DACx0501_I2C_Addr address);
 DACx0501_Status_t DACx0501_I2C_ReadStatus(DACx0501_GInst_t *device, DACx0501_I2C_Addr address);
+
+/* Hardware dependent function prototypes. */
+void DACx0501_SPI_Tx(uint8_t *pData, uint8_t size);
+
 
 #endif /* DACx0501_H_ */

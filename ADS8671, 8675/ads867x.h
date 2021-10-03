@@ -14,7 +14,15 @@
 
 #include "stm32f103xb.h"
 
-#define ADS867x_WKEY 0x69
+/* GPIO configuration. */
+#define CS_ADC_Pin					GPIO_PIN_0
+#define CS_ADC_GPIO_Port			GPIOB
+
+/* ADC constants. */
+#define ADS867x_WKEY				0x69
+#define ADS867x_INPUT_RANGE			1.25f
+#define ADS867x_VALUE_OF_DIVISION	0.25f
+
 
 /*
  * @brief Configuration registers mapping. LSW and HSW are low significant word and high significant word respectively.
@@ -117,8 +125,8 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_CONVDATA,
-	ADS867x_ALLZERO,
+	ADS867x_CONVDATA	= 3,
+	ADS867x_ALLZERO		= 4,
 	ADS867x_ALLONES,
 	ADS867x_ALTERNATING_0_1,
 	ADS867x_ALTERNATING_00_11
@@ -582,7 +590,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		/* */
 		uint8_t MSB_ADDR_BIT	: 1;
 		/* Command code. */
-		uint16_t COMMAND		: 7;
+		uint8_t COMMAND			: 7;
 		/* Address. */
 		uint16_t ADDRESS		: 8; 
 		/* Read or write data word. */
@@ -599,6 +607,8 @@ typedef union __attribute__((aligned(1), packed)) {
 typedef struct {
 
 	ADS867x_InputCmd_t data;
+	volatile uint16_t* tx_byte_cnt; 
+	volatile uint16_t* rx_byte_cnt;
 	delay_fptr delay;
 	spi_txrx_fptr spi_tx;
 	spi_txrx_fptr spi_rx;
@@ -607,9 +617,10 @@ typedef struct {
 
 
 /* Public function prototypes. */
-
+void ADS867x_Init(void);
+float ADS867x_GetVoltage(void);
 ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device);
-int8_t ADS867x_WRAddress(ADS867x_GInst_t* device, uint8_t operation, uint8_t address);
+uint16_t ADS867x_W_R_REG(ADS867x_GInst_t* device, uint8_t operation, uint8_t address);
 void ADS867x_RstPwdn(ADS867x_GInst_t* device, uint8_t pwrdn, uint8_t nap_en, uint8_t rstn_app, uint8_t in_al_dis, uint8_t vdd_al_dis);
 void ADS867x_SdiCtrl(ADS867x_GInst_t* device, ADS867x_SPIProtocol protocol);
 void ADS867x_SdoCtrl(ADS867x_GInst_t* device, uint8_t sdo_mode, uint8_t ssync_clk, ADS867x_SDO1Mode sdo1_config);
@@ -620,6 +631,11 @@ void ADS867x_RangeSel(ADS867x_GInst_t* device, ADS867x_InputRange range_sel, uin
 ADS867x_Alarm_t ADS867x_ReadAlarm(ADS867x_GInst_t* device);
 void ADS867x_SetAlarmHTh(ADS867x_GInst_t* device, uint16_t inp_alrm_high_th, uint8_t inp_alrm_hyst);
 void ADS867x_SetAlarmLTh(ADS867x_GInst_t* device, uint16_t inp_alrm_low_th);
+
+/* Hardware dependent function prototypes. */
+void ADS867x_SPI_Tx(uint8_t *pData, uint8_t size);
+void ADS867x_SPI_Rx(uint8_t *pData, uint8_t size);
+
 
 #endif /* ADS867x_H_ */
 
