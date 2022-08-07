@@ -20,9 +20,7 @@
 
 /* ADC constants. */
 #define ADS867x_WKEY				0x69
-#define ADS867x_INPUT_RANGE			1.25f
-#define ADS867x_VALUE_OF_DIVISION	0.25f
-
+#define ADS867x_VALUE_OF_DIVISION	0.312f
 
 /*
  * @brief Configuration registers mapping. LSW and HSW are low significant word and high significant word respectively.
@@ -620,7 +618,7 @@ typedef struct {
 void ADS867x_Init(void);
 float ADS867x_GetVoltage(void);
 ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device);
-uint16_t ADS867x_W_R_REG(ADS867x_GInst_t* device, uint8_t operation, uint8_t address);
+uint16_t ADS867x_W_R_REG(ADS867x_GInst_t* device, uint8_t address);
 void ADS867x_RstPwdn(ADS867x_GInst_t* device, uint8_t pwrdn, uint8_t nap_en, uint8_t rstn_app, uint8_t in_al_dis, uint8_t vdd_al_dis);
 void ADS867x_SdiCtrl(ADS867x_GInst_t* device, ADS867x_SPIProtocol protocol);
 void ADS867x_SdoCtrl(ADS867x_GInst_t* device, uint8_t sdo_mode, uint8_t ssync_clk, ADS867x_SDO1Mode sdo1_config);

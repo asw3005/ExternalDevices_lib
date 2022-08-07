@@ -32,11 +32,56 @@ void DAC60501_SetVoltage(float voltage) {
 		.spi_tx = DACx0501_SPI_Tx
 	};
 	
-	dac_data = (uint16_t)(voltage * DAC60501_VALUE_OF_DIVISION) - 1;
+	dac_data = (uint16_t)(voltage * DAC60501_VALUE_OF_DIVISION);
 	if (dac_data > DAC60501_12BIT) { dac_data = DAC60501_12BIT; }
 	
 	DACx0501_SPI_WriteData(&dac60501, DACx0501_DAC60501, dac_data);
 }
+
+/*
+ * @brief Set DAC voltage.
+ *
+ * @param voltage : Voltage from 0 to 5000 mV.
+ *
+ **/
+void DAC70501_SetVoltage(float voltage) {
+
+	uint16_t dac_data = 0;
+
+	/* General data struct of DAC unit. */
+	DACx0501_GInst_t dac70501 = {
+		.delay = HAL_Delay,
+		.spi_tx = DACx0501_SPI_Tx
+	};
+
+	dac_data = (uint16_t)(voltage * DAC70501_VALUE_OF_DIVISION);
+	if (dac_data > DAC70501_14BIT) { dac_data = DAC70501_14BIT; }
+
+	DACx0501_SPI_WriteData(&dac70501, DACx0501_DAC70501, dac_data);
+}
+
+/*
+ * @brief Set DAC voltage.
+ *
+ * @param voltage : Voltage from 0 to 5000 mV.
+ *
+ **/
+void DAC80501_SetVoltage(float voltage) {
+
+	uint16_t dac_data = 0;
+
+	/* General data struct of DAC unit. */
+	DACx0501_GInst_t dac70501 = {
+		.delay = HAL_Delay,
+		.spi_tx = DACx0501_SPI_Tx
+	};
+
+	dac_data = (uint16_t)(voltage * DAC80501_VALUE_OF_DIVISION);
+	if (dac_data > DAC80501_16BIT) { dac_data = DAC80501_16BIT; }
+
+	DACx0501_SPI_WriteData(&dac70501, DACx0501_DAC80501, dac_data);
+}
+
 
 /*
  * @brief Enable or disable dac sync function.

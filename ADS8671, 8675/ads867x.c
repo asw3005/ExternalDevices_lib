@@ -37,6 +37,9 @@ void ADS867x_Init(void) {
 	ADS867x_RangeSel(&ads8671, ADS867x_P1_25VREF, 0);
 }
 
+/*
+	@brief
+*/
 float ADS867x_GetVoltage(void) {
 	
 	/* General data struct of ADC unit. */
@@ -48,7 +51,7 @@ float ADS867x_GetVoltage(void) {
 		.spi_rx = ADS867x_SPI_Rx
 	};
 
-	return  ADS867x_INPUT_RANGE * ADS867x_VALUE_OF_DIVISION * (uint16_t)(ADS867x_ReadADC(&ads8671).DataWord >> 18);
+	return  /* ADS867x_INPUT_RANGE * */ ADS867x_VALUE_OF_DIVISION * (uint16_t)(ADS867x_ReadADC(&ads8671).DataWord >> 18);
 }
 
 /*
@@ -77,7 +80,7 @@ ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device)
 	
 	//device->delay(1);
 	device->spi_rx(&device->data.Command, 4);
-	timeout = 1000;
+	timeout = 10000;
 	while (*device->rx_byte_cnt > 0) {
 		timeout--;
 		if (timeout == 0) { __NOP(); break; }
@@ -96,11 +99,10 @@ ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device)
  * @brief Write/read device register.
  * 
  * @param *device : Instance of the general data struct ADS867x_GInst_t.
- * @param operation : 0 is write operation, all other combinations are read.
  * @param address : Device address that you wish.
  *
  **/
-uint16_t ADS867x_W_R_REG(ADS867x_GInst_t* device, uint8_t operation, uint8_t address)
+uint16_t ADS867x_W_R_REG(ADS867x_GInst_t* device, uint8_t address)
 {
 	uint16_t Data = 0;
 	

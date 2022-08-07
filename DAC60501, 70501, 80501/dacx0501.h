@@ -301,7 +301,8 @@ typedef struct {
 /* Public function prototypes. */
 
 void DAC60501_SetVoltage(float voltage);
-
+void DAC70501_SetVoltage(float voltage);
+void DAC80501_SetVoltage(float voltage);
 
 /* SPI functions. */
 void DACx0501_SPI_Sync(DACx0501_GInst_t *device, uint8_t dac_sync);
