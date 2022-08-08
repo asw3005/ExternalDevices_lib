@@ -300,6 +300,10 @@ typedef struct {
 
 /* Public function prototypes. */
 
+void DAC60501_WriteRAWData(uint16_t data);
+void DAC70501_WriteRAWData(uint16_t data);
+void DAC80501_WriteRAWData(uint16_t data);
+
 void DAC60501_SetVoltage(float voltage);
 void DAC70501_SetVoltage(float voltage);
 void DAC80501_SetVoltage(float voltage);

@@ -17,6 +17,72 @@ static void DACx0501_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state
 /* SPI set of functions. */
 
 /*
+ * @brief Write RAW DAC data.
+ *
+ * @param voltage : data from 0 to 4095.
+ *
+ **/
+void DAC60501_WriteRAWData(uint16_t data) {
+
+	uint16_t dac_data = 0;
+
+	/* General data struct of DAC unit. */
+	DACx0501_GInst_t dac60501 = {
+		.delay = HAL_Delay,
+		.spi_tx = DACx0501_SPI_Tx
+	};
+
+	dac_data = data;
+	if (dac_data > DAC60501_12BIT) { dac_data = DAC60501_12BIT; }
+
+	DACx0501_SPI_WriteData(&dac60501, DACx0501_DAC60501, dac_data);
+}
+
+/*
+ * @brief Write RAW DAC data.
+ *
+ * @param voltage : data from 0 to 16383.
+ *
+ **/
+void DAC70501_WriteRAWData(uint16_t data) {
+
+	uint16_t dac_data = 0;
+
+	/* General data struct of DAC unit. */
+	DACx0501_GInst_t dac70501 = {
+		.delay = HAL_Delay,
+		.spi_tx = DACx0501_SPI_Tx
+	};
+
+	dac_data = data;
+	if (dac_data > DAC70501_14BIT) { dac_data = DAC70501_14BIT; }
+
+	DACx0501_SPI_WriteData(&dac70501, DACx0501_DAC70501, dac_data);
+}
+
+/*
+ * @brief Write RAW DAC data.
+ *
+ * @param voltage : data from 0 to 65535.
+ *
+ **/
+void DAC80501_WriteRAWData(uint16_t data) {
+
+	uint16_t dac_data = 0;
+
+	/* General data struct of DAC unit. */
+	DACx0501_GInst_t dac80501 = {
+		.delay = HAL_Delay,
+		.spi_tx = DACx0501_SPI_Tx
+	};
+
+	dac_data = data;
+	if (dac_data > DAC80501_16BIT) { dac_data = DAC80501_16BIT; }
+
+	DACx0501_SPI_WriteData(&dac80501, DAC80501_16BIT, dac_data);
+}
+
+/*
  * @brief Set DAC voltage.
  * 
  * @param voltage : Voltage from 0 to 5000 mV.
