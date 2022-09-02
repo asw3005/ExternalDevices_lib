@@ -1,0 +1,11 @@
+void StartDefaultTask(void const * argument)
+{
+	/* Uncomment if hardware driver is used. */
+	AM2301_InitPerif();
+
+	for (;;)
+	{
+		AM2301_GetData();
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
