@@ -79,7 +79,7 @@ void DAC80501_WriteRAWData(uint16_t data) {
 	dac_data = data;
 	if (dac_data > DAC80501_16BIT) { dac_data = DAC80501_16BIT; }
 
-	DACx0501_SPI_WriteData(&dac80501, DAC80501_16BIT, dac_data);
+	DACx0501_SPI_WriteData(&dac80501, DACx0501_DAC80501, dac_data);
 }
 
 /*
