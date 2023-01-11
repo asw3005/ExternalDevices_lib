@@ -46,7 +46,7 @@ typedef enum
 	PT6315_11DIG_17SEG	= 0x07,
 	PT6315_12DIG_16SEG	= 0x08 //Default mode value.
 	
-} PT6315_DisplayModeCmd;
+} PT6315_DISPLAY_MODE_CMD_t;
 
 /*
  * @brief Display control commands.
@@ -69,7 +69,7 @@ typedef enum
 	PT6315_PULSE_WIDTH_13_16	= 0x06,
 	PT6315_PULSE_WIDTH_14_16	= 0x07
 	
-} PT6315_DisplayControlCmd;
+} PT6315_DISPLAY_CONTROL_CMD_t;
 	
 /*
  * @brief Data setting commands.
@@ -91,7 +91,7 @@ typedef enum
 	PT6315_READ_KEY			= 0x02,
 	PT6315_DONT_CARE		= 0x03
 	
-} PT6315_DataSetCmd;
+} PT6315_DATA_SET_CMD_t;
 
 /*
  * @brief Address setting commands.
@@ -102,7 +102,7 @@ typedef enum
 	/* Command. */
 	PT6315_ADDR_CMD = 0x03
 		
-} PT6315_AddressSetCmd;
+} PT6315_ADDRESS_SET_CMD_t;
 
 /*
  * @brief LED display designation.
@@ -131,7 +131,7 @@ typedef enum
 	PT6315_LED4_ON	= 0x08,	
 #endif
 	
-} PT6315_LedNumber;
+} PT6315_LED_NUMBER_t;
 
 /*
  *	@brief Delay function typedef pointer. 
@@ -174,7 +174,7 @@ typedef	union
 		uint8_t CMD			: 2;
 	};
 		
-} PT6315_DisplayModeCmd_t;
+} PT6315_DISPLAY_MODE_CMD_t_t;
 
 /*
  * @brief Data setting commands typedef.
@@ -196,7 +196,7 @@ typedef	union
 		uint8_t CMD				: 2;
 	};
 		
-} PT6315_DataSetCmd_t;
+} PT6315_DATA_SET_CMD_t_t;
 
 /*
  * @brief Display control commands typedef.
@@ -216,7 +216,7 @@ typedef	union
 		uint8_t CMD				: 2;
 	};
 		
-} PT6315_DisplayControlCmd_t;
+} PT6315_DISPLAY_CONTROL_CMD_t_t;
 
 /*
  * @brief Address setting commands typedef.
@@ -232,7 +232,7 @@ typedef	union
 		uint8_t CMD		: 2;
 	};
 		
-} PT6315_AddressSetCmd_t;
+} PT6315_ADDRESS_SET_CMD_t_t;
 
 /*
  * @brief LED display terminals typedef.
@@ -308,12 +308,13 @@ typedef struct
 } PT6315_GInst_t;
 
 /* Public function prototypes. */
-void PT6315_Init(PT6315_GInst_t *device);
+void PT6315_Init(PT6315_GInst_t *device, PT6315_DISPLAY_MODE_CMD_t mode, PT6315_DISPLAY_CONTROL_CMD_t onoff, PT6315_DISPLAY_CONTROL_CMD_t ctrl);
 void PT6315_SetResetRAMBuff(PT6315_GInst_t *device, uint8_t segment, uint8_t dig, uint8_t state);
+void PT6315_SetResetRAMBuff7Seg(PT6315_GInst_t *device, uint8_t dig, uint8_t data);
 uint8_t PT6315_ReadRAMBuff(PT6315_GInst_t *device, uint8_t segment, uint8_t dig);
 void PT6315_ReadKeys(PT6315_GInst_t *device);
 void PT6315_LedEn(PT6315_GInst_t *device, uint8_t number, uint8_t state);
-void PT6315_SetBrightness(PT6315_GInst_t *device, PT6315_DisplayControlCmd level);
+void PT6315_SetBrightness(PT6315_GInst_t *device, PT6315_DISPLAY_CONTROL_CMD_t level);
 void PT6315_WriteRAM(PT6315_GInst_t *device);
 
 

@@ -16,18 +16,6 @@ extern SPI_HandleTypeDef hspi2;
 static const uint8_t IV18_CLOCK_DOT[2] = { 8, 9 };
 
 /* Number graph constants.  */
-static const uint8_t IV18_CLOCK_NUMBERS[12][7] = {		
-	// "0"					 "1"					  "2"
-	{ 1, 1, 1, 1, 1, 1, 0 }, { 0, 1, 1, 0, 0, 0, 0 }, { 1, 1, 0, 1, 1, 0, 1 },
-	// "3"					 "4"					  "5"
-	{ 1, 1, 1, 1, 0, 0, 1 }, { 0, 1, 1, 0, 0, 1, 1 }, { 1, 0, 1, 1, 0, 1, 1 },
-	// "6"					 "7"					  "8"
-	{ 1, 0, 1, 1, 1, 1, 1 }, { 1, 1, 1, 0, 0, 0, 0 }, { 1, 1, 1, 1, 1, 1, 1 },
-	// "9"					 " "					  "-"
-	{ 1, 1, 1, 1, 0, 1, 1 }, { 0, 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 1 }
-};
-
-/* Number graph constants.  */
 static const uint8_t IV18_CLOCK_NUMBERS_PACK[12] = {		
 	// "0"					 "1"					  "2"
 	0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F, 0x00, 0x40
@@ -60,11 +48,11 @@ static PT6315_GInst_t pt6315_ginst = {
  **/
 void IV18_Init(IV18_GInst_t *device)
 {
-	PT6315_Init(&pt6315_ginst);
+	PT6315_Init(&pt6315_ginst, PT6315_8DIG_20SEG, PT6315_DISPLAY_ON, PT6315_PULSE_WIDTH_14_16);
 	
-		device->tx_data_fptr(7, 6, 1);
-		device->tx_data_fptr(7, 3, 1);
-		device->display_data_fptr();
+	device->tx_data_fptr(7, 6, 1);
+	device->tx_data_fptr(7, 3, 1);
+	device->display_data_fptr();
 }
 
 

@@ -12,7 +12,7 @@
 /* RAM memory of PT6315. */
 static struct __attribute__((aligned(1), packed)) ram_data_t 
 {
-	PT6315_AddressSetCmd_t cmd;
+	PT6315_ADDRESS_SET_CMD_t_t cmd;
 	uint8_t pt6315_ram[12][3];
 	
 } ram_data;
@@ -20,12 +20,12 @@ static struct __attribute__((aligned(1), packed)) ram_data_t
 
 /* Private function prototypes. */
 //static void PT6315_WriteRAM(PT6315_GInst_t device);
-static void PT6315_SendModeCmd(PT6315_GInst_t *device, PT6315_DisplayModeCmd mode);
-static void PT6315_SendControlCmd(PT6315_GInst_t *device, PT6315_DisplayControlCmd display_onoff, PT6315_DisplayControlCmd dimming);
+static void PT6315_SendModeCmd(PT6315_GInst_t *device, PT6315_DISPLAY_MODE_CMD_t mode);
+static void PT6315_SendControlCmd(PT6315_GInst_t *device, PT6315_DISPLAY_CONTROL_CMD_t display_onoff, PT6315_DISPLAY_CONTROL_CMD_t dimming);
 static void PT6315_SendDataSetCmd(PT6315_GInst_t *device,
-	PT6315_DataSetCmd mode,
-	PT6315_DataSetCmd addr_mode, 
-	PT6315_DataSetCmd data_mode);
+	PT6315_DATA_SET_CMD_t mode,
+	PT6315_DATA_SET_CMD_t addr_mode, 
+	PT6315_DATA_SET_CMD_t data_mode);
 static void PT6315_SetAddress(PT6315_GInst_t *device, uint8_t address);
 
 
@@ -34,12 +34,16 @@ static void PT6315_SetAddress(PT6315_GInst_t *device, uint8_t address);
 
 /*
  * @brief PT6315 init.
+ * 
+ * @param mode : See PT6315_DISPLAY_MODE_CMD_t in the pt6315.h
+ * @param onoff : See PT6315_DISPLAY_CONTROL_CMD_t in the pt6315.h
+ * @param ctrl : See PT6315_DISPLAY_CONTROL_CMD_t in the pt6315.h
  *
  **/
-void PT6315_Init(PT6315_GInst_t *device)
+void PT6315_Init(PT6315_GInst_t *device, PT6315_DISPLAY_MODE_CMD_t mode, PT6315_DISPLAY_CONTROL_CMD_t onoff, PT6315_DISPLAY_CONTROL_CMD_t ctrl)
 {
-	PT6315_SendModeCmd(device, PT6315_12DIG_16SEG);
-	PT6315_SendControlCmd(device, PT6315_DISPLAY_ON, PT6315_PULSE_WIDTH_1_16);
+	PT6315_SendModeCmd(device, mode);
+	PT6315_SendControlCmd(device, onoff, ctrl);
 	
 	for (uint8_t i = 0; i < 12; i++) {
 		for (uint8_t j = 0; j < 3; j++) {
@@ -92,6 +96,22 @@ void PT6315_SetResetRAMBuff(PT6315_GInst_t *device, uint8_t segment, uint8_t dig
 }
 
 /*
+ * @brief Write data to the RAM memory of the PT6315. Only 8 segments able to write.
+ * 
+ * @param device : instance of general data struct. 
+ * @param dig : number of dig of the PT6315 driver (from 1 to 12).
+ * @param data : data byte that means eight segments of 7 seg indicators + one dot.
+ *
+ **/
+void PT6315_SetResetRAMBuff7Seg(PT6315_GInst_t *device, uint8_t dig, uint8_t data)
+{	
+	if (dig < PT6315_MIN_NUMBER_OF_DIG || dig > PT6315_MAX_NUMBER_OF_DIG) return;
+
+	/* Write data for 7 seg digit. */	 
+	ram_data.pt6315_ram[dig - 1][0] = data;		
+}
+
+/*
  * @brief Set or reset required data bit of the RAM memory of the PT6315.
  * 
  * @param device : instance of general data struct. 
@@ -125,7 +145,7 @@ uint8_t PT6315_ReadRAMBuff(PT6315_GInst_t *device, uint8_t segment, uint8_t dig)
  **/
 void PT6315_ReadKeys(PT6315_GInst_t *device)
 {
-	PT6315_DataSetCmd_t data_set_cmd;
+	PT6315_DATA_SET_CMD_t_t data_set_cmd;
 	
 	data_set_cmd.CMD = PT6315_DATA_CMD;
 	data_set_cmd.SETTINGS_MODE = PT6315_NORMAL_MODE;
@@ -152,7 +172,7 @@ void PT6315_LedEn(PT6315_GInst_t *device, uint8_t number, uint8_t state)
 	/* LEDs state byte. */
 	static struct tx
 	{
-		PT6315_DataSetCmd_t data_set_cmd;
+		PT6315_DATA_SET_CMD_t_t data_set_cmd;
 		PT6315_LedControlCmd_t pt6315_ledbyte;
 		
 	} data;
@@ -184,10 +204,10 @@ void PT6315_LedEn(PT6315_GInst_t *device, uint8_t number, uint8_t state)
  * @brief Enables/disables specific LED.
  * 
  * @param device : instance of general data struct. 
- * @param level : brightness value from the PT6315_DisplayControlCmd enum.
+ * @param level : brightness value from the PT6315_DISPLAY_CONTROL_CMD_t enum.
  *
  **/
-void PT6315_SetBrightness(PT6315_GInst_t *device, PT6315_DisplayControlCmd level)
+void PT6315_SetBrightness(PT6315_GInst_t *device, PT6315_DISPLAY_CONTROL_CMD_t level)
 {
 	/* Set the brightnees that you need. */
 	PT6315_SendControlCmd(device, PT6315_DISPLAY_ON, level);
@@ -223,12 +243,12 @@ void PT6315_WriteRAM(PT6315_GInst_t *device)
  * @brief Sending display mode setting command.
  * 
  * @param device : instance of general data struct. 
- * @param mode : determine the number of segment and grids to be used, see the PT6315_DisplayModeCmd.
+ * @param mode : determine the number of segment and grids to be used, see the PT6315_DISPLAY_MODE_CMD_t.
  *
  **/
-static void PT6315_SendModeCmd(PT6315_GInst_t *device, PT6315_DisplayModeCmd mode)
+static void PT6315_SendModeCmd(PT6315_GInst_t *device, PT6315_DISPLAY_MODE_CMD_t mode)
 {
-	PT6315_DisplayModeCmd_t mode_cmd;
+	PT6315_DISPLAY_MODE_CMD_t_t mode_cmd;
 	
 	mode_cmd.CMD = PT6315_DISP_CMD;
 	mode_cmd.DisplaySettingCmd = mode;
@@ -245,13 +265,13 @@ static void PT6315_SendModeCmd(PT6315_GInst_t *device, PT6315_DisplayModeCmd mod
  * @brief Sending display control command.
  * 
  * @param device : instance of general data struct. 
- * @param display_onoff : used to turn on or off a display, see the PT6315_DisplayControlCmd.
- * @param dimming : set the pulse width, see the PT6315_DisplayControlCmd.
+ * @param display_onoff : used to turn on or off a display, see the PT6315_DISPLAY_CONTROL_CMD_t.
+ * @param dimming : set the pulse width, see the PT6315_DISPLAY_CONTROL_CMD_t.
  *
  **/
-static void PT6315_SendControlCmd(PT6315_GInst_t *device, PT6315_DisplayControlCmd display_onoff, PT6315_DisplayControlCmd dimming)
+static void PT6315_SendControlCmd(PT6315_GInst_t *device, PT6315_DISPLAY_CONTROL_CMD_t display_onoff, PT6315_DISPLAY_CONTROL_CMD_t dimming)
 {
-	PT6315_DisplayControlCmd_t control_cmd;
+	PT6315_DISPLAY_CONTROL_CMD_t_t control_cmd;
 	
 	control_cmd.CMD = PT6315_CONTROL_CMD;
 	control_cmd.DISPLAY_ON_OFF = display_onoff;
@@ -268,17 +288,17 @@ static void PT6315_SendControlCmd(PT6315_GInst_t *device, PT6315_DisplayControlC
  * @brief Sending data setting command.
  * 
  * @param device : instance of general data struct. 
- * @param mode : set operation mode of the display, see the PT6315_DataSetCmd.
- * @param addr_mode : set address operation mode, see the PT6315_DataSetCmd.
- * @param data_mode : select the data operatin mode, see the PT6315_DataSetCmd.
+ * @param mode : set operation mode of the display, see the PT6315_DATA_SET_CMD_t.
+ * @param addr_mode : set address operation mode, see the PT6315_DATA_SET_CMD_t.
+ * @param data_mode : select the data operatin mode, see the PT6315_DATA_SET_CMD_t.
  *
  **/
 static void PT6315_SendDataSetCmd(PT6315_GInst_t *device,
-	PT6315_DataSetCmd mode,
-	PT6315_DataSetCmd addr_mode, 
-	PT6315_DataSetCmd data_mode)
+	PT6315_DATA_SET_CMD_t mode,
+	PT6315_DATA_SET_CMD_t addr_mode, 
+	PT6315_DATA_SET_CMD_t data_mode)
 {
-	PT6315_DataSetCmd_t data_set_cmd;
+	PT6315_DATA_SET_CMD_t_t data_set_cmd;
 	
 	data_set_cmd.CMD = PT6315_DATA_CMD;
 	data_set_cmd.SETTINGS_MODE = mode;
@@ -301,7 +321,7 @@ static void PT6315_SendDataSetCmd(PT6315_GInst_t *device,
  **/
 static void PT6315_SetAddress(PT6315_GInst_t *device, uint8_t address)
 {
-	PT6315_AddressSetCmd_t addr_set_cmd;
+	PT6315_ADDRESS_SET_CMD_t_t addr_set_cmd;
 	
 	addr_set_cmd.CMD = PT6315_ADDR_CMD;
 	addr_set_cmd.ADDR = address;

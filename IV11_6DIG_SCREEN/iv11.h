@@ -98,6 +98,7 @@ typedef struct
 void IV11_Init(IV11_GInst_t *device);
 void IV11_TestScreen0(IV11_GInst_t *device);
 void IV11_TestScreen1(IV11_GInst_t *device);
+void IV11_ClearDisplay(IV11_GInst_t *device);
 void IV11_SetTime(IV11_GInst_t *device, uint8_t hours, uint8_t minutes, uint8_t seconds);
 void IV11_DotState(IV11_GInst_t *device, uint8_t dot_number, uint8_t state);
 

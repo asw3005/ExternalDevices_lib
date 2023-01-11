@@ -21,7 +21,7 @@ static const uint8_t IV11_CLOCK_DOT[6][2] =
 
 /* Number graph constants.  */
 static const uint8_t IV11_CLOCK_NUMBERS_PACK[12] = {		
-	// "0"					 "1"					  "2"
+	// "0" "1"	 "2"
 	0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F, 0x00, 0x40
 };
 
@@ -45,17 +45,31 @@ static PT6315_GInst_t pt6315_ginst = {
 /* Public functions. */
 
 /*
- * @brief Cleare RAM into the external VFD driver and drow the clock face.
+ * @brief Clear RAM into the external VFD driver and drow the clock face.
  * 
  * @param device : instance of the IV11_GInst_t struct.
  *
  **/
 void IV11_Init(IV11_GInst_t *device)
 {
-	PT6315_Init(&pt6315_ginst);
+	PT6315_Init(&pt6315_ginst, PT6315_6DIG_22SEG, PT6315_DISPLAY_ON, PT6315_PULSE_WIDTH_14_16);
 }
 
-
+/*
+ * @brief Clear display.
+ * 
+ * @param device : instance of the IV11_GInst_t struct.
+ *
+ **/
+void IV11_ClearDisplay(IV11_GInst_t *device)
+{
+	device->tx_7seg_data_fptr(8, 0);
+	device->tx_7seg_data_fptr(7, 0);
+	device->tx_7seg_data_fptr(5, 0);
+	device->tx_7seg_data_fptr(4, 0);
+	device->tx_7seg_data_fptr(2, 0);
+	device->tx_7seg_data_fptr(1, 0);	
+}
 
 /*
  * @brief Drives the clock, its arrows.
