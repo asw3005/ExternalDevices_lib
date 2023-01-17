@@ -8,23 +8,21 @@
 /**
  ** @brief Constants
  **/
-#define ADDR_HTU21D_SHIFTED             0x80	//7 bit MSB 0x76 (address) + 1 bit LSB 0x00 (read/write)
-#define ADDR_HTU21D						0x40	//It's not shifted address
-#define WRITE_MODE						0x00	//			
-#define READ_MODE						0x01	//
+#define HTU21D_ADDR_SHIFTED             0x80	//7 bit MSB 0x76 (address) + 1 bit LSB 0x00 (read/write)
+#define HTU21D_ADDR						0x40	//It's not shifted address
 
 /**
  ** @brief Internal command SI7021
  **/
 static enum {
 	
-	TRIGGER_TEMPERATURE_MEASUREMENT_HOLD_MASTER		= 0xE3,
-	TRIGGER_HUMIDITY_MEASUREMENT_HOLD_MASTER		= 0xE5,
-	TRIGGER_TEMPERATURE_MEASUREMENT_NO_HOLD_MASTER	= 0xF3,
-	TRIGGER_HUMIDITY_MEASUREMENT_NO_HOLD_MASTER		= 0xF5,
-	WRITE_USER_REGISTER								= 0xE6,
-	READ_USER_REGISTER								= 0xE7,
-	SOFT_RESET_HTU21D								= 0xFE,
+	HTU21D_TRIGGER_TEMPERATURE_MEASUREMENT_HOLD_MASTER		= 0xE3,
+	HTU21D_TRIGGER_HUMIDITY_MEASUREMENT_HOLD_MASTER			= 0xE5,
+	HTU21D_TRIGGER_TEMPERATURE_MEASUREMENT_NO_HOLD_MASTER	= 0xF3,
+	HTU21D_TRIGGER_HUMIDITY_MEASUREMENT_NO_HOLD_MASTER		= 0xF5,
+	HTU21D_WRITE_USER_REGISTER								= 0xE6,
+	HTU21D_READ_USER_REGISTER								= 0xE7,
+	HTU21D_SOFT_RESET_HTU21D								= 0xFE,
 
 } InternalCommandHTU21D_enum;
 
@@ -40,15 +38,16 @@ static enum {
  ** @retval zero -> Success / +ve value -> Warning / -ve value -> Error
  **/
 typedef int8_t(*htu21d_communication_fptr)(uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size);
+//typedef int8_t(*htu21d_communication_alt_fptr)(uint8_t DevAddress, uint8_t *pData, uint16_t Size);
 typedef void(*htu21d_delay_fptr)(uint32_t period);
 
 /**
  ** @brief TempHumPress struct
  **/
 typedef struct {
-	int32_t TemperatureC;
-	int32_t TemperatureF;
-	uint32_t HumidityRH;
+	float TemperatureC;
+	float TemperatureF;
+	float HumidityRH;
 	
 } TempHumStructHTU21D_typedef;
 
@@ -107,8 +106,8 @@ typedef struct {
  **/
 
 //Get temperature
-TempHumStructHTU21D_typedef* getHTU21DTemp(HTU21D_typedef *dev_htu21d);	
+void HTU21D_GetTemp(HTU21D_typedef *dev_htu21d);	
 //Get humidity
-TempHumStructHTU21D_typedef* getHTU21DHum(HTU21D_typedef *dev_htu21d); 		
+void HTU21D_GetHum(HTU21D_typedef *dev_htu21d); 		
 //Set configuration register
-void setConfugurationHTU21D(uint8_t measurement_resolution, uint8_t heater_en, HTU21D_typedef *dev_htu21d);
+void HTU21D_SetConfuguration(HTU21D_typedef *dev_htu21d, uint8_t measurement_resolution, uint8_t heater_en);

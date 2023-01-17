@@ -1,0 +1,86 @@
+/**
+ ** @brief Reading temperature from lps22h sensor task 
+ **/
+static void LPS22H_ReadDataTask(void)
+{
+	static LPS22H_typedef dev_lps22h_inst0 = { 
+	
+		.dev_address = LPS22H_ADDR_SHIFTED,
+		.read_data_i2c = user_i2c_read,
+		.write_data_i2c = user_i2c_write,
+		.delay = user_delay_ms,
+	};
+	
+	//vTaskDelay(10);
+	xSemaphoreTake(mutI2C1Handle, portMAX_DELAY);
+	pca9546_instance0.drive_reset_pin(PCA9546_RSTPIN_SET);
+	//driveResetPin(PCA9546_RSTPIN_SET);
+	PCA9546_SelectChannel(PCA9546_CHANNEL_LPS22, &pca9546_instance0);
+	LPS22H_InitDevice(&dev_lps22h_inst0);
+	xSemaphoreGive(mutI2C1Handle);
+	
+	for (;;)
+	{
+		LPS22H_TempPressStruct_typedef *dev_compensated_data_lps22h_inst0;
+		
+		xSemaphoreTake(mutI2C1Handle, portMAX_DELAY);
+		PCA9546_SelectChannel(PCA9546_CHANNEL_HTS221, &pca9546_instance0);
+		dev_compensated_data_lps22h_inst0 = LPS22H_Get_DataTempPress(&dev_lps22h_inst0);
+		xSemaphoreGive(mutI2C1Handle);
+		vTaskDelay(1000);		
+	
+	}
+}
+
+
+//additional function
+#include "stm32l4xx_hal.h"
+
+/**
+ ** @brief Read i2c function for external device library 
+ **/
+int8_t user_i2c_read(uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)
+{
+	int8_t rslt = 1; /* Return 0 for Success, non-zero for failure */
+
+	//HAL_Delay(2);
+	rslt = HAL_I2C_Mem_Read_IT(&hi2c1, DevAddress, MemAddress, MemAddSize, pData, Size);
+	HAL_Delay(1);
+	return rslt = 0;
+}
+
+/**
+ ** @brief Write i2c function for external device library 
+ **/
+int8_t user_i2c_write(uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)
+{
+	int8_t rslt = 1; /* Return 0 for Success, non-zero for failure */
+
+	//HAL_Delay(2);
+	rslt = HAL_I2C_Mem_Write_IT(&hi2c1, DevAddress, MemAddress, MemAddSize, pData, Size);
+	HAL_Delay(1);
+	return rslt = 0;
+}
+
+/**
+ ** @brief Alternative write  function for external device library 
+ **/
+int8_t user_i2c_write_alt(uint8_t dev_addr, uint8_t data, uint16_t len)
+{
+	int8_t rslt = 1; /* Return 0 for Success, non-zero for failure */
+	
+	static uint8_t tmp_data;
+	tmp_data = data;
+	rslt = HAL_I2C_Master_Transmit_IT(&hi2c1, dev_addr, &tmp_data, len);
+	
+	return rslt = 0;
+}
+
+/**
+ ** @brief Delay function for external device library 
+ **/
+void user_delay_ms(uint32_t period)
+{
+	vTaskDelay(period);
+	//HAL_Delay(period);
+}

@@ -1,0 +1,44 @@
+/*
+ * #brief Testing.
+ *
+ **/
+static void DS12887_TaskImpl()
+{		
+	///Create clock data instance.
+	DS12887_GDataInstance_typedef ds12887_inst0 = { 
+			
+		.delay = HAL_Delay,
+		.tx_data = DS12887_WriteI,
+		.rx_data = DS12887_ReadI
+	};
+	DS12887_Get_ControlRegC(&ds12887_inst0);
+	DS12887_Get_ControlRegD(&ds12887_inst0);
+	DS12887_Set_ControlRegA(&ds12887_inst0, DS12887_SQW_2Hz, DS12887_OSC_ON);
+	DS12887_Set_ControlRegB(&ds12887_inst0,
+							DS12887_DAYLIGHT_DIS,
+							DS12887_CLOCK_FORMAT_24HOURS,
+							DS12887_DATA_FORMAT_BCD,
+							DS12887_SQW_EN,
+							DS12887_UPDATE_ENDED_INTERRUPT_EN,
+							DS12887_ALARM_INTERRUPT_DIS,
+							DS12887_PERIODIC_INTERRUPT_DIS,
+							DS12887_UPDATE_NORMAL);
+	DS12887_Set_Time(&ds12887_inst0,
+		DS12887_HOUR_OF_DAY_NONE,
+		15,
+		13,
+		0);
+	
+	
+	DS12887_Set_Alarm(&ds12887_inst0, DS12887_HOUR_OF_DAY_NONE, 22, 22, 22);
+	DS12887_Set_Date(&ds12887_inst0, 1, 21, 12, 20);
+	
+	for(; /*|__|*/ ;)
+	{
+		//Get date and time.
+		DS12887_Get_TimeDate(&ds12887_inst0);			
+		xQueueSend(TimeDate_QueueHandle, &ds12887_inst0.clock, 0);		
+		vTaskDelay(1000);	
+	}
+}
+

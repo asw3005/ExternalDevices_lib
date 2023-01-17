@@ -1,0 +1,42 @@
+/* It used I2C to 1-Wire transceiver. Full test is not completed. */
+
+/*
+ * @brief Temperature sensor task.
+ *
+ **/
+static void DS18B20_TaskImpl()
+{
+	//Variable.
+	uint8_t tTimer = 0;	
+	uint8_t isAvailableSensor = 0;
+	
+	///Create instance of ds18b20's data struct.
+	DS18B20_GInst_t ds18b20_instance0 = { 
+
+		.delay = HAL_Delay,
+		.reset_bus = DS18B20_1WireReset,
+		.strong_pull_up = DS18B20_SPU,
+		.tx_data = DS18B20_TxData,
+		.rx_data = DS18B20_RxData
+	};
+	
+	/* Sleep pin of the DS2484 I2C to 1-Wire transceiver. */
+	HAL_GPIO_WritePin(DS2484_SLPZ_GPIO_Port, DS2484_SLPZ_Pin, GPIO_PIN_SET);
+	vTaskDelay(20000);
+	
+	
+	for (;;)
+	{		
+		//Check connection with sensor.
+		isAvailableSensor = DS18B20_DeviceDetect(&ds18b20_instance0);
+		///Measures tempereture. 
+		if(isAvailableSensor)
+		{
+			DS18B20_Get_PowerSupplyType(&ds18b20_instance0);						
+			DS18B20_Get_Temperature(&ds18b20_instance0, ONEWIRE_SKIP_ROM, DS18B20_FULL_SCRATCHPAD);
+			//xSemaphoreGive(TSensor_SemaphoreHandle);
+			xQueueSend(TemperatureData_QueueHandle, &ds18b20_instance0.converted_data.Temperature, 0);	
+		}
+		vTaskDelay(20000);
+	}
+}

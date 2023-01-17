@@ -13,6 +13,10 @@ static int32_t HTS221_Temperature_Conv(HTS221_typedef *dev_hts221);
 static uint32_t HTS221_Humidity_Conv(HTS221_typedef *dev_hts221);     
 static void HTS221_Get_Calibration_Data(HTS221_typedef *dev_hts221); 
 static void HTS221_Get_ID(HTS221_typedef *dev_hts221);
+static void HTS221_Set_Av_Conf(HTS221_typedef *dev_hts221, HTS221_AvConf av_conf_t, HTS221_AvConf av_conf_h);
+static void HTS221_Set_Ctrl_Reg_1(HTS221_typedef *dev_hts221, HTS221_CtrlReg1 odr, HTS221_CtrlReg1 bdu, HTS221_CtrlReg1 pd);
+static void HTS221_Set_Ctrl_Reg_2(HTS221_typedef *dev_hts221, HTS221_CtrlReg2 one_shot, HTS221_CtrlReg2 heater, HTS221_CtrlReg2 boot); 
+static void HTS221_Set_Ctrl_Reg_3(HTS221_typedef *dev_hts221, HTS221_CtrlReg3 drdy_en, HTS221_CtrlReg3 pp_od, HTS221_CtrlReg3 drdy_h_l);
 
 
 
@@ -26,10 +30,10 @@ void HTS221_Init_Device(HTS221_typedef *dev_hts221)
 {	
 	
 	//Config work mode for device
-	HTS221_Set_Av_Conf(dev_hts221, AVG_T16_H32, AVG_T16_H32);
-	HTS221_Set_Ctrl_Reg_1(dev_hts221, ODR_RATE_H1T1Hz, BDU_CONTINUOUS_UPDATE, PD_ACTIVE_MODE);
-	HTS221_Set_Ctrl_Reg_2(dev_hts221, ONE_SHOT_DIS, HEATER_DIS, BOOT_NORMAL_MODE);
-	HTS221_Set_Ctrl_Reg_3(dev_hts221, DRDY_DIS, PP_OD_PUSH_PULL, DRDY_H_L_ACTIVE_HIGH);
+	HTS221_Set_Av_Conf(dev_hts221, HTS221_AVG_T16_H32, HTS221_AVG_T16_H32);
+	HTS221_Set_Ctrl_Reg_1(dev_hts221, HTS221_ODR_RATE_H1T1Hz, HTS221_BDU_CONTINUOUS_UPDATE, HTS221_PD_ACTIVE_MODE);
+	HTS221_Set_Ctrl_Reg_2(dev_hts221, HTS221_ONE_SHOT_DIS, HTS221_HEATER_DIS, HTS221_BOOT_NORMAL_MODE);
+	HTS221_Set_Ctrl_Reg_3(dev_hts221, HTS221_DRDY_DIS, HTS221_PP_OD_PUSH_PULL, HTS221_DRDY_H_L_ACTIVE_HIGH);
 	
 	HTS221_Get_Calibration_Data(dev_hts221);
 	HTS221_Get_ID(dev_hts221);
@@ -48,7 +52,7 @@ HTS221_TempHumPressStruct_typedef* HTS221_Get_Data_Temp_Hum(HTS221_typedef *dev_
 	dev_hts221->dev_compensated_data.TemperatureF = ((HTS221_Temperature_Conv(dev_hts221) * 18) + 32000) / 10;
 	dev_hts221->dev_compensated_data.HumidityRH = HTS221_Humidity_Conv(dev_hts221);
 	
-	dev_hts221->read_data_i2c(dev_hts221->dev_address, STATUS_REG, 1, (uint8_t *)(&dev_hts221->dev_uncompensated_data), sizeof(dev_hts221->dev_uncompensated_data));
+	dev_hts221->read_data_i2c(dev_hts221->dev_address, HTS221_STATUS_REG, 1, (uint8_t *)(&dev_hts221->dev_uncompensated_data), sizeof(dev_hts221->dev_uncompensated_data));
 	dev_hts221->delay(1);
 	
 	return  &dev_hts221->dev_compensated_data;
@@ -63,7 +67,7 @@ HTS221_TempHumPressStruct_typedef* HTS221_Get_Data_Temp_Hum(HTS221_typedef *dev_
 static void HTS221_Get_Calibration_Data(HTS221_typedef *dev_hts221)                              
 {
 	//write receive's register address to hts221 Config Struct
-	dev_hts221->read_data_i2c(dev_hts221->dev_address, CALIB_START, 1, (uint8_t *)&dev_hts221->dev_calibration_data, sizeof(dev_hts221->dev_calibration_data));
+	dev_hts221->read_data_i2c(dev_hts221->dev_address, HTS221_CALIB_START, 1, (uint8_t *)&dev_hts221->dev_calibration_data, sizeof(dev_hts221->dev_calibration_data));
 	dev_hts221->delay(1);
 }
 
@@ -76,7 +80,7 @@ static void HTS221_Get_Calibration_Data(HTS221_typedef *dev_hts221)
 static void HTS221_Get_ID(HTS221_typedef *dev_hts221)                              
 {
 	//write receive's register address to hts221 Config Struct
-	dev_hts221->read_data_i2c(dev_hts221->dev_address, WHO_AM_I, 1, (uint8_t *)(&dev_hts221->dev_compensated_data.dev_id), sizeof(dev_hts221->dev_compensated_data.dev_id));
+	dev_hts221->read_data_i2c(dev_hts221->dev_address, HTS221_WHO_AM_I, 1, (uint8_t *)(&dev_hts221->dev_compensated_data.dev_id), sizeof(dev_hts221->dev_compensated_data.dev_id));
 	dev_hts221->delay(1);
 }
 
@@ -88,13 +92,13 @@ static void HTS221_Get_ID(HTS221_typedef *dev_hts221)
  **	@param[in] av_conf_h : select the numbers of averaged humidity samples, refer value to HTS221_Av_Conf_enum.
  **	
  **/
-void HTS221_Set_Av_Conf(HTS221_typedef *dev_hts221, HTS221_AvConf av_conf_t, HTS221_AvConf av_conf_h)                              
+static void HTS221_Set_Av_Conf(HTS221_typedef *dev_hts221, HTS221_AvConf av_conf_t, HTS221_AvConf av_conf_h)                              
 {
 	dev_hts221->dev_configuration.bitsAvConf.avgt_5_3 = av_conf_t;
 	dev_hts221->dev_configuration.bitsAvConf.avgh_2_0 = av_conf_h;
 	dev_hts221->dev_configuration.bitsAvConf.reserved_7_6 = 0;
 	
-	dev_hts221->write_data_i2c(dev_hts221->dev_address, AV_CONF, 1, &dev_hts221->dev_configuration.Av_Conf, sizeof(dev_hts221->dev_configuration.Av_Conf));
+	dev_hts221->write_data_i2c(dev_hts221->dev_address, HTS221_AV_CONF, 1, &dev_hts221->dev_configuration.Av_Conf, sizeof(dev_hts221->dev_configuration.Av_Conf));
 	dev_hts221->delay(1); 
 }
 
@@ -107,13 +111,13 @@ void HTS221_Set_Av_Conf(HTS221_typedef *dev_hts221, HTS221_AvConf av_conf_t, HTS
  **	@param[in] pd : power-down control, 0: power-down mode, 1: active mode.
  **	
  **/
-void HTS221_Set_Ctrl_Reg_1(HTS221_typedef *dev_hts221, HTS221_CtrlReg1 odr, HTS221_CtrlReg1 bdu, HTS221_CtrlReg1 pd)                              
+static void HTS221_Set_Ctrl_Reg_1(HTS221_typedef *dev_hts221, HTS221_CtrlReg1 odr, HTS221_CtrlReg1 bdu, HTS221_CtrlReg1 pd)                              
 {
 	dev_hts221->dev_configuration.bitsCtrlReg1.odr_1_0 = odr;
 	dev_hts221->dev_configuration.bitsCtrlReg1.bdu = bdu;
 	dev_hts221->dev_configuration.bitsCtrlReg1.pd = pd;	
 	
-	dev_hts221->write_data_i2c(dev_hts221->dev_address, CTRL_REG_1, 1, &dev_hts221->dev_configuration.CtrlReg1, sizeof(dev_hts221->dev_configuration.CtrlReg1));
+	dev_hts221->write_data_i2c(dev_hts221->dev_address, HTS221_CTRL_REG_1, 1, &dev_hts221->dev_configuration.CtrlReg1, sizeof(dev_hts221->dev_configuration.CtrlReg1));
 	dev_hts221->delay(1); 
 }
 
@@ -126,13 +130,13 @@ void HTS221_Set_Ctrl_Reg_1(HTS221_typedef *dev_hts221, HTS221_CtrlReg1 odr, HTS2
  **	@param[in] boot : reboot memory content, 0: normal mode, 1: reboot memory content.
  **	
  **/
-void HTS221_Set_Ctrl_Reg_2(HTS221_typedef *dev_hts221, HTS221_CtrlReg2 one_shot, HTS221_CtrlReg2 heater, HTS221_CtrlReg2 boot)                              
+static void HTS221_Set_Ctrl_Reg_2(HTS221_typedef *dev_hts221, HTS221_CtrlReg2 one_shot, HTS221_CtrlReg2 heater, HTS221_CtrlReg2 boot)                              
 {
 	dev_hts221->dev_configuration.bitsCtrlReg2.one_shot = one_shot;
 	dev_hts221->dev_configuration.bitsCtrlReg2.heater = heater;
 	dev_hts221->dev_configuration.bitsCtrlReg2.boot = boot;	
 	
-	dev_hts221->write_data_i2c(dev_hts221->dev_address, CTRL_REG_2, 1, &dev_hts221->dev_configuration.CtrlReg2, sizeof(dev_hts221->dev_configuration.CtrlReg2));
+	dev_hts221->write_data_i2c(dev_hts221->dev_address, HTS221_CTRL_REG_2, 1, &dev_hts221->dev_configuration.CtrlReg2, sizeof(dev_hts221->dev_configuration.CtrlReg2));
 	dev_hts221->delay(1); 
 }
 
@@ -145,13 +149,13 @@ void HTS221_Set_Ctrl_Reg_2(HTS221_typedef *dev_hts221, HTS221_CtrlReg2 one_shot,
  **	@param[in] boot : reboot memory content, 0: normal mode, 1: reboot memory content.
  **	
  **/
-void HTS221_Set_Ctrl_Reg_3(HTS221_typedef *dev_hts221, HTS221_CtrlReg3 drdy_en, HTS221_CtrlReg3 pp_od, HTS221_CtrlReg3 drdy_h_l)                              
+static void HTS221_Set_Ctrl_Reg_3(HTS221_typedef *dev_hts221, HTS221_CtrlReg3 drdy_en, HTS221_CtrlReg3 pp_od, HTS221_CtrlReg3 drdy_h_l)                              
 {
 	dev_hts221->dev_configuration.bitsCtrlReg3.drdy_en = drdy_en;
 	dev_hts221->dev_configuration.bitsCtrlReg3.pp_od = pp_od;
 	dev_hts221->dev_configuration.bitsCtrlReg3.drdy_h_l = drdy_h_l;	
 	
-	dev_hts221->write_data_i2c(dev_hts221->dev_address, CTRL_REG_3, 1, &dev_hts221->dev_configuration.CtrlReg3, sizeof(dev_hts221->dev_configuration.CtrlReg3));
+	dev_hts221->write_data_i2c(dev_hts221->dev_address, HTS221_CTRL_REG_3, 1, &dev_hts221->dev_configuration.CtrlReg3, sizeof(dev_hts221->dev_configuration.CtrlReg3));
 	dev_hts221->delay(1); 
 }
 

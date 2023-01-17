@@ -1,0 +1,32 @@
+/*
+ * #brief
+ *
+ **/
+static void DS3231_TaskImpl()
+{	
+	//Static variable.	
+	
+	///Create clock data instance.
+	DS3231_GDataInstance_typedef ds3231_inst0 = { 
+			
+		.delay = HAL_Delay,
+		.i2c_tx_data = I2C_Transmit_IT,
+		.i2c_rx_data = I2C_Receive_IT
+	};
+	
+	//DS3231_Set_Time(&ds3231_inst0, DS3231_CLOCK_FORMAT_24HOURS, 8, 11, 30);
+	//DS3231_Set_Date(&ds3231_inst0, 3, 14, 10, 20);
+	//DS3231_Set_Alarm1(&ds3231_inst0, DS3231_ALARM_HOURS_MINUTES_SECONDS_MATCH, DS3231_CLOCK_FORMAT_24HOURS, 0, 30, 15, 4);
+	//DS3231_Set_Alarm2(&ds3231_inst0, DS3231_ALARM_HOURS_MINUTES_SECONDS_MATCH, DS3231_CLOCK_FORMAT_24HOURS, 30, 15, 4);
+	DS3231_Set_ControlReg(&ds3231_inst0, 0, 0, 0, DS3231_SQW_1Hz, 0, 0, 0);
+	//DS3231_Get_TimeDate(&ds3231_inst0);	
+
+	
+	for(;/*|__|*/;)
+	{
+		//Get date and time.
+		DS3231_Get_TimeDate(&ds3231_inst0);			
+		xQueueSend(TimeData_QueueHandle, &ds3231_inst0.clock, 0);		
+		vTaskDelay(1000);	
+	}
+}

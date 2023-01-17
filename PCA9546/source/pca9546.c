@@ -13,9 +13,9 @@
 /**
  ** @brief Select channel function
  **/
-void selectChannel(CHANNEL_enum channel, PCA9546_CONF_typedef *dev_instance)
+void PCA9546_SelectChannel(PCA9546_Conf_typedef *dev_instance, PCA9546_Channel channel)
 {
-	dev_instance->write_data_i2c(dev_instance->dev_address, channel, 1);
-	dev_instance->delay(1);
-		
+	dev_instance->dev_configuration = channel;
+	dev_instance->write_data_i2c(dev_instance->dev_address, &dev_instance->dev_configuration, 1);
+	dev_instance->delay(1);		
 }

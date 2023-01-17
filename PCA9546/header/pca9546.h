@@ -7,32 +7,25 @@
 /**
  ** @brief Configuration i2c multiplexor
  **/
-#define ADDR_PCA9546            0x70
-#define ADDR_PCA9546_SHIFTED	0xE0
+#define PCA9546_ADDR            0x70
+#define PCA9546_ADDR_SHIFTED	0xE0
 
-#define CHANNEL_0		0x02
-#define CHANNEL_1		0x01
-#define CHANNEL_2		0x04
-#define CHANNEL_3		0x08
-
-//#define CHANNEL_BME280	CHANNEL_1
-//#define CHANNEL_SI7021	CHANNEL_0
-//#define CHANNEL_HTS221	CHANNEL_2
-//#define CHANNEL_LPS22	CHANNEL_3
-
+#define PCA9546_CHANNEL_0		0x02
+#define PCA9546_CHANNEL_1		0x01
+#define PCA9546_CHANNEL_2		0x04
+#define PCA9546_CHANNEL_3		0x08
 
 /**
  ** @brief Device specific function type
  ** 
  ** @param[in] dev_addr : Device address on the I2C bus
- ** @param[in] reg_addr : Register address for device
  ** @param[in] *data : Pointer on data struct instance
  ** @param[in] len : Length of transmition/reception data
  **
  ** @return Result of API execution status
  ** @retval zero -> Success / +ve value -> Warning / -ve value -> Error
  **/
-typedef int8_t(*pca9546_communication_fptr)(uint8_t dev_addr, uint8_t data, uint16_t len);
+typedef int8_t(*pca9546_communication_fptr)(uint8_t dev_addr, uint8_t *data, uint16_t len);
 typedef void(*pca9546_reset_pin_driver_fptr)(uint8_t drive_reset_pin);
 typedef void(*pca9546_delay_fptr)(uint32_t period);
 
@@ -41,13 +34,14 @@ typedef void(*pca9546_delay_fptr)(uint32_t period);
  **/
 typedef enum
 {
-	CHANNEL_BME280  =    CHANNEL_1,
-	CHANNEL_SI7021  =    CHANNEL_0,
-	CHANNEL_HTS221  =    CHANNEL_2,
-	CHANNEL_LPS22   =    CHANNEL_3,
-	CHANNEL_HTU21D  =    CHANNEL_1
+	PCA9546_CHANNEL_BME280  =	PCA9546_CHANNEL_0,
+	PCA9546_CHANNEL_BMP280	=	PCA9546_CHANNEL_0,
+	PCA9546_CHANNEL_SI7021  =	PCA9546_CHANNEL_0,
+	PCA9546_CHANNEL_HTS221  =	PCA9546_CHANNEL_2,
+	PCA9546_CHANNEL_LPS22   =	PCA9546_CHANNEL_3,
+	PCA9546_CHANNEL_HTU21D  =	PCA9546_CHANNEL_1
 	
-} CHANNEL_enum;
+} PCA9546_Channel;
 
 /**
  ** @brief Reset pin state
@@ -57,7 +51,7 @@ typedef enum
 	PCA9546_RSTPIN_RESET = 0x00,
     PCA9546_RSTPIN_SET = 0x01,
 	
-} RESET_PIN_STATE_enum;
+} PCA9546_ResetPinState;
 
 /**
  ** @brief Multiplexer config struct
@@ -70,11 +64,11 @@ typedef struct
 	pca9546_reset_pin_driver_fptr drive_reset_pin;
 	pca9546_delay_fptr delay;	
 	
-} PCA9546_CONF_typedef;
+} PCA9546_Conf_typedef;
 
 /**
  ** @brief Public function prototype
  **/
 
 //Select pca9546 channel
-void selectChannel(CHANNEL_enum channel, PCA9546_CONF_typedef *dev_instance);
+void PCA9546_SelectChannel(PCA9546_Conf_typedef *dev_instance, PCA9546_Channel channel);

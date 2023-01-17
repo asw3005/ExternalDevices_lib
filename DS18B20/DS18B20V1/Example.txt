@@ -1,0 +1,190 @@
+//additional function
+#include "stm32l4xx_hal.h"
+
+//Usart helpful functions
+void UART_Init_Baud(uint32_t baud);
+void UART_Receive_IT(uint8_t *buffer, uint8_t size);
+void UART_Transmit_IT(uint8_t *buffer, uint8_t size);
+void UART_ParasitePinRemote(uint8_t pull_up);
+void printObjectData(DS18B20_GeneralDataInstance_typedef *device, uint8_t *char_buffer);
+
+
+/*
+ * @brief Your Serial number or use DS18B20_Get_LaserRomCode
+ * The sensor ID must be your own! Read it from the your sensor.
+ **/
+static uint64_t SerialNumber[4] = { 
+	0x7000000BA532A428,
+	0,
+	0,
+	0
+};
+
+/*
+ * @brief Reading temperature from the DS18B20 sensor.
+ *
+ **/
+static void DS18B20_ReadDataTaskImpl()
+{
+		//Message buffer.
+	uint8_t buffer[100];
+	uint8_t messageLength = 0;
+	///Create instance of ds18b20's data struct.
+	static DS18B20_GeneralDataInstance_typedef ds18b20_instance0 = { 
+
+		.strong_pull_up = UART_ParasitePinRemote,
+		.isReceiveComplete = (uint16_t *) &huart3.TxXferCount,
+		.uart_init_baud = UART_Init_Baud,	
+		.uart_rx_data = UART_Receive_IT,
+		.uart_tx_data = UART_Transmit_IT,
+		.delay = HAL_Delay
+
+	};	
+	
+	DS18B20_DeviceDetect(&ds18b20_instance0);
+	DS18B20_Get_PowerSupplyType(&ds18b20_instance0);
+	//Use it, if you have no sensor ID in the variable SerialNumber above. 
+	//Sensor ID must be your own! Read it from the your sensor.
+	//DS18B20_Get_LaserRomCode(&ds18b20_instance0);
+	//DS18B20_Set_ThresholdAndControl(&ds18b20_instance0, ONEWIRE_MATCH_ROM, 0x4B, 0x46, MEASUREMENT_RESOLUTION_12BIT);
+	//DS18B20_CopyScratchpadToEeprom(&ds18b20_instance0, ONEWIRE_MATCH_ROM);
+	DS18B20_Set_LaserRomCode(&ds18b20_instance0, SerialNumber[0]);
+	DS18B20_ReadScratchpadBytes(&ds18b20_instance0, ONEWIRE_MATCH_ROM, DS18B20_FULL_SCRATCHPAD);
+	printObjectData(&ds18b20_instance0, buffer);
+//	DS18B20_Set_LaserRomCode(&ds18b20_instance0, SerialNumber[1]);
+//	DS18B20_ReadScratchpadBytes(&ds18b20_instance0, ONEWIRE_MATCH_ROM, DS18B20_FULL_SCRATCHPAD);	
+//	printObjectData(&ds18b20_instance0, buffer);
+	
+	for (;;)
+	{
+		//HAL_GetTick();
+		vTaskDelay(250);
+		 //Use it, if you don't use DS18B20_Get_LaserRomCode above.
+		DS18B20_Set_LaserRomCode(&ds18b20_instance0, SerialNumber[0]);
+		DS18B20_Get_Temperature(&ds18b20_instance0, ONEWIRE_MATCH_ROM, DS18B20_FULL_SCRATCHPAD);
+		messageLength  = snprintf((char*)buffer, sizeof(buffer), "DS18B20_0 temperature is %5.2f °C\r\n", ds18b20_instance0.converted_data.Temperature);
+		HAL_UART_Transmit_DMA(&huart3, buffer, messageLength);
+		
+//		vTaskDelay(250);
+//		DS18B20_Set_LaserRomCode(&ds18b20_instance0, SerialNumber[1]);
+//		DS18B20_Get_Temperature(&ds18b20_instance0, ONEWIRE_MATCH_ROM, FULL_SCRATCHPAD);
+//		messageLength  = snprintf((char*)buffer, sizeof(buffer), "DS18B20_1 temperature is %5.2f °C\r\n", ds18b20_instance0.converted_data.Temperature);
+//		HAL_UART_Transmit_IT(&huart2, buffer, messageLength);
+
+
+	}
+}
+
+/*
+ * @brief Usart baud rate reinitialisation.
+ *
+ **/
+void UART_Init_Baud(uint32_t baud)
+{
+	huart2.Instance = USART2;
+	huart2.Init.BaudRate = baud;
+	huart2.Init.WordLength = UART_WORDLENGTH_8B;
+	huart2.Init.StopBits = UART_STOPBITS_1;
+	huart2.Init.Parity = UART_PARITY_NONE;
+	huart2.Init.Mode = UART_MODE_TX_RX;
+	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&huart2) != HAL_OK)
+	{
+		for (;;) ;
+	}
+ }
+
+/*
+ * @brief 
+ *
+ **/
+static void UART_Receive_IT(uint8_t *buffer, uint8_t size)
+{
+	HAL_UART_Receive_IT(&huart3, buffer, size);
+	//HAL_UART_Receive_DMA(&huart3, buffer, size);
+}
+
+static void UART_Transmit_IT(uint8_t *buffer, uint8_t size)
+{
+	HAL_UART_Transmit_IT(&huart3, buffer, size);
+	//HAL_UART_Transmit_DMA(&huart3, buffer, size);
+}
+
+/*
+ * @brief USART2 GPIO Reconfiguration 
+ *
+ **/
+void UART_ParasitePinRemote(uint8_t pull_up)
+{		
+	/**   
+	PD5     ------> USART2_TX
+	*/
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	
+	GPIO_InitStruct.Pin = GPIO_PIN_5;
+	if (pull_up > 0)
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	}
+	else
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	}
+	
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+}
+
+/**
+ ** @brief Delay function for external device library 
+ **/
+void user_delay_ms(uint32_t period)
+{
+	vTaskDelay(period);
+	//HAL_Delay(period);
+}
+
+/*
+ * @brief Note, use your own huart.
+ *
+ **/
+void printObjectData(DS18B20_GeneralDataInstance_typedef *device, uint8_t *char_buffer)
+{
+	uint8_t messageLength;
+	
+	messageLength = sprintf((char*)char_buffer,
+		"Serial number %0*X%0*X%0*X%0*X%0*X%0*X%0*X%0*Xh\r\n", 
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[7],
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[6],
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[5],
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[4],
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[3],
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[2],
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[1],
+		2,
+		device->converted_data.partsRomLaserCode.arrayRomLaserCode[0]);
+	HAL_UART_Transmit_DMA(&huart3, char_buffer, messageLength);
+	HAL_Delay(10);	
+	
+	messageLength = sprintf((char*)char_buffer, "Th =  %0*d\r\n", 2, device->scratchpad_data.ThRegister);
+	HAL_UART_Transmit_DMA(&huart3, char_buffer, messageLength);
+	HAL_Delay(10);
+	messageLength = sprintf((char*)char_buffer, "Tl =  %0*d\r\n", 2, device->scratchpad_data.TlRegister);
+	HAL_UART_Transmit_DMA(&huart3, char_buffer, messageLength);
+	HAL_Delay(10);
+	messageLength = sprintf((char*)char_buffer, "Cfg =  %0*X\r\n", 2, device->scratchpad_data.ConfigurationRegister);
+	HAL_UART_Transmit_DMA(&huart3, char_buffer, messageLength);
+	HAL_Delay(10);
+}

@@ -19,7 +19,7 @@ static uint32_t SI7021_Humidity_Conv(SI7021_typedef *dev_si7021);
  **/				
 SI7021_TempHumStruct_typedef* SI7021_Get_Temp(SI7021_typedef *dev_si7021)                              
 {	
-	dev_si7021->read_data_i2c(dev_si7021->dev_address, MEASURE_THOLD_MASTER, 1, &dev_si7021->dev_uncompensated_data.TemperatureMSB, 3);
+	dev_si7021->read_data_i2c(dev_si7021->dev_address, SI7021_MEASURE_THOLD_MASTER, 1, &dev_si7021->dev_uncompensated_data.TemperatureMSB, 3);
 	dev_si7021->delay(15);
 	dev_si7021->dev_compensated_data.TemperatureC = SI7021_Temperature_Conv(dev_si7021) / 10;
 	dev_si7021->dev_compensated_data.TemperatureF = ((dev_si7021->dev_compensated_data.TemperatureC * 18 * 10) + 320000) / 100;
@@ -31,7 +31,7 @@ SI7021_TempHumStruct_typedef* SI7021_Get_Temp(SI7021_typedef *dev_si7021)
  **/					
 SI7021_TempHumStruct_typedef* SI7021_Get_Hum(SI7021_typedef *dev_si7021)                              
 {
-	dev_si7021->read_data_i2c(dev_si7021->dev_address, MEASURE_RHHOLD_MASTER, 1, &dev_si7021->dev_uncompensated_data.HumidityMSB, 3);
+	dev_si7021->read_data_i2c(dev_si7021->dev_address, SI7021_MEASURE_RHHOLD_MASTER, 1, &dev_si7021->dev_uncompensated_data.HumidityMSB, 3);
 	dev_si7021->delay(15);
 	dev_si7021->dev_compensated_data.HumidityRH = SI7021_Humidity_Conv(dev_si7021);
 	return &dev_si7021->dev_compensated_data;
@@ -58,11 +58,11 @@ void SI7021_Set_Confuguration(uint8_t measurement_resolution, uint8_t heater_en,
 	if(heater_en)
 	{
 		dev_si7021->dev_configuration.HeaterControlRegister = heater_value;
-		dev_si7021->write_data_i2c(dev_si7021->dev_address, WRITE_HEATER_CR, 1, &dev_si7021->dev_configuration.HeaterControlRegister, 1);
+		dev_si7021->write_data_i2c(dev_si7021->dev_address, SI7021_WRITE_HEATER_CR, 1, &dev_si7021->dev_configuration.HeaterControlRegister, 1);
 		dev_si7021->delay(5);
 	}
 	
-	dev_si7021->write_data_i2c(dev_si7021->dev_address, WRITE_RHT_USER_REG_1, 1, &dev_si7021->dev_configuration.ControlRegister, 1);
+	dev_si7021->write_data_i2c(dev_si7021->dev_address, SI7021_WRITE_RHT_USER_REG_1, 1, &dev_si7021->dev_configuration.ControlRegister, 1);
 	dev_si7021->delay(5);	
 }
 
@@ -72,20 +72,20 @@ void SI7021_Set_Confuguration(uint8_t measurement_resolution, uint8_t heater_en,
 void SI7021_Get_Electronic_Serial_Number(SI7021_typedef *dev_si7021)                              
 {
 	//write receive's register address to  firmware revision Struct
-	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_msb = READ_ELECTRONIC_ID_FIRST_BYTE_PART1;
-	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_lsb = READ_ELECTRONIC_ID_FIRST_BYTE_PART2;
+	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_msb = SI7021_READ_ELECTRONIC_ID_FIRST_BYTE_PART1;
+	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_lsb = SI7021_READ_ELECTRONIC_ID_FIRST_BYTE_PART2;
 	
 	dev_si7021->read_data_i2c(dev_si7021->dev_address, dev_si7021->dev_twin_cmd, 2, &dev_si7021->dev_electronic_serial_number.SNA_3, 8);
 	dev_si7021->delay(5);
 	
-	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_msb = READ_ELECTRONIC_ID_SECOND_BYTE_PART1;
-	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_lsb = READ_ELECTRONIC_ID_SECOND_BYTE_PART2;
+	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_msb = SI7021_READ_ELECTRONIC_ID_SECOND_BYTE_PART1;
+	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_lsb = SI7021_READ_ELECTRONIC_ID_SECOND_BYTE_PART2;
 	
 	dev_si7021->read_data_i2c(dev_si7021->dev_address, dev_si7021->dev_twin_cmd, 2, &dev_si7021->dev_electronic_serial_number.SNB_3, 6);
 	dev_si7021->delay(5);
 	
-	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_msb = READ_FIRMWARE_REVISION_PART1;
-	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_lsb = READ_FIRMWARE_REVISION_PART2;
+	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_msb = SI7021_READ_FIRMWARE_REVISION_PART1;
+	dev_si7021->dev_twin_cmd_elements.dev_twin_cmd_lsb = SI7021_READ_FIRMWARE_REVISION_PART2;
 	
 	dev_si7021->read_data_i2c(dev_si7021->dev_address, dev_si7021->dev_twin_cmd, 2, &dev_si7021->dev_compensated_data.FirmwareRevision, 1);
 	dev_si7021->delay(5);	

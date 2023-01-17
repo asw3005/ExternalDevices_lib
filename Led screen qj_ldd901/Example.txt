@@ -1,0 +1,12 @@
+void StartDefaultTask(void const * argument)
+{
+	uint8_t seg_numb = 0, greed_numb = 0;
+
+	QJ_LDD901_ScreenInit();
+	vTaskDelay(pdMS_TO_TICKS(100));
+
+	for (;;)
+	{
+		QJ_LDD901_ScreenTest();
+	}
+}

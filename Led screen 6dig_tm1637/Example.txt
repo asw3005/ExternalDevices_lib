@@ -1,0 +1,12 @@
+void StartDefaultTask(void const * argument)
+{
+	uint8_t seg_numb = 0, greed_numb = 0;
+
+	TM1637_ScreenCtrl(TM1637_DISPLAY_ON, TM1637_PULSE_WIDTH_13_16);
+	vTaskDelay(pdMS_TO_TICKS(100));
+
+	for (;;)
+	{
+		TM1637_ScreenTest();
+	}
+}

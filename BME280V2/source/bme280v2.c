@@ -41,7 +41,7 @@ void BME280_Init_Device(BME280_Profile meas_profile, BME280_typedef *dev_bme280)
  ** @param[in] *dev_bme280 : pointer to instance BME280_typedef.
  **
  **/				
-BME280_TempHumPressStruct_typedef* BME280_Get_Data_Press_Temp_Hum(BME280_typedef *dev_bme280)                              
+BME280_TempHumPressStruct_typedef* BME280_Get_PressTempHum(BME280_typedef *dev_bme280)                              
 {
 	dev_bme280->dev_compensated_data.TemperatureC = BME280_Temperature_Conv(dev_bme280);
 	dev_bme280->dev_compensated_data.TemperatureF = ((BME280_Temperature_Conv(dev_bme280) * 18) + 32000) / 10;
@@ -49,7 +49,7 @@ BME280_TempHumPressStruct_typedef* BME280_Get_Data_Press_Temp_Hum(BME280_typedef
 	dev_bme280->dev_compensated_data.PressurePa = BME280_Pressure_Conv(dev_bme280);
 	dev_bme280->dev_compensated_data.PressuremmHg = (((uint64_t) dev_bme280 ->dev_compensated_data.PressurePa * 1000000)) / 133322;
 	
-	dev_bme280->read_data_i2c(dev_bme280->dev_address, CTRL_HUM_ADDR, 1, (uint8_t *)(&dev_bme280->dev_uncompensated_data), sizeof(dev_bme280->dev_uncompensated_data));
+	dev_bme280->read_data_i2c(dev_bme280->dev_address, BME280_CTRL_HUM_ADDR, 1, (uint8_t *)(&dev_bme280->dev_uncompensated_data), sizeof(dev_bme280->dev_uncompensated_data));
 	dev_bme280->delay(1);
 	
 	return  &dev_bme280->dev_compensated_data;
@@ -64,7 +64,7 @@ BME280_TempHumPressStruct_typedef* BME280_Get_Data_Press_Temp_Hum(BME280_typedef
 void BME280_Get_Calibration_Data(BME280_typedef *dev_bme280)                              
 {
 	//write receive's register address to bme280 Config Struct
-	dev_bme280->read_data_i2c(dev_bme280->dev_address, CALIB00_START_ADDR, 1, (uint8_t *)&dev_bme280->dev_calibration_data, sizeof(dev_bme280->dev_calibration_data));
+	dev_bme280->read_data_i2c(dev_bme280->dev_address, BME280_CALIB00_START_ADDR, 1, (uint8_t *)&dev_bme280->dev_calibration_data, sizeof(dev_bme280->dev_calibration_data));
 	dev_bme280->delay(1);
 }
 
@@ -77,7 +77,7 @@ void BME280_Get_Calibration_Data(BME280_typedef *dev_bme280)
 void BME280_GetID(BME280_typedef *dev_bme280)                              
 {
 	//write receive's register address to bme280 Config Struct
-	dev_bme280->read_data_i2c(dev_bme280->dev_address, ID_ADDR, 1, (uint8_t *)(&dev_bme280->dev_calibration_data.bmeID), 1);
+	dev_bme280->read_data_i2c(dev_bme280->dev_address, BME280_ID_ADDR, 1, (uint8_t *)(&dev_bme280->dev_calibration_data.bmeID), 1);
 	dev_bme280->delay(1);
 }
 
@@ -90,7 +90,7 @@ void BME280_GetID(BME280_typedef *dev_bme280)
 void BME280_GetCalibration_Data0(BME280_typedef *dev_bme280)                              
 {
 	//write receive's register address to bme280 Config Struct
-	dev_bme280->read_data_i2c(dev_bme280->dev_address, CALIB00_START_ADDR, 1, (uint8_t *)(&dev_bme280->dev_calibration_data), 26);
+	dev_bme280->read_data_i2c(dev_bme280->dev_address, BME280_CALIB00_START_ADDR, 1, (uint8_t *)(&dev_bme280->dev_calibration_data), 26);
 	dev_bme280->delay(1);
 }
 
@@ -103,7 +103,7 @@ void BME280_GetCalibration_Data0(BME280_typedef *dev_bme280)
 void BME280_Get_Calibration_Data1(BME280_typedef *dev_bme280)                              
 {
 	//write receive's register address to bme280 Config Struct
-	dev_bme280->read_data_i2c(dev_bme280->dev_address, CALIB26_START_ADDR, 1, (uint8_t *)(&dev_bme280->dev_calibration_data.Dig_H2), 7);
+	dev_bme280->read_data_i2c(dev_bme280->dev_address, BME280_CALIB26_START_ADDR, 1, (uint8_t *)(&dev_bme280->dev_calibration_data.Dig_H2), 7);
 	dev_bme280->delay(1);
 }
 
@@ -119,68 +119,68 @@ static void BME280_Set_Profile(BME280_Profile profile_type, BME280_typedef *dev_
 	{
 		case WEATHER_MONITORING:
 
-		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = OSRS_H_OVERSAMPLING_1;
+		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = BME280_OSRS_H_OVERSAMPLING_1;
 	
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = FORCED_MODE;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = OSRS_P_OVERSAMPLING_1;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = OSRS_T_OVERSAMPLING_1;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = BME280_FORCED_MODE;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = BME280_OSRS_P_OVERSAMPLING_1;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = BME280_OSRS_T_OVERSAMPLING_1;
 	
-		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = SPI3WIRE_DIS;
-		dev_bme280->dev_configuration.bitsDataConfig.t_sb = T_SB_1000mS;
-		dev_bme280->dev_configuration.bitsDataConfig.filter = FILTER_OFF; 
+		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = BME280_SPI3WIRE_DIS;
+		dev_bme280->dev_configuration.bitsDataConfig.t_sb = BME280_T_SB_1000mS;
+		dev_bme280->dev_configuration.bitsDataConfig.filter = BME280_FILTER_OFF; 
 		
 		break;
 		
 		case HUMIDITY_SENSING:
 
-		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = OSRS_H_OVERSAMPLING_1;
+		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = BME280_OSRS_H_OVERSAMPLING_1;
 	
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = FORCED_MODE;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = OSRS_P_SKIPPED;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = OSRS_T_OVERSAMPLING_1;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = BME280_FORCED_MODE;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = BME280_OSRS_P_SKIPPED;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = BME280_OSRS_T_OVERSAMPLING_1;
 	
-		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = SPI3WIRE_DIS;
-		dev_bme280->dev_configuration.bitsDataConfig.t_sb = T_SB_1000mS;
-		dev_bme280->dev_configuration.bitsDataConfig.filter = FILTER_OFF; 
+		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = BME280_SPI3WIRE_DIS;
+		dev_bme280->dev_configuration.bitsDataConfig.t_sb = BME280_T_SB_1000mS;
+		dev_bme280->dev_configuration.bitsDataConfig.filter = BME280_FILTER_OFF; 
 		
 		break;
 		
 		case INDOOR_NAVIGATION:
 
-		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = OSRS_H_OVERSAMPLING_1;
+		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = BME280_OSRS_H_OVERSAMPLING_1;
 	
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = NORMAL_MODE;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = OSRS_P_OVERSAMPLING_16;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = OSRS_T_OVERSAMPLING_2;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = BME280_NORMAL_MODE;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = BME280_OSRS_P_OVERSAMPLING_16;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = BME280_OSRS_T_OVERSAMPLING_2;
 	
-		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = SPI3WIRE_DIS;
-		dev_bme280->dev_configuration.bitsDataConfig.t_sb = T_SB_500mS;
-		dev_bme280->dev_configuration.bitsDataConfig.filter = FILTER_COEFF16; 
+		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = BME280_SPI3WIRE_DIS;
+		dev_bme280->dev_configuration.bitsDataConfig.t_sb = BME280_T_SB_500mS;
+		dev_bme280->dev_configuration.bitsDataConfig.filter = BME280_FILTER_COEFF16; 
 		
 		break;
 		
 		case GAMING:
 
-		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = OSRS_H_SKIPPED;
+		dev_bme280->dev_configuration.bitsDataCtrlHum.osrs_h = BME280_OSRS_H_SKIPPED;
 	
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = NORMAL_MODE;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = OSRS_P_OVERSAMPLING_4;
-		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = OSRS_T_OVERSAMPLING_1;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.mode = BME280_NORMAL_MODE;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_p = BME280_OSRS_P_OVERSAMPLING_4;
+		dev_bme280->dev_configuration.bitsDataCtrlMeas.osrs_t = BME280_OSRS_T_OVERSAMPLING_1;
 	
-		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = SPI3WIRE_DIS;
-		dev_bme280->dev_configuration.bitsDataConfig.t_sb = T_SB_500mS;
-		dev_bme280->dev_configuration.bitsDataConfig.filter = FILTER_COEFF16; 
+		dev_bme280->dev_configuration.bitsDataConfig.spi3w_en = BME280_SPI3WIRE_DIS;
+		dev_bme280->dev_configuration.bitsDataConfig.t_sb = BME280_T_SB_500mS;
+		dev_bme280->dev_configuration.bitsDataConfig.filter = BME280_FILTER_COEFF16; 
 		
 		break;
 		
 		default: break;
 	}
 	
-	dev_bme280->write_data_i2c(dev_bme280->dev_address, CTRL_HUM_ADDR, 1, &dev_bme280->dev_configuration.DataCtrlHum, sizeof(dev_bme280->dev_configuration.DataCtrlHum));
+	dev_bme280->write_data_i2c(dev_bme280->dev_address, BME280_CTRL_HUM_ADDR, 1, &dev_bme280->dev_configuration.DataCtrlHum, sizeof(dev_bme280->dev_configuration.DataCtrlHum));
 	dev_bme280->delay(1);
-	dev_bme280->write_data_i2c(dev_bme280->dev_address, CTRL_MEAS_ADDR, 1, &dev_bme280->dev_configuration.DataCtrlMeas, sizeof(dev_bme280->dev_configuration.DataCtrlMeas));
+	dev_bme280->write_data_i2c(dev_bme280->dev_address, BME280_CTRL_MEAS_ADDR, 1, &dev_bme280->dev_configuration.DataCtrlMeas, sizeof(dev_bme280->dev_configuration.DataCtrlMeas));
 	dev_bme280->delay(1);
-	dev_bme280->write_data_i2c(dev_bme280->dev_address, CONFIG_ADDR, 1, &dev_bme280->dev_configuration.DataConfig, sizeof(dev_bme280->dev_configuration.DataConfig));
+	dev_bme280->write_data_i2c(dev_bme280->dev_address, BME280_CONFIG_ADDR, 1, &dev_bme280->dev_configuration.DataConfig, sizeof(dev_bme280->dev_configuration.DataConfig));
 	dev_bme280->delay(1);
  
 }
