@@ -1,0 +1,45 @@
+#
+# Copyright (c) 2019 Peter Bigot Consulting, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+description: Maxim MAX31343 I2C RTC/TCXO
+
+compatible: "maxim,max31343"
+
+include: i2c-device.yaml
+
+properties:
+  reg:
+    required: true
+
+  clko-gpios:
+    type: phandle-array
+    description: |
+
+      32.875kHz or 1Hz - 128Hz CMOS Push-Pull Output (50% Duty Cycle).
+
+      Enable CLKO output by setting ENCLKO bit to 1 in the RTC_config2 register (4h). This
+      output operates on either power supply. This pin can be left open circuit if not
+      used.
+
+  int#-gpios:
+    type: phandle-array
+    description: |
+
+      Active-Low Interrupt.
+
+      This pin is used to output an alarm or interrupt. This is an open-drain output and 
+      requires an external pullup resistor.
+
+  sqw-gpios:
+    type: phandle-array
+    description: |
+
+      Square-Wave output.
+
+      This pin is used to output a temperature-compensated square wave with programmable frequency
+      from 1Hz to 32Hz. This is an open-drain and requires an extermal pullup resistor. If not use,
+      connect to ground.
+      
