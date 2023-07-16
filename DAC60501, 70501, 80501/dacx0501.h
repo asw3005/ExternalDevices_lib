@@ -33,12 +33,13 @@
  **/
 typedef enum {
 	
+	DACx0501_MIN,
 	DAC60501_12BIT = 4095,
 	DAC70501_14BIT = 16383,
 	DAC80501_16BIT = 65535
 	
 	
-} DACx0501_RESOLUTION;
+} DACx0501_RESOLUTION_t;
 
 /*
  * @brief Slave addrreses if you are using I2C bus (addresses are shifted 1 bit to the left).
@@ -51,7 +52,7 @@ typedef enum {
 	DACx0501_ADDR2_SH = 0x94,
 	DACx0501_ADDR3_SH = 0x96
 		
-} DACx0501_I2C_Addr;
+} DACx0501_I2C_ADDR_t;
 
 /*
  * @brief DAC type list.
@@ -63,7 +64,7 @@ typedef enum {
 	DACx0501_DAC70501,
 	DACx0501_DAC80501
 	
-} DACx0501_Type;
+} DACx0501_TYPE_t;
 
 /*
  * @brief DAC command bytes.
@@ -82,7 +83,7 @@ typedef enum {
 	
 	DACx0501_SOFT_RESET = 0x0A
 
-} DACx0501_Command;
+} DACx0501_CMD_t;
 
 /*
  * @brief Data exchange function typedefs.
@@ -316,14 +317,14 @@ void DACx0501_SPI_Trigger(DACx0501_GInst_t *device, uint8_t soft_reset, uint8_t 
 void DACx0501_SPI_WriteData(DACx0501_GInst_t *device, uint8_t dac_type, uint16_t dac_data);
 
 /* I2C functions. */
-void DACx0501_I2C_Sync(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t dac_sync);
-void DACx0501_I2C_Config(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t dac_pwdwn, uint8_t ref_pwdwn);
-void DACx0501_I2C_Gain(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t buff_gain, uint8_t ref_div);
-void DACx0501_I2C_Trigger(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t soft_reset, uint8_t ldac);
-void DACx0501_I2C_WriteData(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t dac_type, uint16_t dac_data);
+void DACx0501_I2C_Sync(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t dac_sync);
+void DACx0501_I2C_Config(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t dac_pwdwn, uint8_t ref_pwdwn);
+void DACx0501_I2C_Gain(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t buff_gain, uint8_t ref_div);
+void DACx0501_I2C_Trigger(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t soft_reset, uint8_t ldac);
+void DACx0501_I2C_WriteData(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t dac_type, uint16_t dac_data);
 
-DACx0501_Devid_t DACx0501_I2C_ReadDevId(DACx0501_GInst_t *device, DACx0501_I2C_Addr address);
-DACx0501_Status_t DACx0501_I2C_ReadStatus(DACx0501_GInst_t *device, DACx0501_I2C_Addr address);
+DACx0501_Devid_t DACx0501_I2C_ReadDevId(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address);
+DACx0501_Status_t DACx0501_I2C_ReadStatus(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address);
 
 /* Hardware dependent function prototypes. */
 void DACx0501_SPI_Tx(uint8_t *pData, uint8_t size);

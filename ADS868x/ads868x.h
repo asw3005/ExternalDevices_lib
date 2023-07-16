@@ -1,11 +1,11 @@
 /*
- * @brief Common header for ADS8671, ADS8675 from the Texas Instruments.
- * Created 08.02.21 by asw3005. 
+ * @brief Common header for ADS8681, ADS8685, ADS8689 from the Texas Instruments.
+ * Created 07.10.23 by asw3005. 
  *
  **/
 
-#ifndef ADS867x_H_
-#define ADS867x_H_
+#ifndef ADS868x_H_
+#define ADS868x_H_
 
 #ifndef NULL
 #define NULL (void*)0
@@ -19,8 +19,8 @@
 #define CS_ADC_GPIO_Port			GPIOB
 
 /* ADC constants. */
-#define ADS867x_WKEY				0x69
-#define ADS867x_VALUE_OF_DIVISION	0.312f
+#define ADS868x_WKEY				0x69
+#define ADS868x_VALUE_OF_DIVISION	0.000078125f
 
 /*
  * @brief Configuration registers mapping. LSW and HSW are low significant word and high significant word respectively.
@@ -30,36 +30,36 @@ typedef enum {
 	
 	/* This register contains the unique identification numbers associated to a device that is used in a daisy-chain
 	 * configuration involving multiple devices.*/
-	ADS867x_DEVICE_ID_LSW,
-	ADS867x_DEVICE_ID_HSW		= 0x02,
+	ADS868x_DEVICE_ID_LSW,
+	ADS868x_DEVICE_ID_HSW		= 0x02,
 	/* This register controls the reset and power-down features offered by the converter. Any write operation to the 
 	 * RST_PWRCTL_REG register must be preceded by a write operation with the register address set to 05h and the register 
 	 * data set to 69h. */
-	ADS867x_RST_PWRCTL_LSW		= 0x04,
-	ADS867x_RST_PWRCTL_HSW		= 0x06,
+	ADS868x_RST_PWRCTL_LSW		= 0x04,
+	ADS868x_RST_PWRCTL_HSW		= 0x06,
 	/* This register configures the protocol used for writing data to the device. */
-	ADS867x_SDI_CTL_LSW			= 0x08,
-	ADS867x_SDI_CTL_HSW			= 0x0A,
+	ADS868x_SDI_CTL_LSW			= 0x08,
+	ADS868x_SDI_CTL_HSW			= 0x0A,
 	/* This register controls the data protocol used to transmit data out from the SDO-x pins of the device. */
-	ADS867x_SDO_CTL_LSW			= 0x0C,
-	ADS867x_SDO_STL_HSW			= 0x0E,
+	ADS868x_SDO_CTL_LSW			= 0x0C,
+	ADS868x_SDO_STL_HSW			= 0x0E,
 	/* This register controls the data output by the device. */
-	ADS867x_DATAOUT_CTL_LSW		= 0x10,
-	ADS867x_DATAOUT_CTL_HSW		= 0x12,
+	ADS868x_DATAOUT_CTL_LSW		= 0x10,
+	ADS868x_DATAOUT_CTL_HSW		= 0x12,
 	/* This register controls the configuration of the internal reference and input voltage ranges for the converter. */
-	ADS867x_RANGE_SEL_LSW		= 0x14,
-	ADS867x_RANGE_SEL_HSW		= 0x16,
+	ADS868x_RANGE_SEL_LSW		= 0x14,
+	ADS868x_RANGE_SEL_HSW		= 0x16,
 	/* This register contains the output alarm flags (active and tripped) for the input and AVDD alarm. */
-	ADS867x_ALARM_LSW			= 0x20,
-	ADS867x_ALARM_HSW			= 0x22,
+	ADS868x_ALARM_LSW			= 0x20,
+	ADS868x_ALARM_HSW			= 0x22,
 	/* This register controls the hysteresis and high threshold for the input alarm. */
-	ADS867x_ALARM_H_TH_LSW		= 0x24,
-	ADS867x_ALARM_H_TH_HSW		= 0x26,
+	ADS868x_ALARM_H_TH_LSW		= 0x24,
+	ADS868x_ALARM_H_TH_HSW		= 0x26,
 	/* This register controls the low threshold for the input alarm. */
-	ADS867x_ALARM_L_TH_LSW		= 0x28,
-	ADS867x_ALARM_L_TH_HSW		= 0x2A
+	ADS868x_ALARM_L_TH_LSW		= 0x28,
+	ADS868x_ALARM_L_TH_HSW		= 0x2A
 	
-} ADS867x_REG_MAP_t;
+} ADS868x_REG_MAP_t;
 
 /*
  * @brief List of commands. All other input combinations are like a NOP command.
@@ -68,28 +68,28 @@ typedef enum {
 typedef enum {
 	
 	/* No operation. */
-	ADS867x_NOP = 0x00,
+	ADS868x_NOP = 0x00,
 	/* Command used to clear any (or a group of) bits of a register. Any bit marked 1 in the data field results in that particular
 	 * bit of the specified register being reset to 0, leaving the other bits unchanged. */
-	ADS867x_RESET_HWORD		= 0x60,
+	ADS868x_RESET_HWORD		= 0x60,
 	/* Command used to set any (or a group of) bits of a register. Any bit marked 1 in the data field results in that particular
 	 * bit of the specified register being set to 1, leaving the other bits unchanged. */
-	ADS867x_SET_HWORD		= 0x6C,
+	ADS868x_SET_HWORD		= 0x6C,
 	/* Command used to perform a 16-bit read operation. Upon receiving this command, the device sends out 16 bits of the register 
 	 * in the next frame. */
-	ADS867x_READ_HWORD		= 0x64,
+	ADS868x_READ_HWORD		= 0x64,
 	/* Same as the READ_HWORD except that only eight bits of the register (byte read) are returned in the next frame. */
-	ADS867x_READ_BYTE		= 0x24,
+	ADS868x_READ_BYTE		= 0x24,
 	/* Half-word write command (two bytes of input data are written into the specified address). */
-	ADS867x_WRITE_HWORD		= 0x68,
+	ADS868x_WRITE_HWORD		= 0x68,
 	/* Half-word write command. With this command, only the MS byte of the 16-bit data word is written at the specified register
 	 * address. The LS byte is ignored. */
-	ADS867x_WRITE_MSB		= 0x69,
+	ADS868x_WRITE_MSB		= 0x69,
 	/* Half-word write command. With this command, only the LS byte of the 16-bit data word is written at the specified register
 	 * address. The MS byte is ignored. */
-	ADS867x_WRITE_LSB		= 0x6A,
+	ADS868x_WRITE_LSB		= 0x6A,
 	
-} ADS867x_CMD_LIST_t;
+} ADS868x_CMD_LIST_t;
 
 /*
  * @brief SPI protocol select.
@@ -97,12 +97,12 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_CPOL0_CPHASE0,
-	ADS867x_CPOL0_CPHASE1,
-	ADS867x_CPOL1_CPHASE0,
-	ADS867x_CPOL1_CPHASE1
+	ADS868x_CPOL0_CPHASE0,
+	ADS868x_CPOL0_CPHASE1,
+	ADS868x_CPOL1_CPHASE0,
+	ADS868x_CPOL1_CPHASE1
 	
-} ADS867x_SPI_PROTOCOL_t;
+} ADS868x_SPI_PROTOCOL_t;
 
 /*
  * @brief SDO1 pin mode.
@@ -110,12 +110,12 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_SDO1_TRISTATE,
-	ADS867x_SDO1_ALARM,
-	ADS867x_SDO1_GPO,
-	ADS867x_SDO1_2BITMODE
+	ADS868x_SDO1_TRISTATE,
+	ADS868x_SDO1_ALARM,
+	ADS868x_SDO1_GPO,
+	ADS868x_SDO1_2BITMODE
 	
-} ADS867x_SDO1_MODE_t;
+} ADS868x_SDO1_MODE_t;
 
 /*
  * @brief Data output format. 
@@ -123,13 +123,13 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_CONVDATA	= 3,
-	ADS867x_ALLZERO		= 4,
-	ADS867x_ALLONES,
-	ADS867x_ALTERNATING_0_1,
-	ADS867x_ALTERNATING_00_11
+	ADS868x_CONVDATA	= 3,
+	ADS868x_ALLZERO		= 4,
+	ADS868x_ALLONES,
+	ADS868x_ALTERNATING_0_1,
+	ADS868x_ALTERNATING_00_11
 	
-} ADS867x_DATA_VAL_t;
+} ADS868x_DATA_VAL_t;
 
 /*
  * @brief Parity output format. 
@@ -137,10 +137,10 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_PAR_DIS,
-	ADS867x_PAR_EN
+	ADS868x_PAR_DIS,
+	ADS868x_PAR_EN
 	
-} ADS867x_PAR_t;
+} ADS868x_PAR_t;
 
 /*
  * @brief Range output format. 
@@ -148,10 +148,10 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_RANGE_DO_NOT_INCL,
-	ADS867x_RANGE_INCL
+	ADS868x_RANGE_DO_NOT_INCL,
+	ADS868x_RANGE_INCL
 	
-} ADS867x_RANGE_INCL_t;
+} ADS868x_RANGE_INCL_t;
 
 /*
  * @brief Active input ALARM flags control.
@@ -159,12 +159,12 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_ACTIVE_IN_DO_NOT_INCL,
-	ADS867x_ACTIVE_IN_H_FLAG_INCL,
-	ADS867x_ACTIVE_IN_L_FLAG_INCL,
-	ADS867x_BOTH_ACTIVE_IN_FLAGS_INCL
+	ADS868x_ACTIVE_IN_DO_NOT_INCL,
+	ADS868x_ACTIVE_IN_H_FLAG_INCL,
+	ADS868x_ACTIVE_IN_L_FLAG_INCL,
+	ADS868x_BOTH_ACTIVE_IN_FLAGS_INCL
 	
-} ADS867x_IN_ACTIVE_ALARM_t;
+} ADS868x_IN_ACTIVE_ALARM_t;
 
 /*
  * @brief Active VDD ALARM flags control.
@@ -172,12 +172,12 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_ACTIVE_VDD_DO_NOT_INCL,
-	ADS867x_ACTIVE_VDD_H_FLAG_INCL,
-	ADS867x_ACTIVE_VDD_L_FLAG_INCL,
-	ADS867x_BOTH_ACTIVE_VDD_FLAGS_INCL
+	ADS868x_ACTIVE_VDD_DO_NOT_INCL,
+	ADS868x_ACTIVE_VDD_H_FLAG_INCL,
+	ADS868x_ACTIVE_VDD_L_FLAG_INCL,
+	ADS868x_BOTH_ACTIVE_VDD_FLAGS_INCL
 	
-} ADS867x_VDD_ACTIVE_ALARM_t;
+} ADS868x_VDD_ACTIVE_ALARM_t;
 
 /*
  * @brief Device address output format. 
@@ -185,10 +185,10 @@ typedef enum {
  **/
 typedef enum {
 	
-	ADS867x_DEV_ADDR_DO_NOT_INCL,
-	ADS867x_DEV_ADDR_INCL
+	ADS868x_DEV_ADDR_DO_NOT_INCL,
+	ADS868x_DEV_ADDR_INCL
 	
-} ADS867x_DEV_ADDR_INCL_t;
+} ADS868x_DEV_ADDR_INCL_t;
 
 /*
  * @brief Analog input range.
@@ -197,26 +197,26 @@ typedef enum {
  **/
 typedef enum {
 	/* ±3 × VREF */
-	ADS867x_PN3_0VREF,
+	ADS868x_PN3_0VREF,
 	/* ±2.5 × VREF */
-	ADS867x_PN2_5VREF,
+	ADS868x_PN2_5VREF,
 	/* ±1.5 × VREF */
-	ADS867x_PN1_5VREF,
+	ADS868x_PN1_5VREF,
 	/* ±1.25 × VREF */
-	ADS867x_PN1_25VREF,
+	ADS868x_PN1_25VREF,
 	/* ±0.625 × VREF */
-	ADS867x_PN0_625VREF,
+	ADS868x_PN0_625VREF,
 	
 	/* 0–3 × VREF */
-	ADS867x_P3_0VREF = 0x08,
+	ADS868x_P3_0VREF = 0x08,
 	/* 0–2.5 × VREF */
-	ADS867x_P2_5VREF,
+	ADS868x_P2_5VREF,
 	/* 0–1.5 × VREF */
-	ADS867x_P1_5VREF,
+	ADS868x_P1_5VREF,
 	/* 0–1.25 × VREF */
-	ADS867x_P1_25VREF
+	ADS868x_P1_25VREF
 	
-} ADS867x_INPUT_RANGE_t;
+} ADS868x_INPUT_RANGE_t;
 
 
 
@@ -249,7 +249,7 @@ typedef union __attribute__((aligned(1), packed)) {
 	};
 	
 	
-} ADS867x_DevId_t;
+} ADS868x_DevId_t;
 
 /*
  * @brief Reset and power down register type.
@@ -293,7 +293,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t RESERVED31_16	: 16;
 	};
 	
-} ADS867x_RstPwrCtrl_t;
+} ADS868x_RstPwrCtrl_t;
 
 /*
  * @brief Writing or reading protocol register type.
@@ -322,7 +322,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t RESERVED31_16	: 16;
 	};
 	
-} ADS867x_SdiCtrl_t;
+} ADS868x_SdiCtrl_t;
 
 /*
  * @brief Data protocol register type.
@@ -367,7 +367,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t RESERVED31_16	: 16;
 	};
 	
-} ADS867x_SdoCtrl_t;
+} ADS868x_SdoCtrl_t;
 
 /*
  * @brief Data output register type.
@@ -425,7 +425,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t RESERVED31_16			: 16;
 	};
 	
-} ADS867x_DataOut_t;
+} ADS868x_DataOut_t;
 
 /*
  * @brief Internal reference and input voltage register type.
@@ -456,7 +456,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t RESERVED31_16	: 16;
 	};
 	
-} ADS867x_RangeSel_t;
+} ADS868x_RangeSel_t;
 
 /*
  * @brief Output alarm flags register type.
@@ -517,7 +517,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t RESERVED31_16		: 16;
 	};
 	
-} ADS867x_Alarm_t;
+} ADS868x_Alarm_t;
 
 /*
  * @brief Hysteresis and high threshold register type.
@@ -532,19 +532,17 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t AlarmHTh_HSW;
 	};
 	struct {
-		/* Reserved, must be set to 00b. */
-		uint8_t RESERVED1_0			: 2;
-		/* Threshold for comparison is INP_ALRM_HIGH_TH[15:2]. INP_ALRM_HIGH_TH[1:0] must be set to 00b. Default is 0xFFFF. */
-		uint16_t INP_ALRM_HIGH_TH	: 14;
+		/* Threshold for comparison is INP_ALRM_HIGH_TH[15:0]. Default is 0xFFFF. */
+		uint16_t INP_ALRM_HIGH_TH	: 16;
 		/* Reserved. Reads return 00h. */
 		uint8_t RESERVED23_16		: 8;
-		/* Reserved, must be se to 0000b. */
-		uint8_t RESERVED27_24		: 4;
-		/* INP_ALRM_HYST[7:4]: 4-bit hysteresis value for the input ALARM. INP_ALRM_HYST[3:0] must be set to 0000b. */
-		uint8_t INP_ALRM_HYST		: 4;
+		/* Reserved, must be se to 00b. */
+		uint8_t RESERVED25_24		: 2;
+		/* INP_ALRM_HYST[7:2]: 6-bit hysteresis value for the input ALARM. INP_ALRM_HYST[1:0] must be set to 00b. */
+		uint8_t INP_ALRM_HYST		: 6;
 	};
 	
-} ADS867x_AlarmHTh_t;
+} ADS868x_AlarmHTh_t;
 
 /*
  * @brief Low threshold register type.
@@ -559,15 +557,13 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint16_t AlarmLTh_HSW;
 	};
 	struct {
-		/* Reserved, must be set to 00b. */
-		uint8_t RESERVED1_0			: 2;
-		/* Threshold for comparison is INP_ALRM_LOW_TH[15:2]. INP_ALRM_LOW_TH[1:0] must be set to 00b. */
-		uint16_t INP_ALRM_LOW_TH	: 14;
+		/* Threshold for comparison is INP_ALRM_LOW_TH[15:0]. */
+		uint16_t INP_ALRM_LOW_TH	: 16;
 		/* Reserved. Reads return 0000h. */
 		uint16_t RESERVED31_15		: 16;
 	};
 	
-} ADS867x_AlarmLTh_t;
+} ADS868x_AlarmLTh_t;
 
 /*
  * @brief Output data word with all data flags enabled or all disabled.
@@ -584,22 +580,22 @@ typedef union __attribute__((aligned(1), packed)) {
 	};
 	/* All data flags enabled format. */
 	struct {
-		uint16_t RESERVED3_0		: 4;
+		uint16_t RESERVED3_0		: 2;
 		uint16_t PARITY_BITS		: 2;
-		uint16_t ADC_INPUT_RANGE	: 4;
 		uint16_t INPUT_ALARM_FLAGS	: 2;
 		uint16_t AVDD_ALARM_FLAGS	: 2;
+		uint16_t ADC_INPUT_RANGE	: 4;
 		uint16_t DEVICE_ADDRESS		: 4;
-		uint16_t CONVERSION_RESULT	: 14;
+		uint16_t CONVERSION_RESULT	: 16;
 	};
 	
 	/* All data flags disabled format. */
 	struct {
-		uint32_t RESERVED17_0_ALL		: 18;
-		uint32_t CONVERSION_RESULT_ALL	: 14;
+		uint32_t RESERVED17_0_ALL		: 16;
+		uint32_t CONVERSION_RESULT_ALL	: 16;
 	};
 	
-} ADS867x_OutputDataWord_t;
+} ADS868x_OutputDataWord_t;
 
 
 /*
@@ -636,7 +632,7 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint8_t REG_DATA_LSB	: 8;
 	};
 	
-} ADS867x_InputCmd_t;
+} ADS868x_InputCmd_t;
 
 /*
  * @brief General data instance struct.
@@ -644,36 +640,36 @@ typedef union __attribute__((aligned(1), packed)) {
  **/
 typedef struct {
 
-	ADS867x_InputCmd_t data;
+	ADS868x_InputCmd_t data;
 	volatile uint16_t* tx_byte_cnt; 
 	volatile uint16_t* rx_byte_cnt;
 	delay_fptr delay;
 	spi_txrx_fptr spi_tx;
 	spi_txrx_fptr spi_rx;
 
-} ADS867x_GInst_t;
+} ADS868x_GInst_t;
 
 
 /* Public function prototypes. */
-void ADS867x_Init(void);
-float ADS867x_GetVoltage(void);
-ADS867x_OutputDataWord_t ADS867x_ReadADC(ADS867x_GInst_t* device);
-uint16_t ADS867x_R_REG(ADS867x_GInst_t* device, uint8_t address);
-void ADS867x_RstPwdn(ADS867x_GInst_t* device, uint8_t pwrdn, uint8_t nap_en, uint8_t rstn_app, uint8_t in_al_dis, uint8_t vdd_al_dis);
-void ADS867x_SdiCtrl(ADS867x_GInst_t* device, ADS867x_SPI_PROTOCOL_t protocol);
-void ADS867x_SdoCtrl(ADS867x_GInst_t* device, uint8_t sdo_mode, uint8_t ssync_clk, ADS867x_SDO1_MODE_t sdo1_config);
-void ADS867x_SdoPinSetReset(ADS867x_GInst_t* device, uint8_t sdo_val);
-void ADS867x_DataOutCtrl(ADS867x_GInst_t* device, ADS867x_DATA_VAL_t data_val, ADS867x_PAR_t par_en, ADS867x_RANGE_INCL_t range_incl, 
-	ADS867x_IN_ACTIVE_ALARM_t in_active_alarm_incl, ADS867x_VDD_ACTIVE_ALARM_t vdd_active_alarm_incl, ADS867x_DEV_ADDR_INCL_t device_addr_incl);
-void ADS867x_RangeSel(ADS867x_GInst_t* device, ADS867x_INPUT_RANGE_t range_sel, uint8_t intref_dis);
-ADS867x_Alarm_t ADS867x_ReadAlarm(ADS867x_GInst_t* device);
-void ADS867x_SetAlarmHTh(ADS867x_GInst_t* device, uint16_t inp_alrm_high_th, uint8_t inp_alrm_hyst);
-void ADS867x_SetAlarmLTh(ADS867x_GInst_t* device, uint16_t inp_alrm_low_th);
+void ADS868x_Init(void);
+float ADS868x_GetVoltage(void);
+ADS868x_OutputDataWord_t ADS868x_ReadADC(ADS868x_GInst_t* device);
+uint16_t ADS868x_R_REG(ADS868x_GInst_t* device, uint8_t address);
+void ADS868x_RstPwdn(ADS868x_GInst_t* device, uint8_t pwrdn, uint8_t nap_en, uint8_t rstn_app, uint8_t in_al_dis, uint8_t vdd_al_dis);
+void ADS868x_SdiCtrl(ADS868x_GInst_t* device, ADS868x_SPI_PROTOCOL_t protocol);
+void ADS868x_SdoCtrl(ADS868x_GInst_t* device, uint8_t sdo_mode, uint8_t ssync_clk, ADS868x_SDO1_MODE_t sdo1_config);
+void ADS868x_SdoPinSetReset(ADS868x_GInst_t* device, uint8_t sdo_val);
+void ADS868x_DataOutCtrl(ADS868x_GInst_t* device, ADS868x_DATA_VAL_t data_val, ADS868x_PAR_t par_en, ADS868x_RANGE_INCL_t range_incl, 
+	ADS868x_IN_ACTIVE_ALARM_t in_active_alarm_incl, ADS868x_VDD_ACTIVE_ALARM_t vdd_active_alarm_incl, ADS868x_DEV_ADDR_INCL_t device_addr_incl);
+void ADS868x_RangeSel(ADS868x_GInst_t* device, ADS868x_INPUT_RANGE_t range_sel, uint8_t intref_dis);
+ADS868x_Alarm_t ADS868x_ReadAlarm(ADS868x_GInst_t* device);
+void ADS868x_SetAlarmHTh(ADS868x_GInst_t* device, uint16_t inp_alrm_high_th, uint8_t inp_alrm_hyst);
+void ADS868x_SetAlarmLTh(ADS868x_GInst_t* device, uint16_t inp_alrm_low_th);
 
 /* Hardware dependent function prototypes. */
-void ADS867x_SPI_Tx(uint8_t *pData, uint8_t size);
-void ADS867x_SPI_Rx(uint8_t *pData, uint8_t size);
+void ADS868x_SPI_Tx(uint8_t *pData, uint8_t size);
+void ADS868x_SPI_Rx(uint8_t *pData, uint8_t size);
 
 
-#endif /* ADS867x_H_ */
+#endif /* ADS868x_H_ */
 

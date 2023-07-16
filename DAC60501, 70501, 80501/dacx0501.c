@@ -277,7 +277,7 @@ void DACx0501_SPI_WriteData(DACx0501_GInst_t *device, uint8_t dac_type, uint16_t
  *        When cleared to 0 ,the DAC output is set to update immediately (asynchronous mode), default.
  *
  **/
-void DACx0501_I2C_Sync(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t dac_sync) {
+void DACx0501_I2C_Sync(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t dac_sync) {
 	
 	DACx0501_Sync_t dac_sync_reg;
 	
@@ -297,7 +297,7 @@ void DACx0501_I2C_Sync(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint
  * @param *device : Instance of general data struct DACx0501_GInst_t.
  *
  **/
-DACx0501_Devid_t DACx0501_I2C_ReadDevId(DACx0501_GInst_t *device, DACx0501_I2C_Addr address) {
+DACx0501_Devid_t DACx0501_I2C_ReadDevId(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address) {
 	
 	DACx0501_Devid_t dac_devid_reg;
 	
@@ -319,7 +319,7 @@ DACx0501_Devid_t DACx0501_I2C_ReadDevId(DACx0501_GInst_t *device, DACx0501_I2C_A
  * @param *device : Instance of general data struct DACx0501_GInst_t.
  *
  **/
-DACx0501_Status_t DACx0501_I2C_ReadStatus(DACx0501_GInst_t *device, DACx0501_I2C_Addr address) {
+DACx0501_Status_t DACx0501_I2C_ReadStatus(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address) {
 	
 	DACx0501_Status_t dac_status_reg;
 	
@@ -343,7 +343,7 @@ DACx0501_Status_t DACx0501_I2C_ReadStatus(DACx0501_GInst_t *device, DACx0501_I2C
  * @param ref_pwdwn : When set to 1, this bit disables the device internal reference.
  *
  **/
-void DACx0501_I2C_Config(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t dac_pwdwn, uint8_t ref_pwdwn) {
+void DACx0501_I2C_Config(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t dac_pwdwn, uint8_t ref_pwdwn) {
 	
 	DACx0501_Config_t dac_config_reg;
 	
@@ -367,7 +367,7 @@ void DACx0501_I2C_Config(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, ui
  *        to 0, the reference voltage is unaffected.
  *
  **/
-void DACx0501_I2C_Gain(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t buff_gain, uint8_t ref_div) {
+void DACx0501_I2C_Gain(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t buff_gain, uint8_t ref_div) {
 	
 	DACx0501_Gain_t dac_gain_reg;
 	
@@ -390,7 +390,7 @@ void DACx0501_I2C_Gain(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint
  * @param ldac : Set this bit to 1 to synchronously load the DAC in synchronous mode, This bit is self resetting.
  *
  **/
-void DACx0501_I2C_Trigger(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t soft_reset, uint8_t ldac) {
+void DACx0501_I2C_Trigger(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t soft_reset, uint8_t ldac) {
 	
 	DACx0501_Trigger_t dac_trigger_reg;
 	
@@ -412,7 +412,7 @@ void DACx0501_I2C_Trigger(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, u
  * @param dac_data : Digital code that conversion to voltage on the output of the DAC.
  *
  **/
-void DACx0501_I2C_WriteData(DACx0501_GInst_t *device, DACx0501_I2C_Addr address, uint8_t dac_type, uint16_t dac_data) {
+void DACx0501_I2C_WriteData(DACx0501_GInst_t *device, DACx0501_I2C_ADDR_t address, uint8_t dac_type, uint16_t dac_data) {
 	
 	DACx0501_DACReg_t dac_data_reg;
 	
