@@ -20,7 +20,7 @@
 #define AD9520x_TYPE					AD95203_PART_ID
 #define AD9520x_CUSTOMER_ID				0x0A0B
 
-
+/* Ports' selection. */
 
 
 /*
@@ -482,6 +482,12 @@ typedef union {
 typedef struct __attribute__((aligned(1), packed)) {
 	union {
 		uint16_t InstrHeader;
+
+		struct {
+			uint8_t InstrHeader_LSB;
+			uint8_t InstrHeader_MSB;
+		};
+
 		struct {
 			/* The address within the register map that is written to or read from. */
 			uint16_t ADDR 				: 13;
@@ -496,7 +502,7 @@ typedef struct __attribute__((aligned(1), packed)) {
 			uint16_t READ_WRITE 		: 1;
 		};
 	};
-	uint8_t RxTxData[12];
+	uint8_t RxTxData[5];
 
 }  AD9520_RxTxData_t;
 
@@ -509,6 +515,7 @@ typedef struct {
 	/* Part ID */
 	uint8_t PartId;
 	/* Customer version ID. */
+
 	uint16_t CustId;
 	/* Buffer data struct to read/write */
 	AD9520_RxTxData_t Data;
@@ -521,11 +528,18 @@ typedef struct {
 
 /* Public function prototypes. */
 uint8_t AD9520_Init(void);
+void AD9520_ResetCtrl(uint8_t RstCtrl);
+
 uint8_t AD9520_GetPartID(void);
-void AD9520_SpiCtrl(uint8_t SdoActive, uint8_t MsbLsbCtrl, uint8_t SoftReset);
-void AD9520_ReadBackCtrl(uint8_t ReadBackActive);
+uint8_t AD9520_GetEepromStatus(void);
+uint8_t AD9520_GetEepromError(void);
+AD9520_PllReadBack_t* AD9520_GetPllReadbackCtrl(void);
 uint16_t AD9520_EepCustIdRW(uint8_t ReadWrite, uint16_t CustId);
 
+void AD9520_ReadBackCtrl(uint8_t ReadBackActive);
+void AD9520_SpiCtrl(uint8_t SdoActive, uint8_t MsbLsbCtrl, uint8_t SoftReset);
+
+void AD9520_IoUpdate(void);
 void AD9520_ACounterCfg(uint8_t CntVal);
 void AD9520_RCounterCfg(uint16_t CntVal);
 void AD9520_BCounterCfg(uint16_t CntVal);
@@ -539,7 +553,6 @@ void AD9520_PllCtrl6(uint8_t RefMonPinCtrl, uint8_t EnRef1FreqMon, uint8_t EnRef
 void AD9520_PllCtrl7(uint8_t EnDiffRef, uint8_t EnRef1, uint8_t  EnRef2, uint8_t StayOnRef2, uint8_t EnAutoRefSw, uint8_t UseRefSelPin, uint8_t SelRef2, uint8_t DisSwDeglitch);
 void AD9520_PllCtrl8(uint8_t EnHoldover, uint8_t EnExtHoldover, uint8_t EnLdPinCmp, uint8_t DisPllStatus, uint8_t EnClkDoubler, uint8_t EnXtalOsc, uint8_t EnStatEepAtStatPin);
 void AD9520_PllCtrl9(uint8_t EnZeroDelay, uint8_t EnExtZeroDelay, uint8_t ExtZeroDelayChDivSel);
-AD9520_PllReadBack_t* AD9520_PllReadbackCtrl(void);
 void AD9520_OutCtrl(uint8_t OutNumber, uint8_t OutPowerDownLVPECL, uint8_t OutDiffVoltageLVPECL, uint8_t OutPolarity, uint8_t OutCfgCMOS, uint8_t OutFormat);
 void AD9520_EnDisCSDLDToOut(uint8_t RegNumber, uint8_t State);
 void AD9520_ChDividersCtrl(uint8_t DivNumber, uint8_t DivHighCycles, uint8_t DivLowCycles, uint8_t PhaseOffset, uint8_t ClkOutStart,
@@ -547,11 +560,8 @@ void AD9520_ChDividersCtrl(uint8_t DivNumber, uint8_t DivHighCycles, uint8_t Div
 void AD9520_VcoDivCtrl(uint8_t VcoDiv);
 void AD9520_InClkCtrl(uint8_t VcoBypass, uint8_t VcoOrClkAsIn, uint8_t PwrDownVcoAndClk, uint8_t PwrDownVcoClkInterface, uint8_t PwrDownClkInSection);
 void AD9520_PwrDownSyncCtrl(uint8_t SoftSync, uint8_t PwrDownDistrRef, uint8_t PwrDownSync, uint8_t DisPowerOnSync);
-void AD9520_IoUpdate(uint8_t IoUpdate);
 void AD9520_EepromCtrl(uint8_t EnEepromWrite, uint8_t SoftEeprom);
-void AD9520_EepromWrite(uint8_t RegToEeprom);
-uint8_t AD9520_EepromStatus(void);
-uint8_t AD9520_EepromError(void);
+void AD9520_EepromWrite(void);
 
 
 

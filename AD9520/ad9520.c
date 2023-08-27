@@ -21,50 +21,62 @@ static AD9520_GStr_t ad9520 = {
 		.spi_tx_fp = Ad9520_SpiTxData
 };
 
+/* Private function prototypes. */
+static uint8_t AD9520_ReadReg(uint16_t RegAddress);
+static void AD9520_WriteReg(uint16_t RegAddress, uint8_t RegValue);
+
 
 /*
  * @brief Init AD9520.
  */
 uint8_t AD9520_Init(void) {
 
-	/* SDO disable, LSB first, no soft reset. */
-	AD9520_SpiCtrl(0, 1, 0);
+	static uint8_t Tmp[10] = { 0 };
 
-	/* Reinit AD9520Spi */
-	AD9520Spi->Instance 				= SPI6;
-	AD9520Spi->Init.Mode 				= SPI_MODE_MASTER;
-	AD9520Spi->Init.Direction 			= SPI_DIRECTION_1LINE;
-	AD9520Spi->Init.DataSize 			= SPI_DATASIZE_8BIT;
-	AD9520Spi->Init.CLKPolarity 		= SPI_POLARITY_LOW;
-	AD9520Spi->Init.CLKPhase 			= SPI_PHASE_1EDGE;
-	AD9520Spi->Init.NSS 				= SPI_NSS_SOFT;
-	AD9520Spi->Init.BaudRatePrescaler 	= SPI_BAUDRATEPRESCALER_2;
-	AD9520Spi->Init.FirstBit 			= SPI_FIRSTBIT_LSB;
-	AD9520Spi->Init.TIMode 				= SPI_TIMODE_DISABLE;
-	AD9520Spi->Init.CRCCalculation 		= SPI_CRCCALCULATION_DISABLE;
-	AD9520Spi->Init.CRCPolynomial 		= 10;
-	if (HAL_SPI_Init(AD9520Spi) != HAL_OK) {
-	Error_Handler();
-	}
+	/* Reset chip. */
+	AD9520_ResetCtrl(1);
+	HAL_Delay(100);
+	AD9520_ResetCtrl(0);
+	HAL_Delay(100);
 
 	/* Is the chip available? */
 	if (AD9520_GetPartID() != AD9520x_TYPE) {
 		return AD9520x_NO_DEVICE;
 	}
+
+	//AD9520_ReadBackCtrl(1);
+
+	Tmp[1] = AD9520_ReadReg(AD9520_DIVIDER0_BYTE0);
+	Tmp[0] = AD9520_ReadReg(AD9520_PLL_CTRL_3);
+	Tmp[2] = AD9520_GetPartID();
+
 	/* PFD charge pump. */
 	AD9520_PfdChargePumpCtrl(0, 3, 7, 0);
-	AD9520_RCounterCfg(0x0001);
-	AD9520_ACounterCfg(0x00);
-	AD9520_BCounterCfg(0x003);
-	AD9520_PllCtrl1(6, 0, 0, 0, 0, 0);
+	AD9520_RCounterCfg(1);
+	AD9520_ACounterCfg(0);
+	AD9520_BCounterCfg(10);
+	AD9520_PllCtrl1(4, 0, 0, 0, 0, 0);
 	AD9520_PllCtrl2(0, 0);
-	AD9520_PllCtrl3(0, 3, 0, 0, 0, 0);
 	AD9520_PllCtrl4(0, 0, 0);
 	AD9520_PllCtrl5(0, 0, 0);
 	AD9520_PllCtrl6(0, 0, 0, 0);
-	AD9520_PllCtrl7(0, 1, 0, 0, 0, 0, 0, 0);
 	AD9520_PllCtrl8(0, 0, 0, 0, 0, 0, 1);
 	AD9520_PllCtrl9(0, 0, 0);
+	/* Select VCO as source. */
+	AD9520_InClkCtrl(0, 1, 0, 0, 0);
+	/* Enable reference 1 as input. */
+	AD9520_PllCtrl7(0, 1, 0, 0, 0, 0, 0, 0);
+	/* Clock divider. */
+	AD9520_VcoDivCtrl(2);
+	/* Select VCO as source. */
+	//AD9520_InClkCtrl(0, 1, 0, 0, 0);
+	/* IO update. */
+	AD9520_PllCtrl3(0, 3, 0, 0, 3, 0);
+	AD9520_IoUpdate();
+	HAL_Delay(1500);
+	AD9520_PllCtrl3(1, 3, 0, 0, 3, 0);
+	AD9520_IoUpdate();
+	HAL_Delay(1500);
 	/* Left enabled only outputs from 3 to 8. Remaining outputs set to safe power-down mode. */
 	AD9520_OutCtrl(0, 1, 2, 0, 3, 0);
 	AD9520_OutCtrl(1, 1, 2, 0, 3, 0);
@@ -76,18 +88,32 @@ uint8_t AD9520_Init(void) {
 	AD9520_EnDisCSDLDToOut(AD9520_CSDLD_OUT_EN_LSB, 0x00);
 	AD9520_EnDisCSDLDToOut(AD9520_CSDLD_OUT_EN_MSB, 0x00);
 	/* LVPECL channel dividers setting up. */
-	AD9520_ChDividersCtrl(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-	/* Clock divider. */
-	AD9520_VcoDivCtrl(4);
-	/* Input clocks control. */
-	AD9520_InClkCtrl(0, 1, 0, 0, 0);
+	AD9520_ChDividersCtrl(0, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(1, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(2, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(3, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
 	/* Power down and sync. */
 	AD9520_PwrDownSyncCtrl(0, 0, 0, 0);
 	/* IO update. */
-	AD9520_IoUpdate(1);
+	AD9520_IoUpdate();
+	HAL_Delay(150);
+	/* Init VCO calibration. */
+	AD9520_PllCtrl3(1, 2, 0, 0, 3, 0);
+	AD9520_IoUpdate();
+	HAL_Delay(150);
+
+
+	Tmp[0] = AD9520_ReadReg(AD9520_PLL_CTRL_3);
+	Tmp[1] = AD9520_ReadReg(AD9520_DIVIDER0_BYTE0);
+	Tmp[2] = AD9520_GetPartID();
+	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
+	HAL_Delay(1500);
+	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
+	HAL_Delay(1500);
+	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
+	HAL_Delay(1500);
+	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
+	HAL_Delay(1500);
 
 	return ad9520.PartId;
 }
@@ -99,14 +125,7 @@ uint8_t AD9520_GetPartID(void) {
 
 	ad9520.PartId = 0x00;
 
-	ad9520.Data.ADDR = AD9520_PART_ID;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_READ;
-
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 2);
-	ad9520.delay_fp(1);
-	ad9520.spi_rx_fp(&ad9520.PartId, 1);
-	ad9520.delay_fp(1);
+	ad9520.PartId = AD9520_ReadReg(AD9520_PART_ID);
 	return ad9520.PartId;
 }
 
@@ -116,7 +135,7 @@ uint8_t AD9520_GetPartID(void) {
  * @param SdoActive 	: 0 - SDO pin is high impedance (default), 1 - SDO pin is used for read.
  * @param MsbLsbCtrl 	: 0 - MSB first, the addressing decrements (default), 1 - LSB first, the addressing increments.
  * @param SoftReset 	: 1 - reset (self-clearing). If the EEPROM pin is high, soft reset loads the register values from
- * 			the EEPROM. If the EEPROM pin is low, soft reset loads the register values to the on-chip defaults.
+ * 							  the EEPROM. If the EEPROM pin is low, soft reset loads the register values to the on-chip defaults.
  *
  */
 void AD9520_SpiCtrl(uint8_t SdoActive, uint8_t MsbLsbCtrl, uint8_t SoftReset) {
@@ -130,12 +149,7 @@ void AD9520_SpiCtrl(uint8_t SdoActive, uint8_t MsbLsbCtrl, uint8_t SoftReset) {
 	SpiCtrl.MSB_LSB_CTRL_M = MsbLsbCtrl;
 	SpiCtrl.SDO_ACTIVE_M = SdoActive;
 
-	ad9520.Data.ADDR = AD9520_SERIAL_PORT_CFG;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = SpiCtrl.SpiCtrl;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_SERIAL_PORT_CFG, SpiCtrl.SpiCtrl);
 }
 
 /*
@@ -145,37 +159,24 @@ void AD9520_SpiCtrl(uint8_t SdoActive, uint8_t MsbLsbCtrl, uint8_t SoftReset) {
  */
 void AD9520_ReadBackCtrl(uint8_t ReadBackActive) {
 
-	ad9520.Data.ADDR = AD9520_READBACK_CTRL;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = ReadBackActive & 0x01;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_READBACK_CTRL, ReadBackActive & 0x01);
 }
 
 /*
  * @brief EEPROM customer version ID control.
  *
  * @param ReadWrite : may be AD9520_READ or AD9520_WRITE.
- * @param CustId : may be AD9520x_CUSTOMER_ID or any.
+ * @param CustId 	: may be AD9520x_CUSTOMER_ID or any.
  */
 uint16_t AD9520_EepCustIdRW(uint8_t ReadWrite, uint16_t CustId) {
 
-	ad9520.Data.ADDR = AD9520_CUSTOMER_VERSION_ID_LSB;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_TWO_BYTES;
 	if (ReadWrite) {
-		ad9520.Data.READ_WRITE = AD9520_READ;
-		ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 2);
-		ad9520.delay_fp(1);
-		ad9520.spi_rx_fp((uint8_t*)&ad9520.CustId, 2);
-		ad9520.delay_fp(1);
+		ad9520.CustId = AD9520_ReadReg(AD9520_CUSTOMER_VERSION_ID_LSB);
+		ad9520.CustId |= (uint16_t)AD9520_ReadReg(AD9520_CUSTOMER_VERSION_ID_MSB) << 8;
 	} else {
 		ad9520.CustId = CustId;
-		ad9520.Data.READ_WRITE = AD9520_WRITE;
-		ad9520.Data.RxTxData[0] = CustId;
-		ad9520.Data.RxTxData[1] = CustId >> 8;
-		ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 4);
-		ad9520.delay_fp(1);
+		AD9520_WriteReg(AD9520_CUSTOMER_VERSION_ID_LSB, ad9520.CustId);
+		AD9520_WriteReg(AD9520_CUSTOMER_VERSION_ID_MSB, ad9520.CustId >> 8);
 	}
 	return ad9520.CustId;
 }
@@ -200,12 +201,7 @@ void AD9520_PfdChargePumpCtrl(uint8_t PllPowerDown, uint8_t CpMode, uint8_t CpCu
 	PfdChargePump.CP_CURRENT = CpCurrent;
 	PfdChargePump.PFD_POLARITY = PfdPolarity;
 
-	ad9520.Data.ADDR = AD9520_PFD_CHARGE_PUMP;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PfdChargePump.PfdChargePumpCfg;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PFD_CHARGE_PUMP, PfdChargePump.PfdChargePumpCfg);
 }
 
 /*
@@ -215,13 +211,8 @@ void AD9520_PfdChargePumpCtrl(uint8_t PllPowerDown, uint8_t CpMode, uint8_t CpCu
  */
 void AD9520_RCounterCfg(uint16_t CntVal) {
 
-	ad9520.Data.ADDR = AD9520_R_COUNTER_LSB;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_TWO_BYTES;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = CntVal;
-	ad9520.Data.RxTxData[1] = CntVal >> 8;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 4);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_R_COUNTER_LSB, CntVal);
+	AD9520_WriteReg(AD9520_R_COUNTER_MSB, CntVal >> 8);
 }
 
 /*
@@ -231,12 +222,7 @@ void AD9520_RCounterCfg(uint16_t CntVal) {
  */
 void AD9520_ACounterCfg(uint8_t CntVal) {
 
-	ad9520.Data.ADDR = AD9520_A_COUNTER;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = CntVal;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_A_COUNTER, CntVal);
 }
 
 /*
@@ -246,13 +232,8 @@ void AD9520_ACounterCfg(uint8_t CntVal) {
  */
 void AD9520_BCounterCfg(uint16_t CntVal) {
 
-	ad9520.Data.ADDR = AD9520_B_COUNTER_LSB;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_TWO_BYTES;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = CntVal;
-	ad9520.Data.RxTxData[1] = CntVal >> 8;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 4);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_B_COUNTER_LSB, CntVal);
+	AD9520_WriteReg(AD9520_B_COUNTER_MSB, CntVal >> 8);
 }
 
 /*
@@ -290,12 +271,7 @@ void AD9520_PllCtrl1(uint8_t PrescP, uint8_t BCntBypass, uint8_t RstAllCnt, uint
 	PllCtrl1.RST_R_CNT = RstRCnt;
 	PllCtrl1.SET_CP_PIN = SetCPPin;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_1;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl1.PllCtrl1;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_1, PllCtrl1.PllCtrl1);
 }
 
 /*
@@ -355,12 +331,7 @@ void AD9520_PllCtrl2(uint8_t AntibacklashPulseWidth, uint8_t StatusPinCtrl) {
 	PllCtrl2.ANTIBACKLASH_PULSE_WIDTH = AntibacklashPulseWidth;
 	PllCtrl2.STATUS_PIN_CTRL = StatusPinCtrl;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_2;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl2.PllCtrl2;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_2, PllCtrl2.PllCtrl2);
 }
 
 /*
@@ -403,12 +374,7 @@ void AD9520_PllCtrl3(uint8_t VcoCalibNow, uint8_t VcoCalibDiv, uint8_t  DisDLD, 
 	PllCtrl3.LOCK_DETECT_CNT = LockDetectCnt;
 	PllCtrl3.CMOS_REFIN_OFFSET = CmosRefinOffset;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_3;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl3.PllCtrl3;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_3, PllCtrl3.PllCtrl3);
 }
 
 /*
@@ -426,12 +392,7 @@ void AD9520_PllCtrl4(uint8_t NPathDelay, uint8_t RPathDelay, uint8_t RABCntSyncP
 	PllCtrl4.RPATH_DELAY = RPathDelay;
 	PllCtrl4.RAB_CNT_SYNCPIN_RST = RABCntSyncPinRst;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_4;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl4.PllCtrl4;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_4, PllCtrl4.PllCtrl4);
 }
 
 /*
@@ -493,12 +454,7 @@ void AD9520_PllCtrl5(uint8_t LedPinCtrl, uint8_t RefFreqMonThr, uint8_t EnStatus
 	PllCtrl5.REF_FREQ_MON_THR = RefFreqMonThr;
 	PllCtrl5.EN_STATUS_PIN_DIV = EnStatusMonPinDiv;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_5;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl5.PllCtrl5;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_5, PllCtrl5.PllCtrl5);
 }
 
 /*
@@ -558,12 +514,7 @@ void AD9520_PllCtrl6(uint8_t RefMonPinCtrl, uint8_t EnRef1FreqMon, uint8_t EnRef
 	PllCtrl6.EN_REF2_FREQ_MON = EnRef2FreqMon;
 	PllCtrl6.EN_VCO_FREQ_MON = EnVcoFreqMon;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_6;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl6.PllCtrl6;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_6, PllCtrl6.PllCtrl6);
 }
 
 /*
@@ -607,12 +558,7 @@ void AD9520_PllCtrl7(uint8_t EnDiffRef, uint8_t EnRef1, uint8_t  EnRef2, uint8_t
 	PllCtrl7.SEL_REF2 = SelRef2;
 	PllCtrl7.DIS_SW_DEGLITCH = DisSwDeglitch;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_7;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl7.PllCtrl7;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_7, PllCtrl7.PllCtrl7);
 }
 
 /*
@@ -656,12 +602,7 @@ void AD9520_PllCtrl8(uint8_t EnHoldover, uint8_t EnExtHoldover, uint8_t EnLdPinC
 	PllCtrl8.EN_XTAL_OSC = EnXtalOsc;
 	PllCtrl8.EN_STEEP_ON_STPIN = EnStatEepAtStatPin;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_8;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl8.PllCtrl8;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_8, PllCtrl8.PllCtrl8);
 }
 
 /*
@@ -687,12 +628,7 @@ void AD9520_PllCtrl9(uint8_t EnZeroDelay, uint8_t EnExtZeroDelay, uint8_t ExtZer
 	PllCtrl9.EN_EXT_ZDELAY = EnExtZeroDelay;
 	PllCtrl9.EXT_ZDELAY_CHDIV = ExtZeroDelayChDivSel;
 
-	ad9520.Data.ADDR = AD9520_PLL_CTRL_9;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PllCtrl9.PllCtrl9;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_PLL_CTRL_9, PllCtrl9.PllCtrl9);
 }
 
 /*
@@ -706,7 +642,7 @@ void AD9520_PllCtrl9(uint8_t EnZeroDelay, uint8_t EnExtZeroDelay, uint8_t ExtZer
  * 					1 - REF1 frequency is greater than the threshold frequency.
  * @ret bit 2 : Indicates if the frequency of the signal at REF2 is greater than the threshold frequency set by Register 0x01A[6].
  * 					0 - REF2 frequency is less than the threshold frequency,
- * 					1 - REF2 frequency is less than the threshold frequency.
+ * 					1 - REF2 frequency is greater than the threshold frequency.
  * @ret bit 3 : Indicates if the VCO frequency is greater than the threshold (see Table 17: REF1, REF2, and VCO frequency status monitor parameter).
  * 					0 - VCO frequency is less than the threshold,
  * 					1 - VCO frequency is greater than the threshold.
@@ -721,17 +657,11 @@ void AD9520_PllCtrl9(uint8_t EnZeroDelay, uint8_t EnExtZeroDelay, uint8_t ExtZer
  * 					1 - VCO calibration finished.
  * @ret bit 7 : Unused.
  */
-AD9520_PllReadBack_t* AD9520_PllReadbackCtrl(void) {
+AD9520_PllReadBack_t* AD9520_GetPllReadbackCtrl(void) {
 
 	static AD9520_PllReadBack_t PllReadbackCtrl;
 
-	ad9520.Data.ADDR = AD9520_PLL_READBACK;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_READ;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 2);
-	ad9520.delay_fp(1);
-	ad9520.spi_rx_fp(&PllReadbackCtrl.PllReadBack, 1);
-	ad9520.delay_fp(1);
+	PllReadbackCtrl.PllReadBack = AD9520_ReadReg(AD9520_PLL_READBACK);
 	return &PllReadbackCtrl;
 }
 
@@ -775,12 +705,7 @@ void AD9520_OutCtrl(uint8_t OutNumber, uint8_t OutPowerDownLVPECL, uint8_t OutDi
 	OutControl.CMOS_CFG = OutCfgCMOS;
 	OutControl.OUT_FORMAT = OutFormat;
 
-	ad9520.Data.ADDR = AD9520_OUT0_CTRL + OutNumber;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = OutControl.OutCtrl;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_OUT0_CTRL + OutNumber, OutControl.OutCtrl);
 }
 
 /*
@@ -799,12 +724,7 @@ void AD9520_EnDisCSDLDToOut(uint8_t RegNumber, uint8_t State) {
 	if (RegNumber > 11) { return; }
 	if (RegNumber != AD9520_CSDLD_OUT_EN_LSB || RegNumber != AD9520_CSDLD_OUT_EN_MSB) { return; }
 
-	ad9520.Data.ADDR = RegNumber;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = State;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(RegNumber, State);
 }
 
 /*
@@ -815,9 +735,9 @@ void AD9520_EnDisCSDLDToOut(uint8_t RegNumber, uint8_t State) {
  * 						  Divider 1 controls OUT3, OUT4, OUT5.
  * 						  Divider 2 controls OUT6, OUT7, OUT8.
  * 						  Divider 3 controls OUT9, OUT10, OUT11.
- * @param DivHighCycles : Number of clock cycles (minus 1) of the divider input during which the divider output stays low (from 0 to 15).
+ * @param DivHighCycles : Number of clock cycles (+ 1) of the divider input during which the divider output stays low (from 0 to 15).
  * 						  A value of 0x7 means that the divider is low for eight input clock cycles (default: 0x7).
- * @param DivLowCycles 	: Number of clock cycles (minus 1) of the divider input during which the divider output stays low (from 0 to 15).
+ * @param DivLowCycles 	: Number of clock cycles (+ 1) of the divider input during which the divider output stays low (from 0 to 15).
  * 						  A value of 0x7 means that the divider is low for eight input clock cycles (default: 0x7).
  * @param PhaseOffset 	: Phase offset (from 0 to 15, default: 0x0).
  * @param ClkOutStart 	: Selects clock output to start high or start low.
@@ -849,53 +769,39 @@ void AD9520_ChDividersCtrl(uint8_t DivNumber, uint8_t DivHighCycles, uint8_t Div
 
 	AD9520_DivCtrl_t DivControl;
 
-	if (DivNumber > 3) { return; }
-
 	DivControl.DIV_HIGH_CYCLES = DivHighCycles;
 	DivControl.DIV_LOW_CYCLES = DivLowCycles;
-	ad9520.Data.RxTxData[0] = DivControl.DivLowHighCycles;
-
-
 	DivControl.PHASE_OFFSET = PhaseOffset;
 	DivControl.DIV_CLK_START = ClkOutStart;
 	DivControl.DIV_FORCE = DivOutForce;
 	DivControl.DIV_CHIP_LEVEL_SYNC = IgnoreSync;
 	DivControl.DIV_BYPASS = DivBypass;
-	ad9520.Data.RxTxData[1] = DivControl.DivCtrl;
-
 	DivControl.DIV_DCC_EN_DIS = DivDccEnDis;
 	DivControl.CH_DIRECT_TO_OUT = ChXDirect;
 	DivControl.CH_PWR_DOWN = ChXPwrDown;
-	ad9520.Data.RxTxData[2] = DivControl.ChannelGroupCtrl;
 
-	ad9520.Data.ADDR = AD9520_DIVIDER0_BYTE0 + (DivNumber * 3);
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_THREE_BYTES;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 5);
-	ad9520.delay_fp(5);
+	if (DivNumber > 3) { return; }
+	AD9520_WriteReg(AD9520_DIVIDER0_BYTE0 + (DivNumber * 3), DivControl.DivLowHighCycles);
+	AD9520_WriteReg(AD9520_DIVIDER0_BYTE1 + (DivNumber * 3), DivControl.DivCtrl);
+	AD9520_WriteReg(AD9520_DIVIDER0_BYTE2 + (DivNumber * 3), DivControl.ChannelGroupCtrl);
 }
 
 /*
  * @brief VCO divider control.
  *
- * @param OutPolarity : VCO divider coefficient.
- * 							0 - divide 2 (default),
- * 							1 - divide 3,
- * 							2 - divide 4,
- * 							3 - divide 5,
- * 							4 - divide 6,
- * 							5 - output static.
- * 							6 - divide 1 (bypass),
- * 							7 - output static.
+ * @param VcoDiv : VCO divider coefficient.
+ * 						0 - divide 2 (default),
+ * 						1 - divide 3,
+ * 						2 - divide 4,
+ * 						3 - divide 5,
+ * 						4 - divide 6,
+ * 						5 - output static.
+ * 						6 - divide 1 (bypass),
+ * 						7 - output static.
  */
 void AD9520_VcoDivCtrl(uint8_t VcoDiv) {
 
-	ad9520.Data.ADDR = AD9520_VCO_DIVIDER;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = VcoDiv;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_VCO_DIVIDER, VcoDiv);
 }
 
 /*
@@ -928,12 +834,7 @@ void AD9520_InClkCtrl(uint8_t VcoBypass, uint8_t VcoOrClkAsIn, uint8_t PwrDownVc
 	InClkControl.PWRDOWN_VCO_INTERFACE = PwrDownVcoClkInterface;
 	InClkControl.PWRDOWN_CLK_IN_SECTION = PwrDownClkInSection;
 
-	ad9520.Data.ADDR = AD9520_INPUT_CLOCKS;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = InClkControl.InClkCtrl;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_INPUT_CLOCKS, InClkControl.InClkCtrl);
 }
 
 /*
@@ -962,29 +863,17 @@ void AD9520_PwrDownSyncCtrl(uint8_t SoftSync, uint8_t PwrDownDistrRef, uint8_t P
 	PwrDownAndSyncCtrl.PWRDOWN_SYNC = PwrDownSync;
 	PwrDownAndSyncCtrl.DIS_PWRON_SYNC = DisPowerOnSync;
 
-	ad9520.Data.ADDR = AD9520_POWER_DOWN_SYNC;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = PwrDownAndSyncCtrl.PwrDownAndSyncCtrl;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_POWER_DOWN_SYNC, PwrDownAndSyncCtrl.PwrDownAndSyncCtrl);
 }
 
 /*
- * @brief IO update.
- *
- * @param SoftSync : This bit must be set to 1b to transfer the contents of the buffer registers into the active registers. This transfer occurs
- * 					 on the next SCLK rising edge. This bit is self-clearing; that is, it does not have to be set back to 0b.
- * 						1 -  (self-clearing): updates all active registers to the contents of the buffer registers.
+ * @brief IO update. This bit must be set to 1b to transfer the contents of the buffer registers into the active registers. This transfer occurs
+ * on the next SCLK rising edge. This bit is self-clearing; that is, it does not have to be set back to 0b. This bit is (self-clearing),
+ * it updates all active registers to the contents of the buffer registers.
  */
-void AD9520_IoUpdate(uint8_t IoUpdate) {
+void AD9520_IoUpdate(void) {
 
-	ad9520.Data.ADDR = AD9520_IO_UPDATE;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = IoUpdate;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_IO_UPDATE, 1);
 }
 
 /*
@@ -1004,30 +893,18 @@ void AD9520_EepromCtrl(uint8_t EnEepromWrite, uint8_t SoftEeprom) {
 	EepromCtrl.EN_EEPROM_WRITE = EnEepromWrite;
 	EepromCtrl.SOFT_EEPROM = SoftEeprom;
 
-	ad9520.Data.ADDR = AD9520_EEP_CTRL1;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = EepromCtrl.EepromCtrl1;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_EEP_CTRL1, EepromCtrl.EepromCtrl1);
 }
 
 /*
- * @brief EEPROM transfer activation.
+ * @brief EEPROM transfer activation. Transfers data from the buffer register to the EEPROM (self-clearing). Setting this bit initiates the data transfer
+ * from the buffer register to the EEPROM (writing process). It is reset by the I²C master after the data transfer is complete. Once an EEPROM save/load
+ * transfer is complete, the user must wait a minimum of 10µs before starting the next EEPROM save/load transfer.
  *
- * @param RegToEeprom : Transfers data from the buffer register to the EEPROM (self-clearing).
- * 						1 - setting this bit initiates the data transfer from the buffer register to the EEPROM (writing process); it is reset
- * 							by the I²C master after the data transfer is complete. Once an EEPROM save/load transfer is complete, the user must
- * 							wait a minimum of 10µs before starting the next EEPROM save/load transfer.
  */
-void AD9520_EepromWrite(uint8_t RegToEeprom) {
+void AD9520_EepromWrite(void) {
 
-	ad9520.Data.ADDR = AD9520_EEP_CTRL2;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_WRITE;
-	ad9520.Data.RxTxData[0] = RegToEeprom;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 3);
-	ad9520.delay_fp(1);
+	AD9520_WriteReg(AD9520_EEP_CTRL2, 1);
 }
 
 /*
@@ -1038,18 +915,11 @@ void AD9520_EepromWrite(uint8_t RegToEeprom) {
  * 					0 - data transfer is complete,
  * 					1 - data transfer is not complete.
  */
-uint8_t AD9520_EepromStatus(void) {
+uint8_t AD9520_GetEepromStatus(void) {
 
 	static uint8_t Status;
 
-	ad9520.Data.ADDR = AD9520_EEP_STATUS;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_READ;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 2);
-	ad9520.delay_fp(1);
-	ad9520.spi_rx_fp(&Status, 1);
-	ad9520.delay_fp(1);
-
+	Status = AD9520_ReadReg(AD9520_EEP_STATUS);
 	return (Status & 0x01);
 }
 
@@ -1060,21 +930,66 @@ uint8_t AD9520_EepromStatus(void) {
  * 					0 - no error. Data is correct,
  * 					1 - incorrect data detected.
  */
-uint8_t AD9520_EepromError(void) {
+uint8_t AD9520_GetEepromError(void) {
 
 	static uint8_t EepromErr;
 
-	ad9520.Data.ADDR = AD9520_EEP_ERR_CHECKING;
-	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
-	ad9520.Data.READ_WRITE = AD9520_READ;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.InstrHeader, 2);
-	ad9520.delay_fp(1);
-	ad9520.spi_rx_fp(&EepromErr, 1);
-	ad9520.delay_fp(1);
+	EepromErr = AD9520_ReadReg(AD9520_EEP_ERR_CHECKING);
 	return (EepromErr & 0x01);
 }
 
+/* Private functions. */
+
+/*
+ * @brief Read register.
+ */
+static uint8_t AD9520_ReadReg(uint16_t RegAddress) {
+
+	uint8_t Reg = 0;
+
+	ad9520.Data.ADDR = RegAddress;
+	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
+	ad9520.Data.READ_WRITE = AD9520_READ;
+
+	ad9520.Data.RxTxData[0] = ad9520.Data.InstrHeader_MSB;
+	ad9520.Data.RxTxData[1] = ad9520.Data.InstrHeader_LSB;
+	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.RxTxData, 2);
+	ad9520.delay_fp(25);
+	ad9520.spi_rx_fp(&Reg, 1);
+	ad9520.delay_fp(25);
+	return Reg;
+}
+
+/*
+ * @brief write register.
+ */
+static void AD9520_WriteReg(uint16_t RegAddress, uint8_t RegValue) {
+
+	ad9520.Data.ADDR = RegAddress;
+	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
+	ad9520.Data.READ_WRITE = AD9520_WRITE;
+
+	ad9520.Data.RxTxData[0] = ad9520.Data.InstrHeader_MSB;
+	ad9520.Data.RxTxData[1] = ad9520.Data.InstrHeader_LSB;
+	ad9520.Data.RxTxData[3] = RegValue;
+	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.RxTxData, 3);
+	ad9520.delay_fp(25);
+}
+
 /* Hardware dependent functions. */
+
+/*
+ * @brief Chip reset control.
+ *
+ * @param RstCtrl : Reset pin control.
+ * 						0 - chip reset is not active,
+ * 						1 - chip reset is active.
+ */
+void AD9520_ResetCtrl(uint8_t RstCtrl) {
+
+	  if (!RstCtrl) { HAL_GPIO_WritePin(SPI6_RST_GPIO_Port, SPI6_RST_Pin, GPIO_PIN_SET); }
+	  else { HAL_GPIO_WritePin(SPI6_RST_GPIO_Port, SPI6_RST_Pin, GPIO_PIN_RESET); }
+}
 
 /*
  * @brief Receive data from the chip.
