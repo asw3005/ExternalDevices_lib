@@ -20,6 +20,10 @@ static AD9959_GStr_t ad9959 = {
 		.spi_tx_fp = AD9959_SpiTxData
 };
 
+/* Private function prototypes. */
+//static uint8_t AD9959_ReadByte(uint8_t Address);
+//static void AD9959_WriteByte(uint8_t Address, uint32_t Value, uint8_t Size);
+
 
 /*
  * @brief AD9959 DDS registers initialization.
@@ -95,12 +99,12 @@ void AD9959_SetAmplitude(float Amplitude, uint8_t LoadArrAtIoUpdate, uint8_t Ram
 	AmplitudeCtrl.INC_DEC_STEP_SIZE = IncDecStepSize;
 	AmplitudeCtrl.AMPL_RAMP_RATE = AmplRampRate;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_CH_AMPLITUDE_CTRL;
-	ad9959.Data[0] = AmplitudeCtrl.AmplCtrl_HIGH_LSB;
-	ad9959.Data[1] = AmplitudeCtrl.AmplCtrl_LOW_MSB;
-	ad9959.Data[2] = AmplitudeCtrl.AmplCtrl_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 4);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_CH_AMPLITUDE_CTRL;
+	ad9959.RxTxData.Data[0] = AmplitudeCtrl.AmplCtrl_HIGH_LSB;
+	ad9959.RxTxData.Data[1] = AmplitudeCtrl.AmplCtrl_LOW_MSB;
+	ad9959.RxTxData.Data[2] = AmplitudeCtrl.AmplCtrl_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 4);
 	ad9959.delay_fp(1);
 }
 
@@ -112,11 +116,11 @@ void AD9959_SetAmplitude(float Amplitude, uint8_t LoadArrAtIoUpdate, uint8_t Ram
  */
 void AD9959_SetSweepRampRate(uint8_t RisingSweepRampRate, uint8_t FallingSweepRampRate) {
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_LINEAR_SWEEP_RAMP_RATE;
-	ad9959.Data[0] = FallingSweepRampRate;
-	ad9959.Data[1] = RisingSweepRampRate;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 3);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_LINEAR_SWEEP_RAMP_RATE;
+	ad9959.RxTxData.Data[0] = FallingSweepRampRate;
+	ad9959.RxTxData.Data[1] = RisingSweepRampRate;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 3);
 	ad9959.delay_fp(1);
 }
 
@@ -131,13 +135,13 @@ void AD9959_SetRisingDeltaWord(uint32_t RisingDeltaWord) {
 
 	RisingDeltaWordReg.RisingDeltaWord_32 = RisingDeltaWord;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_LSR_RISING_DELTA_WORD;
-	ad9959.Data[0] = RisingDeltaWordReg.RisingDeltaWord_HIGH_MSB;
-	ad9959.Data[1] = RisingDeltaWordReg.RisingDeltaWord_HIGH_LSB;
-	ad9959.Data[2] = RisingDeltaWordReg.RisingDeltaWord_LOW_MSB;
-	ad9959.Data[3] = RisingDeltaWordReg.RisingDeltaWord_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 5);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_LSR_RISING_DELTA_WORD;
+	ad9959.RxTxData.Data[0] = RisingDeltaWordReg.RisingDeltaWord_HIGH_MSB;
+	ad9959.RxTxData.Data[1] = RisingDeltaWordReg.RisingDeltaWord_HIGH_LSB;
+	ad9959.RxTxData.Data[2] = RisingDeltaWordReg.RisingDeltaWord_LOW_MSB;
+	ad9959.RxTxData.Data[3] = RisingDeltaWordReg.RisingDeltaWord_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 5);
 	ad9959.delay_fp(1);
 }
 
@@ -152,13 +156,13 @@ void AD9959_SetFallingDeltaWord(uint32_t FallingDeltaWord) {
 
 	FallingDeltaWordReg.FallingDeltaWord_32 = FallingDeltaWord;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_LSR_FALLING_DELTA_WORD;
-	ad9959.Data[0] = FallingDeltaWordReg.FallingDeltaWord_HIGH_MSB;
-	ad9959.Data[1] = FallingDeltaWordReg.FallingDeltaWord_HIGH_LSB;
-	ad9959.Data[2] = FallingDeltaWordReg.FallingDeltaWord_LOW_MSB;
-	ad9959.Data[3] = FallingDeltaWordReg.FallingDeltaWord_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 5);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_LSR_FALLING_DELTA_WORD;
+	ad9959.RxTxData.Data[0] = FallingDeltaWordReg.FallingDeltaWord_HIGH_MSB;
+	ad9959.RxTxData.Data[1] = FallingDeltaWordReg.FallingDeltaWord_HIGH_LSB;
+	ad9959.RxTxData.Data[2] = FallingDeltaWordReg.FallingDeltaWord_LOW_MSB;
+	ad9959.RxTxData.Data[3] = FallingDeltaWordReg.FallingDeltaWord_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 5);
 	ad9959.delay_fp(1);
 }
 
@@ -191,13 +195,13 @@ void AD9959_SetChannelWord(AD9959_REG_MAPS_t NumberOfChWord, uint8_t FreqPhaseAm
 		//break;
 	}
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = NumberOfChWord;
-	ad9959.Data[0] = ProfileData.ChannelWord_HIGH_MSB;
-	ad9959.Data[1] = ProfileData.ChannelWord_HIGH_LSB;
-	ad9959.Data[2] = ProfileData.ChannelWord_LOW_MSB;
-	ad9959.Data[3] = ProfileData.ChannelWord_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 5);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = NumberOfChWord;
+	ad9959.RxTxData.Data[0] = ProfileData.ChannelWord_HIGH_MSB;
+	ad9959.RxTxData.Data[1] = ProfileData.ChannelWord_HIGH_LSB;
+	ad9959.RxTxData.Data[2] = ProfileData.ChannelWord_LOW_MSB;
+	ad9959.RxTxData.Data[3] = ProfileData.ChannelWord_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 5);
 	ad9959.delay_fp(1);
 }
 
@@ -227,10 +231,10 @@ void AD9959_ChSelectReg(uint8_t LsbFirst, uint8_t SerialIoMode, uint8_t ChannelE
 	ChSelReg.CH_ENABLE = ChannelEn;
 	ChSelReg.MUST_BE_ZERO = 0;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_CH_SEL;
-	ad9959.Data[0] = ChSelReg.ChSelReg;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 2);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_CH_SEL;
+	ad9959.RxTxData.Data[0] = ChSelReg.ChSelReg;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 2);
 	ad9959.delay_fp(1);
 }
 
@@ -304,12 +308,12 @@ void AD9959_FunctReg1(uint8_t ManSoftSync, uint8_t ManHardSync, uint8_t DacRefPw
 	Function1reg.PLL_DIV_RATIO = PllDivRatio;
 	Function1reg.VCO_GAIN_CTRL = VcoGainCtrl;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_FUNCTION1;
-	ad9959.Data[0] = Function1reg.FunctReg1_HIGH_LSB;
-	ad9959.Data[1] = Function1reg.FunctReg1_LOW_MSB;
-	ad9959.Data[2] = Function1reg.FunctReg1_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 4);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_FUNCTION1;
+	ad9959.RxTxData.Data[0] = Function1reg.FunctReg1_HIGH_LSB;
+	ad9959.RxTxData.Data[1] = Function1reg.FunctReg1_LOW_MSB;
+	ad9959.RxTxData.Data[2] = Function1reg.FunctReg1_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 4);
 	ad9959.delay_fp(1);
 }
 
@@ -361,11 +365,11 @@ void AD9959_FunctReg2(uint8_t SysClkOffset, uint8_t MultiDevSyncMask, uint8_t Mu
 	Function2reg.ALLCH_CLR_SWEEP_ACC = AllChClrSweepAcc;
 	Function2reg.ALLCH_AUTOCLR_SWEEP_ACC = AllChAutoClrSweepAcc;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_FUNCTION2;
-	ad9959.Data[0] = Function2reg.FunctReg2_LOW_MSB;
-	ad9959.Data[1] = Function2reg.FunctReg2_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 3);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_FUNCTION2;
+	ad9959.RxTxData.Data[0] = Function2reg.FunctReg2_LOW_MSB;
+	ad9959.RxTxData.Data[1] = Function2reg.FunctReg2_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 3);
 	ad9959.delay_fp(1);
 }
 
@@ -380,11 +384,11 @@ uint8_t AD9959_ReadSyncStatus(void) {
 
 	static uint8_t SyncStatus;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_READ_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_FUNCTION2;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 1);
+	ad9959.RxTxData.READ_WRITE = AD9959_READ_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_FUNCTION2;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 1);
 	ad9959.delay_fp(1);
-	ad9959.spi_rx_fp((uint8_t*)&SyncStatus, 1);
+	ad9959.spi_rx_fp(&SyncStatus, 1);
 	ad9959.delay_fp(1);
 
 	SyncStatus = SyncStatus & 0x20;
@@ -463,12 +467,12 @@ void AD9959_ChannelFunctReg(uint8_t SineWaveOutEn, uint8_t ClrPhaseAcc, uint8_t 
 	ChFunctReg.AFP_SEL = AfpSelect;
 	ChFunctReg.MUST_BE_ZERO = 0;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_CH_FUNCTION;
-	ad9959.Data[0] = ChFunctReg.ChFunctReg_HIGH_LSB;
-	ad9959.Data[1] = ChFunctReg.ChFunctReg_LOW_MSB;
-	ad9959.Data[2] = ChFunctReg.ChFunctReg_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 4);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_CH_FUNCTION;
+	ad9959.RxTxData.Data[0] = ChFunctReg.ChFunctReg_HIGH_LSB;
+	ad9959.RxTxData.Data[1] = ChFunctReg.ChFunctReg_LOW_MSB;
+	ad9959.RxTxData.Data[2] = ChFunctReg.ChFunctReg_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 4);
 	ad9959.delay_fp(1);
 }
 
@@ -486,13 +490,13 @@ void AD9959_FreqTuneWord0(uint32_t FreqTuneWord) {
 	FreqTuneWord0.FreqTunWord0_LOW_MSB = FreqTuneWord >> 8;
 	FreqTuneWord0.FreqTunWord0_LOW_LSB = FreqTuneWord;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_CH_FREQUENCY_TUNING;
-	ad9959.Data[0] = FreqTuneWord0.FreqTunWord0_HIGH_MSB;
-	ad9959.Data[1] = FreqTuneWord0.FreqTunWord0_HIGH_LSB;
-	ad9959.Data[2] = FreqTuneWord0.FreqTunWord0_LOW_MSB;
-	ad9959.Data[3] = FreqTuneWord0.FreqTunWord0_LOW_LSB;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 5);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_CH_FREQUENCY_TUNING;
+	ad9959.RxTxData.Data[0] = FreqTuneWord0.FreqTunWord0_HIGH_MSB;
+	ad9959.RxTxData.Data[1] = FreqTuneWord0.FreqTunWord0_HIGH_LSB;
+	ad9959.RxTxData.Data[2] = FreqTuneWord0.FreqTunWord0_LOW_MSB;
+	ad9959.RxTxData.Data[3] = FreqTuneWord0.FreqTunWord0_LOW_LSB;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 5);
 	ad9959.delay_fp(1);
 }
 
@@ -507,13 +511,36 @@ void AD9959_ChPhaseOffsetWord0(uint16_t ChPhaseOffsetWord) {
 
 	ChPhaseOffsetWord0.PHASE_OFFSET_WORD0 = ChPhaseOffsetWord;
 
-	ad9959.InstrByte.READ_WRITE = AD9959_WRITE_CMD;
-	ad9959.InstrByte.REG_ADDRESS = AD9959_CH_PHASE_OFFSET;
-	ad9959.Data[0] = ChPhaseOffsetWord0.PhaseOffsetWord016 >> 8;
-	ad9959.Data[1] = ChPhaseOffsetWord0.PhaseOffsetWord016;
-	ad9959.spi_tx_fp((uint8_t*)&ad9959.InstrByte, 3);
+	ad9959.RxTxData.READ_WRITE = AD9959_WRITE_CMD;
+	ad9959.RxTxData.REG_ADDRESS = AD9959_CH_PHASE_OFFSET;
+	ad9959.RxTxData.Data[0] = ChPhaseOffsetWord0.PhaseOffsetWord016 >> 8;
+	ad9959.RxTxData.Data[1] = ChPhaseOffsetWord0.PhaseOffsetWord016;
+	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 3);
 	ad9959.delay_fp(1);
 }
+
+/* Private functions. */
+
+/*
+ * @brief Read byte from the specific address.
+ *
+ * @param Address : Specific address of the ad9959 register map.
+ */
+//static uint8_t AD9959_ReadByte(uint8_t Address) {
+//
+//	return 0;
+//}
+
+/*
+ * @brief Write byte to the specific address.
+ *
+ * @param Address 	: Specific address of the ad9959 register map.
+ * @param Value 	: Desired value of register.
+ * @param Size 		: Data transfer size.
+ */
+//static void AD9959_WriteByte(uint8_t Address, uint32_t Value, uint8_t Size) {
+//
+//}
 
 /* Hardware dependent functions. */
 

@@ -18,6 +18,10 @@ static AD9613_GStr_t ad9613 = {
 		.spi_tx_fp = AD9613_SpiTxData
 };
 
+/* Private function prototypes. */
+static uint8_t AD9613_ReadByte(uint8_t Address);
+static void AD9613_WriteByte(uint8_t Address, uint8_t Value);
+
 /*
  * @brief Initialization the chip.
  */
@@ -39,14 +43,7 @@ uint8_t AD9613_GetChipId(void) {
 
 	static uint8_t ChipId;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_READ_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_CHIP_ID;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 2);
-	ad9613.delay_fp(1);
-	ad9613.spi_rx_fp((uint8_t*)&ChipId, 1);
-	ad9613.delay_fp(1);
-
+	ChipId = AD9613_ReadByte(AD9613_CHIP_ID);
 	return ChipId;
 }
 
@@ -58,13 +55,7 @@ uint8_t AD9613_GetChipGrade(void) {
 
 	static uint8_t ChipGrade;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_READ_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_CHIP_GRADE;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 2);
-	ad9613.delay_fp(1);
-	ad9613.spi_rx_fp((uint8_t*)&ChipGrade, 1);
-	ad9613.delay_fp(1);
+	ChipGrade = AD9613_ReadByte(AD9613_CHIP_GRADE);
 	ChipGrade = (ChipGrade & 0x30) >> 4;
 
 	return ChipGrade;
@@ -78,13 +69,7 @@ uint8_t AD9613_GetRstBitState(void) {
 
 	static uint8_t RstBitState;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_READ_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_SPI_PORT_CFG;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 2);
-	ad9613.delay_fp(1);
-	ad9613.spi_rx_fp((uint8_t*)&RstBitState, 1);
-	ad9613.delay_fp(1);
+	RstBitState = AD9613_ReadByte(AD9613_SPI_PORT_CFG);
 	RstBitState = (RstBitState & 0x04) >> 2;
 
 	return RstBitState;
@@ -98,13 +83,7 @@ uint8_t AD9613_GetSoftTxBitState(void) {
 
 	static uint8_t SoftTxBitState;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_READ_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_TRANSFER;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 2);
-	ad9613.delay_fp(1);
-	ad9613.spi_rx_fp((uint8_t*)&SoftTxBitState, 1);
-	ad9613.delay_fp(1);
+	SoftTxBitState = AD9613_ReadByte(AD9613_TRANSFER);
 	SoftTxBitState &= 0x01;
 
 	return SoftTxBitState;
@@ -133,12 +112,7 @@ void AD9613_SpiPortCfg(uint8_t LsbFirst, uint8_t SoftReset) {
 	SpiPortCfg.LSB_FIRSTM = LsbFirst;
 	SpiPortCfg.MUST_BE_ZEROM = 0;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_SPI_PORT_CFG;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = SpiPortCfg.SpiPortCfgReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(10);
+	AD9613_WriteByte(AD9613_SPI_PORT_CFG, SpiPortCfg.SpiPortCfgReg);
 }
 
 /*
@@ -154,28 +128,18 @@ void AD9613_SpiPortCfg(uint8_t LsbFirst, uint8_t SoftReset) {
  */
 void AD9613_ChSelect(uint8_t ChannelNumber) {
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_CHANNEL_INDEX;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = ChannelNumber & 0x03;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_CHANNEL_INDEX, ChannelNumber & 0x03);
 }
 
 /*
- * @brief Synchron-ously transfers data from the master shift register to the slave (global).
+ * @brief Synchronously transfers data from the master shift register to the slave (global).
  *
  * @param InitSoftTransfer 	: 1 generates an internal transfer signal.
  *
  */
-void AD9613_StartSoftTx(uint8_t InitSoftTransfer) {
+void AD9613_StartSoftTx(void) {
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_TRANSFER;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = InitSoftTransfer & 0x01;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -197,12 +161,7 @@ void AD9613_PwrModes(uint8_t IntPwrDown, uint8_t ExtPwrDownPinf) {
 	PwrModes.INT_PWR_DOWN = IntPwrDown;
 	PwrModes.EXT_PWR_DOWN_PINF = ExtPwrDownPinf;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_POWER_MODES;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = PwrModes.PwrModesReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_POWER_MODES, PwrModes.PwrModesReg);
 }
 
 /*
@@ -214,12 +173,7 @@ void AD9613_PwrModes(uint8_t IntPwrDown, uint8_t ExtPwrDownPinf) {
  */
 void AD9613_EnDisDcs(uint8_t EnDisDcs) {
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_GLOBAL_CLOCK;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = EnDisDcs & 0x01;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_GLOBAL_CLOCK, EnDisDcs & 0x01);
 }
 
 /*
@@ -236,12 +190,7 @@ void AD9613_ClockDivide(uint8_t ClkDivRatio, uint8_t InClkDivPhaseAdj) {
 	ClkDivide.CLK_DIV_RATIO = ClkDivRatio;
 	ClkDivide.IN_CLK_DIV_PHASE_ADJ = InClkDivPhaseAdj;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_CLOCK_DIVIDE;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = ClkDivide.ClkDivideReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_CLOCK_DIVIDE, ClkDivide.ClkDivideReg);
 }
 
 /*
@@ -278,12 +227,7 @@ void AD9613_TestMode(uint8_t OutTestMode, uint8_t RstPnShortGen, uint8_t RstPnLo
 	TestMode.RST_PN_LONG_GEN = RstPnLongGen;
 	TestMode.USER_TEST_MODE_CTRL = UserTestModeCtrl;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_TEST_MODE;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = TestMode.TestModeReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_TEST_MODE, TestMode.TestModeReg);
 }
 
 /*
@@ -300,12 +244,7 @@ void AD9613_OffsetAdj(int8_t OffsetAdjInLsb) {
 	if (OffsetAdjInLsb < 0) { OffsetAdj.OFFSET_SIGN = 1; }
 	if (OffsetAdjInLsb >= 0) { OffsetAdj.OFFSET_SIGN = 0; }
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_OFFSET_ADJUST;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = OffsetAdj.OffsetAdjReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_OFFSET_ADJUST, OffsetAdj.OffsetAdjReg);
 }
 
 /*
@@ -331,12 +270,7 @@ void AD9613_OutputMode(uint8_t OutFormat, uint8_t OutInvert, uint8_t OutEnBar) {
 	OutMode.OUT_INVERT = OutInvert;
 	OutMode.OUT_EN_BAR = OutEnBar;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_OUTPUT_MODE;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = OutMode.OutModeReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_OUTPUT_MODE, OutMode.OutModeReg);
 }
 
 /*
@@ -355,12 +289,7 @@ void AD9613_OutputMode(uint8_t OutFormat, uint8_t OutInvert, uint8_t OutEnBar) {
  */
 void AD9613_OutputAdj(uint8_t OutAdj) {
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_OUTPUT_ADJUST;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = OutAdj & 0x07;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_OUTPUT_ADJUST, OutAdj & 0x07);
 }
 
 /*
@@ -380,12 +309,7 @@ void AD9613_ClkPhaseCtrl(uint8_t OddEvenMode, uint8_t InvertDcoClk) {
 	ClkPhase.ODD_EVEN_OUT_EN = OddEvenMode;
 	ClkPhase.INVERT_DCO_CLK = InvertDcoClk;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_CLOCK_PHASE_CTRL;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = ClkPhase.ClkPhaseCtrlReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_CLOCK_PHASE_CTRL, ClkPhase.ClkPhaseCtrlReg);
 }
 
 /*
@@ -406,12 +330,7 @@ void AD9613_DcoOutDelay(uint8_t EnDcoClkDelay, uint8_t DcoClkDelay) {
 	DcoOutDelay.EN_DCO_CLK_DELAY = EnDcoClkDelay;
 	DcoOutDelay.EN_DCO_CLK_DELAY = DcoClkDelay;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_DCO_OUTPUT_DELAY;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = DcoOutDelay.DcoOutDelayReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_DCO_OUTPUT_DELAY, DcoOutDelay.DcoOutDelayReg);
 }
 
 /*
@@ -434,12 +353,7 @@ void AD9613_InVoltageSel(int8_t InVoltageSel) {
 	if (InVoltageSel < 0) { InSpanSel.SPAN_SIGN = 1; }
 	if (InVoltageSel >= 0) { InSpanSel.SPAN_SIGN = 0; }
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_INPUT_SPAN_SEL;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = InSpanSel.InputSpanSelReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
-	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_INPUT_SPAN_SEL, InSpanSel.InputSpanSelReg);
 }
 
 /*
@@ -452,19 +366,17 @@ void AD9613_InVoltageSel(int8_t InVoltageSel) {
  */
 void AD9613_SetUserTestPattern(uint16_t UserPattern1, uint16_t UserPattern2, uint16_t UserPattern3, uint8_t UserPattern4) {
 
-
-
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_USER_TEST_PATTERN1_LSB;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = UserPattern1;
-	ad9613.Data[1] = UserPattern1 >> 8;
-	ad9613.Data[2] = UserPattern2;
-	ad9613.Data[3] = UserPattern2 >> 8;
-	ad9613.Data[4] = UserPattern3;
-	ad9613.Data[5] = UserPattern3 >> 8;
-	ad9613.Data[6] = UserPattern4;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 9);
+	ad9613.RxTxData.READ_WRITE = AD9613_WRITE_CMD;
+	ad9613.RxTxData.REG_ADDRESS = AD9613_USER_TEST_PATTERN1_LSB;
+	ad9613.RxTxData.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
+	ad9613.RxTxData.Data[0] = UserPattern1;
+	ad9613.RxTxData.Data[1] = UserPattern1 >> 8;
+	ad9613.RxTxData.Data[2] = UserPattern2;
+	ad9613.RxTxData.Data[3] = UserPattern2 >> 8;
+	ad9613.RxTxData.Data[4] = UserPattern3;
+	ad9613.RxTxData.Data[5] = UserPattern3 >> 8;
+	ad9613.RxTxData.Data[6] = UserPattern4;
+	ad9613.spi_tx_fp((uint8_t*)&ad9613.RxTxData.InstrByte, 9);
 	ad9613.delay_fp(5);
 }
 
@@ -491,11 +403,43 @@ void AD9613_SyncCtrl(uint8_t MasterSyncBuffEn, uint8_t ClkDivSyncEn, uint8_t Clk
 	SyncCtrl.CLK_DIV_SYNC_EN = ClkDivSyncEn;
 	SyncCtrl.CLK_DIV_NEXT_SYNC_EN = ClkDivNextSyncOnly;
 
-	ad9613.InstrByte.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.InstrByte.REG_ADDRESS = AD9613_SYNC_CTRL;
-	ad9613.InstrByte.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.Data[0] = SyncCtrl.SyncControlReg;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.InstrByte, 3);
+	AD9613_WriteByte(AD9613_SYNC_CTRL, SyncCtrl.SyncControlReg);
+}
+
+/* Private functions. */
+
+/*
+ * @brief Read byte from the specific address.
+ *
+ * @param Address : Specific address of the ad9959 register map.
+ */
+static uint8_t AD9613_ReadByte(uint8_t Address) {
+
+	uint8_t ReadBack;
+
+	ad9613.RxTxData.READ_WRITE = AD9613_READ_CMD;
+	ad9613.RxTxData.REG_ADDRESS = Address;
+	ad9613.RxTxData.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
+	ad9613.spi_tx_fp((uint8_t*)&ad9613.RxTxData.InstrByte, 2);
+	ad9613.delay_fp(1);
+	ad9613.spi_rx_fp((uint8_t*)&ReadBack, 1);
+	ad9613.delay_fp(1);
+	return ReadBack;
+}
+
+/*
+ * @brief Write byte to the specific address.
+ *
+ * @param Address 	: Specific address of the ad9959 register map.
+ * @param Value 	: Desired value of register.
+ */
+static void AD9613_WriteByte(uint8_t Address, uint8_t Value) {
+
+	ad9613.RxTxData.READ_WRITE = AD9613_WRITE_CMD;
+	ad9613.RxTxData.REG_ADDRESS = Address;
+	ad9613.RxTxData.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
+	ad9613.RxTxData.Data[0] = Value;
+	ad9613.spi_tx_fp((uint8_t*)&ad9613.RxTxData.InstrByte, 3);
 	ad9613.delay_fp(1);
 }
 

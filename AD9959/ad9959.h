@@ -64,22 +64,7 @@ typedef enum {
 
 /* Function pointer prototypes. */
 typedef void(*delay_fptr)(uint32_t);
-typedef void(*spi_rxtx_fptr)(uint8_t* pData, uint8_t Size);
-
-
-/*
- * @brief Instruction byte.
- */
-typedef union {
-	uint8_t InstrByte;
-	struct {
-		uint8_t REG_ADDRESS 	: 5;
-		uint8_t RESERVED 		: 2;
-		/* 1 - read, 0 - write. */
-		uint8_t READ_WRITE 		: 1;
-	};
-
-} AD9959_InstrByte_t;
+typedef void(*rxtx_fptr)(uint8_t* pData, uint8_t Size);
 
 /*
  * @brief
@@ -336,19 +321,36 @@ typedef union __attribute__((aligned(1), packed)) {
 } AD9959_Profile_t;
 
 /*
- * @brief
+ * @brief Instruction byte.
  */
 typedef struct {
+	union {
+		uint8_t InstrByte;
+		struct {
+			uint8_t REG_ADDRESS 	: 5;
+			uint8_t RESERVED 		: 2;
+			/* 1 - read, 0 - write. */
+			uint8_t READ_WRITE 		: 1;
+		};
+	};
 
-	AD9959_InstrByte_t InstrByte;
 	union {
 		uint8_t Data[4];
 		uint32_t Data32;
 	};
+
+} AD9959_RxTxData_t;
+
+/*
+ * @brief
+ */
+typedef struct {
+
+	AD9959_RxTxData_t RxTxData;
 	/* Function pointers. */
 	delay_fptr delay_fp;
-	spi_rxtx_fptr spi_rx_fp;
-	spi_rxtx_fptr spi_tx_fp;
+	rxtx_fptr spi_rx_fp;
+	rxtx_fptr spi_tx_fp;
 
 } AD9959_GStr_t;
 

@@ -75,7 +75,7 @@ typedef enum {
 
 /* Function pointer prototypes. */
 typedef void(*delay_fptr)(uint32_t);
-typedef void(*spi_rxtx_fptr)(uint8_t* pData, uint8_t Size);
+typedef void(*rxtx_fptr)(uint8_t* pData, uint8_t Size);
 
 /*
  * @brief
@@ -221,16 +221,19 @@ typedef union {
 /*
  * @brief Instruction byte.
  */
-typedef union {
-	uint16_t InstrByte;
-	struct {
-		uint16_t REG_ADDRESS 			: 13;
-		uint16_t DATA_LENGTH_W0W1 		: 2;
-		/* 1 - read, 0 - write. */
-		uint16_t READ_WRITE 			: 1;
+typedef struct {
+	union {
+		uint16_t InstrByte;
+		struct {
+			uint16_t REG_ADDRESS 			: 13;
+			uint16_t DATA_LENGTH_W0W1 		: 2;
+			/* 1 - read, 0 - write. */
+			uint16_t READ_WRITE 			: 1;
+		};
 	};
+	uint8_t Data[8];
 
-} AD9613_InstrByte_t;
+} AD9613_RxTxData_t;
 
 /*
  * @brief General struct.
@@ -239,13 +242,12 @@ typedef struct {
 
 	uint8_t ChipId;
 	uint8_t ChipGrade;
-	AD9613_InstrByte_t InstrByte;
-	uint8_t Data[4];
+	AD9613_RxTxData_t RxTxData;
 
 	/* Function pointers. */
 	delay_fptr delay_fp;
-	spi_rxtx_fptr spi_rx_fp;
-	spi_rxtx_fptr spi_tx_fp;
+	rxtx_fptr spi_rx_fp;
+	rxtx_fptr spi_tx_fp;
 
 } AD9613_GStr_t;
 
@@ -256,12 +258,12 @@ uint8_t AD9613_GetChipGrade(void);
 uint8_t AD9613_GetRstBitState(void);
 uint8_t AD9613_GetSoftTxBitState(void);
 
+void AD9613_StartSoftTx(void);
 void AD9613_OutputAdj(uint8_t OutAdj);
 void AD9613_EnDisDcs(uint8_t EnDisDcs);
 void AD9613_ChSelect(uint8_t ChannelNumber);
 void AD9613_OffsetAdj(int8_t OffsetAdjInLsb);
 void AD9613_InVoltageSel(int8_t InVoltageSel);
-void AD9613_StartSoftTx(uint8_t InitSoftTransfer);
 void AD9613_SpiPortCfg(uint8_t LsbFirst, uint8_t SoftReset);
 void AD9613_PwrModes(uint8_t IntPwrDown, uint8_t ExtPwrDownPinf);
 void AD9613_ClkPhaseCtrl(uint8_t OddEvenMode, uint8_t InvertDcoClk);
