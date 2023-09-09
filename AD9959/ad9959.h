@@ -4,7 +4,6 @@
  * Created on: Aug 21, 2023
  * Author: asw3005
  */
-
 #ifndef AD9959_H_
 #define AD9959_H_
 
@@ -15,8 +14,8 @@
 #define AD9959_VOLTAGE_RATIO		1.708984375f
 
 /* Define chip select port and pin. */
-#define CS_PORT GPIOA
-#define CS_PIN 	GPIO_PIN_0
+#define AD9959_CS_PORT 				GPIOA
+#define AD9959_CS_PIN 				GPIO_PIN_0
 
 /*
  * @brief Register maps.
@@ -384,9 +383,5 @@ void AD9959_ChannelFunctReg(uint8_t SineWaveOutEn, uint8_t ClrPhaseAcc, uint8_t 
 void AD9959_FreqTuneWord0(uint32_t FreqTuneWord);
 void AD9959_ChPhaseOffsetWord0(uint16_t ChPhaseOffsetWord);
 
-
-
-void AD9959_SpiRxData(uint8_t *pData, uint8_t Size);
-void AD9959_SpiTxData(uint8_t *pData, uint8_t Size);
 
 #endif /* AD9959_H_ */

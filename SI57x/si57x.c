@@ -2,7 +2,7 @@
  * si57x.c source file.
  *
  * Created on: Aug 28, 2023
- * Author: Supervisor
+ * Author: asw3005
  */
 #include "stm32f1xx_hal.h"
 #include "main.h"
@@ -13,17 +13,23 @@ extern I2C_HandleTypeDef hi2c1;
 
 /* Private variables. */
 static I2C_HandleTypeDef* SI57xI2C = &hi2c1;
-static SI57x_GStr_t si57x = {
-		.delay_fp = HAL_Delay,
-		.i2c_rx_fp = SI57x_I2CRxData,
-		.i2c_tx_fp = SI57x_I2CTxData
-};
 
 /* Private function prototypes. */
 static void SI57x_ReadDivRef(uint8_t Address);
 static void SI57x_WriteDivRef(uint8_t Address);
 static SI57x_RawRegData_t* SI57x_RawRegData(void);
 static SI57x_FreqDivTable_t* SI57x_DevRefData(void);
+
+static void SI57x_I2CRxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size);
+static void SI57x_I2CTxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size);
+
+/* Init general struct. */
+static SI57x_GStr_t si57x = {
+		.delay_fp = HAL_Delay,
+		.i2c_rx_fp = SI57x_I2CRxData,
+		.i2c_tx_fp = SI57x_I2CTxData
+};
+
 
 /*
  * @brief
@@ -33,8 +39,6 @@ void SI57x_Init(void) {
 	SI57x_RstFreezeMemCtrl(1, 0, 0, 0, 0);
 	SI57x_ReadDivRef(SI57x_HIGH_SPEED_N1_DIV);
 	SI57x_SetFreq(100, SI570_20PPM);
-
-
 }
 
 /*
@@ -260,7 +264,7 @@ static SI57x_RawRegData_t* SI57x_RawRegData(void) {
 /*
  * @brief Receive data from the chip.
  */
-void SI57x_I2CRxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size) {
+static void SI57x_I2CRxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size) {
 
 	HAL_I2C_Mem_Read(SI57xI2C, SI57x_CURRENT_ADDR, MemAddr, I2C_MEMADD_SIZE_8BIT, pData, Size, 25);
 }
@@ -268,7 +272,7 @@ void SI57x_I2CRxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size) {
 /*
  * @brief Transmit data to the chip.
  */
-void SI57x_I2CTxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size) {
+static void SI57x_I2CTxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size) {
 
 	HAL_I2C_Mem_Write(SI57xI2C, SI57x_CURRENT_ADDR, MemAddr, I2C_MEMADD_SIZE_8BIT, pData, Size, 25);
 }

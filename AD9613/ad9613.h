@@ -2,7 +2,7 @@
  * ad9613.h header file.
  *
  * Created on: Aug 23, 2023
- * Author: Supervisor
+ * Author: asw3005
  */
 
 #ifndef AD9613_H_
@@ -273,8 +273,5 @@ void AD9613_OutputMode(uint8_t OutFormat, uint8_t OutInvert, uint8_t OutEnBar);
 void AD9613_SyncCtrl(uint8_t MasterSyncBuffEn, uint8_t ClkDivSyncEn, uint8_t ClkDivNextSyncOnly);
 void AD9613_TestMode(uint8_t OutTestMode, uint8_t RstPnShortGen, uint8_t RstPnLongGen, uint8_t UserTestModeCtrl);
 void AD9613_SetUserTestPattern(uint16_t UserPattern1, uint16_t UserPattern2, uint16_t UserPattern3, uint8_t UserPattern4);
-
-void AD9613_SpiRxData(uint8_t *pData, uint8_t Size);
-void AD9613_SpiTxData(uint8_t *pData, uint8_t Size);
 
 #endif /* AD9613_H_ */

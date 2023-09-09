@@ -2,13 +2,17 @@
  * si5338.h header file.
  *
  * Created on: Sep 1, 2023
- * Author: Supervisor
+ * Author: asw3005
  */
 
 #ifndef SI5338_H_
 #define SI5338_H_
 
 #include "stm32f1xx.h"
+
+#define SI5338_STRONE_BYTEVAL_MAX  	256
+#define SI5338_STRTWO_BYTEVAL_MAX	96
+#define SI5338_NUM_REGS_MAX 		(SI5338_STRONE_BYTEVAL_MAX + SI5338_STRTWO_BYTEVAL_MAX)
 
 /* I2C bus addresses. */
 #define SI5338_ADDRESS0				0x70
@@ -28,9 +32,28 @@ typedef enum {
 
 } SI5338_REG_MAP_t;
 
+/*
+ * @brief Register maps.
+ */
+typedef enum {
+
+	SI5338_BASE_PART_NUMBER = 38
+
+} SI5338_DEV_CFG_t;
+
 /* Function pointer prototypes. */
 typedef void(*delay_fptr)(uint32_t);
 typedef void(*rxtx_fptr)(uint8_t MemAddr, uint8_t* pData, uint8_t Size);
+
+/*
+ * @brief Register addressing bytes.
+ */
+typedef struct {
+   uint8_t RegAddr;
+   uint8_t RegVal;
+   uint8_t RegMask;
+
+} SI5338_RegData_t;
 
 /*
  * @brief Ready to use configuration (text name).
@@ -93,11 +116,8 @@ typedef struct {
 
 
 /* Public function prototypes. */
-
+void SI5338_Init(void);
 uint8_t SI5338_GetDevRevID(void);
 SI5338_ReadyDevCfg_t* SI5338_GetDevCfg(void);
-
-void SI5338_I2CRxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size);
-void SI5338_I2CTxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size);
 
 #endif /* SI5338_H_ */

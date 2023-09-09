@@ -2,7 +2,7 @@
  * si57x.h header file.
  *
  * Created on: Aug 28, 2023
- * Author: Supervisor
+ * Author: asw3005
  */
 
 #ifndef SI57X_H_
@@ -179,8 +179,5 @@ typedef struct {
 void SI57x_SetFreq(double NewFreq, uint8_t DevPpmCoeff);
 void SI57x_FreezeDco(uint8_t FreezeDco);
 void SI57x_RstFreezeMemCtrl(uint8_t Recall, uint8_t FreezeVcadc, uint8_t FreezeM, uint8_t NewFreq, uint8_t RstReg);
-
-void SI57x_I2CRxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size);
-void SI57x_I2CTxData(uint8_t MemAddr, uint8_t *pData, uint8_t Size);
 
 #endif /* SI57X_H_ */

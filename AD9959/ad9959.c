@@ -8,22 +8,24 @@
 #include "main.h"
 #include "ad9959.h"
 
-
 /* External variables. */
 extern SPI_HandleTypeDef hspi1;
 
 /* Private variables. */
 static SPI_HandleTypeDef* AD9959Spi = &hspi1;
+
+/* Private function prototypes. */
+//static uint8_t AD9959_ReadByte(uint8_t Address);
+//static void AD9959_WriteByte(uint8_t Address, uint32_t Value, uint8_t Size);
+static void AD9959_SpiRxData(uint8_t *pData, uint8_t Size);
+static void AD9959_SpiTxData(uint8_t *pData, uint8_t Size);
+
+/* Init general struct. */
 static AD9959_GStr_t ad9959 = {
 		.delay_fp = HAL_Delay,
 		.spi_rx_fp = AD9959_SpiRxData,
 		.spi_tx_fp = AD9959_SpiTxData
 };
-
-/* Private function prototypes. */
-//static uint8_t AD9959_ReadByte(uint8_t Address);
-//static void AD9959_WriteByte(uint8_t Address, uint32_t Value, uint8_t Size);
-
 
 /*
  * @brief AD9959 DDS registers initialization.
@@ -547,21 +549,21 @@ void AD9959_ChPhaseOffsetWord0(uint16_t ChPhaseOffsetWord) {
 /*
  * @brief Receive data from the chip.
  */
-void AD9959_SpiRxData(uint8_t *pData, uint8_t Size) {
+static void AD9959_SpiRxData(uint8_t *pData, uint8_t Size) {
 
-	HAL_GPIO_WritePin(CS_PORT, CS_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Receive(AD9959Spi, pData, Size, 25);
-	HAL_GPIO_WritePin(CS_PORT, CS_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_SET);
 }
 
 /*
  * @brief Transmit data to the chip.
  */
-void AD9959_SpiTxData(uint8_t *pData, uint8_t Size) {
+static void AD9959_SpiTxData(uint8_t *pData, uint8_t Size) {
 
-	HAL_GPIO_WritePin(CS_PORT, CS_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(AD9959Spi, pData, Size, 25);
-	HAL_GPIO_WritePin(CS_PORT, CS_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_SET);
 }
 
 

@@ -1,7 +1,7 @@
 /*
  * ad9613.c source file.
  * Created on: Aug 23, 2023
- * Author: Supervisor
+ * Author: asw3005
  */
 #include "stm32f1xx_hal.h"
 #include "main.h"
@@ -12,15 +12,20 @@ extern SPI_HandleTypeDef hspi1;
 
 /* Private variables. */
 static SPI_HandleTypeDef* AD9613Spi = &hspi1;
+
+/* Private function prototypes. */
+static uint8_t AD9613_ReadByte(uint8_t Address);
+static void AD9613_WriteByte(uint8_t Address, uint8_t Value);
+
+static void AD9613_SpiRxData(uint8_t *pData, uint8_t Size);
+static void AD9613_SpiTxData(uint8_t *pData, uint8_t Size);
+
+/* Init general struct. */
 static AD9613_GStr_t ad9613 = {
 		.delay_fp = HAL_Delay,
 		.spi_rx_fp = AD9613_SpiRxData,
 		.spi_tx_fp = AD9613_SpiTxData
 };
-
-/* Private function prototypes. */
-static uint8_t AD9613_ReadByte(uint8_t Address);
-static void AD9613_WriteByte(uint8_t Address, uint8_t Value);
 
 /*
  * @brief Initialization the chip.
@@ -449,7 +454,7 @@ static void AD9613_WriteByte(uint8_t Address, uint8_t Value) {
 /*
  * @brief Receive data from the chip.
  */
-void AD9613_SpiRxData(uint8_t *pData, uint8_t Size) {
+static void AD9613_SpiRxData(uint8_t *pData, uint8_t Size) {
 
 	HAL_GPIO_WritePin(AD9613_CS_PORT, AD9613_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Receive(AD9613Spi, pData, Size, 25);
@@ -459,7 +464,7 @@ void AD9613_SpiRxData(uint8_t *pData, uint8_t Size) {
 /*
  * @brief Transmit data to the chip.
  */
-void AD9613_SpiTxData(uint8_t *pData, uint8_t Size) {
+static void AD9613_SpiTxData(uint8_t *pData, uint8_t Size) {
 
 	HAL_GPIO_WritePin(AD9613_CS_PORT, AD9613_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(AD9613Spi, pData, Size, 25);
