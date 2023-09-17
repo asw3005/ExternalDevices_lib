@@ -1,5 +1,5 @@
 /*
- * ad9520.h
+ * ad9520.h header file.
  *
  * Created on: Aug 5, 2023
  * Author: asw3005
@@ -21,7 +21,19 @@
 #define AD9520x_CUSTOMER_ID				0x0A0B
 
 /* Ports' selection. */
+#define AD9520_NSS_PIN 					GPIO_PIN_11
+#define AD9520_CLK_PIN 					GPIO_PIN_13
+#define AD9520_DATA_IN_PIN				GPIO_PIN_12
+#define AD9520_DATA_INOUT_PIN			GPIO_PIN_14
+#define AD9520_NSS_PORT					GPIOG
+#define AD9520_CLK_PORT 				GPIOG
+#define AD9520_DATA_IN_PORT				GPIOG
+#define AD9520_DATA_INOUT_PORT			GPIOG
 
+/* Significant data bits. */
+#define AD9520_CMD_WORD_SIZE			2
+#define AD9520_BIT_NUMBER				8
+#define AD9520_BIT_MASK					0x80
 
 /*
  * @brief AD9520 register map.
@@ -443,7 +455,9 @@ typedef union {
 		uint8_t PWRDOWN_VCO_AND_CLK		: 1;
 		uint8_t PWRDOWN_VCO_INTERFACE	: 1;
 		uint8_t PWRDOWN_CLK_IN_SECTION	: 1;
-		uint8_t RESERVED				: 3;
+		/* Default 0x01. */
+		uint8_t RESERVED0				: 2;
+		uint8_t RESERVED1				: 1;
 	};
 
 } AD9520_InClkCtrl_t;
@@ -528,6 +542,8 @@ typedef struct {
 
 /* Public function prototypes. */
 uint8_t AD9520_Init(void);
+void AD9520_ExtDistribModeSelect(void);
+void AD9520_IntVcoModeSelect(void);
 void AD9520_ResetCtrl(uint8_t RstCtrl);
 
 uint8_t AD9520_GetPartID(void);
@@ -562,10 +578,5 @@ void AD9520_InClkCtrl(uint8_t VcoBypass, uint8_t VcoOrClkAsIn, uint8_t PwrDownVc
 void AD9520_PwrDownSyncCtrl(uint8_t SoftSync, uint8_t PwrDownDistrRef, uint8_t PwrDownSync, uint8_t DisPowerOnSync);
 void AD9520_EepromCtrl(uint8_t EnEepromWrite, uint8_t SoftEeprom);
 void AD9520_EepromWrite(void);
-
-
-
-void Ad9520_SpiRxData(uint8_t *pData, uint8_t Size);
-void Ad9520_SpiTxData(uint8_t *pData, uint8_t Size);
 
 #endif  /* AD9520_H_ */

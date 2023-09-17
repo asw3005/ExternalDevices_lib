@@ -1,5 +1,5 @@
 /*
- * ad9520.c
+ * ad9520.c source file.
  *
  * Created on: Aug 5, 2023
  * Author: asw3005
@@ -12,26 +12,28 @@
 /* External variables. */
 extern SPI_HandleTypeDef hspi6;
 
+/* Private function prototypes. */
+static uint8_t AD9520_ReadReg(uint16_t RegAddress);
+static void AD9520_WriteReg(uint16_t RegAddress, uint8_t RegValue);
+static void AD9520_ESpiRxData(uint8_t* pData, uint8_t Size);
+static void AD9520_ESpiTxData(uint8_t* pData, uint8_t Size);
+static void AD9520_SpiRxData(uint8_t *pData, uint8_t Size);
+static void AD9520_SpiTxData(uint8_t *pData, uint8_t Size);
+
 /* Private variables. */
 static SPI_HandleTypeDef* AD9520Spi = &hspi6;
 static AD9520_GStr_t ad9520 = {
 
 		.delay_fp = HAL_Delay,
-		.spi_rx_fp = Ad9520_SpiRxData,
-		.spi_tx_fp = Ad9520_SpiTxData
+		.spi_rx_fp = AD9520_ESpiRxData,
+		.spi_tx_fp = AD9520_ESpiTxData
 };
-
-/* Private function prototypes. */
-static uint8_t AD9520_ReadReg(uint16_t RegAddress);
-static void AD9520_WriteReg(uint16_t RegAddress, uint8_t RegValue);
 
 
 /*
  * @brief Init AD9520.
  */
 uint8_t AD9520_Init(void) {
-
-	static uint8_t Tmp[10] = { 0 };
 
 	/* Reset chip. */
 	AD9520_ResetCtrl(1);
@@ -43,12 +45,47 @@ uint8_t AD9520_Init(void) {
 	if (AD9520_GetPartID() != AD9520x_TYPE) {
 		return AD9520x_NO_DEVICE;
 	}
+	/* Left enabled only outputs from 3 to 8. Remaining outputs set to safe power-down mode. */
+	AD9520_OutCtrl(0, 1, 2, 0, 3, 0);
+	AD9520_OutCtrl(1, 1, 2, 0, 3, 0);
+	AD9520_OutCtrl(2, 1, 2, 0, 3, 0);
+	AD9520_OutCtrl(9, 1, 2, 0, 3, 0);
+	AD9520_OutCtrl(10, 1, 2, 0, 3, 0);
+	AD9520_OutCtrl(11, 1, 2, 0, 3, 0);
+	/* IO update. */
+	AD9520_IoUpdate();
+	HAL_Delay(100);
+	/* Select internal VCO as clock source. */
+	AD9520_IntVcoModeSelect();
+	/* Select external clock source. */
+	//AD9520_ExtDistribModeSelect();
 
-	//AD9520_ReadBackCtrl(1);
+	return ad9520.PartId;
+}
 
-	Tmp[1] = AD9520_ReadReg(AD9520_DIVIDER0_BYTE0);
-	Tmp[0] = AD9520_ReadReg(AD9520_PLL_CTRL_3);
-	Tmp[2] = AD9520_GetPartID();
+/*
+ * @brief Init external clock distribution mode.
+ */
+void AD9520_ExtDistribModeSelect(void) {
+
+	/* Select external clock input. */
+	AD9520_InClkCtrl(1, 0, 0, 0, 0);
+	/* Bypass the VCO divider. */
+	AD9520_VcoDivCtrl(6);
+	/* LVPECL channel dividers setting up. */
+	AD9520_ChDividersCtrl(0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
+	AD9520_ChDividersCtrl(1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
+	AD9520_ChDividersCtrl(2, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
+	AD9520_ChDividersCtrl(3, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
+	/* IO update. */
+	AD9520_IoUpdate();
+	HAL_Delay(150);
+}
+
+/*
+ * @brief Select internal VCO to use.
+ */
+void AD9520_IntVcoModeSelect(void) {
 
 	/* PFD charge pump. */
 	AD9520_PfdChargePumpCtrl(0, 3, 7, 0);
@@ -62,60 +99,26 @@ uint8_t AD9520_Init(void) {
 	AD9520_PllCtrl6(0, 0, 0, 0);
 	AD9520_PllCtrl8(0, 0, 0, 0, 0, 0, 1);
 	AD9520_PllCtrl9(0, 0, 0);
-	/* Select VCO as source. */
-	AD9520_InClkCtrl(0, 1, 0, 0, 0);
 	/* Enable reference 1 as input. */
 	AD9520_PllCtrl7(0, 1, 0, 0, 0, 0, 0, 0);
-	/* Clock divider. */
+	/* LVPECL channel dividers setting up. */
+	AD9520_ChDividersCtrl(0, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(1, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(2, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(3, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_IoUpdate();
+	/* Set VCO divider. */
 	AD9520_VcoDivCtrl(2);
 	/* Select VCO as source. */
-	//AD9520_InClkCtrl(0, 1, 0, 0, 0);
+	AD9520_InClkCtrl(0, 1, 0, 0, 0);
 	/* IO update. */
 	AD9520_PllCtrl3(0, 3, 0, 0, 3, 0);
 	AD9520_IoUpdate();
-	HAL_Delay(1500);
+	HAL_Delay(100);
+	/* Init VCO calibration. */
 	AD9520_PllCtrl3(1, 3, 0, 0, 3, 0);
 	AD9520_IoUpdate();
-	HAL_Delay(1500);
-	/* Left enabled only outputs from 3 to 8. Remaining outputs set to safe power-down mode. */
-	AD9520_OutCtrl(0, 1, 2, 0, 3, 0);
-	AD9520_OutCtrl(1, 1, 2, 0, 3, 0);
-	AD9520_OutCtrl(2, 1, 2, 0, 3, 0);
-	AD9520_OutCtrl(9, 1, 2, 0, 3, 0);
-	AD9520_OutCtrl(10, 1, 2, 0, 3, 0);
-	AD9520_OutCtrl(11, 1, 2, 0, 3, 0);
-	/* Current source digital lock detect pin control. */
-	AD9520_EnDisCSDLDToOut(AD9520_CSDLD_OUT_EN_LSB, 0x00);
-	AD9520_EnDisCSDLDToOut(AD9520_CSDLD_OUT_EN_MSB, 0x00);
-	/* LVPECL channel dividers setting up. */
-	AD9520_ChDividersCtrl(0, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(1, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(2, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(3, 4, 4, 0, 0, 0, 0, 0, 1, 0, 0);
-	/* Power down and sync. */
-	AD9520_PwrDownSyncCtrl(0, 0, 0, 0);
-	/* IO update. */
-	AD9520_IoUpdate();
-	HAL_Delay(150);
-	/* Init VCO calibration. */
-	AD9520_PllCtrl3(1, 2, 0, 0, 3, 0);
-	AD9520_IoUpdate();
-	HAL_Delay(150);
-
-
-	Tmp[0] = AD9520_ReadReg(AD9520_PLL_CTRL_3);
-	Tmp[1] = AD9520_ReadReg(AD9520_DIVIDER0_BYTE0);
-	Tmp[2] = AD9520_GetPartID();
-	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
-	HAL_Delay(1500);
-	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
-	HAL_Delay(1500);
-	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
-	HAL_Delay(1500);
-	Tmp[3] = AD9520_GetPllReadbackCtrl()->PllReadBack;
-	HAL_Delay(1500);
-
-	return ad9520.PartId;
+	HAL_Delay(100);
 }
 
 /*
@@ -833,6 +836,7 @@ void AD9520_InClkCtrl(uint8_t VcoBypass, uint8_t VcoOrClkAsIn, uint8_t PwrDownVc
 	InClkControl.PWRDOWN_VCO_AND_CLK = PwrDownVcoAndClk;
 	InClkControl.PWRDOWN_VCO_INTERFACE = PwrDownVcoClkInterface;
 	InClkControl.PWRDOWN_CLK_IN_SECTION = PwrDownClkInSection;
+	InClkControl.RESERVED0 = 1;
 
 	AD9520_WriteReg(AD9520_INPUT_CLOCKS, InClkControl.InClkCtrl);
 }
@@ -945,7 +949,7 @@ uint8_t AD9520_GetEepromError(void) {
  */
 static uint8_t AD9520_ReadReg(uint16_t RegAddress) {
 
-	uint8_t Reg = 0;
+	static uint8_t Reg = 0;
 
 	ad9520.Data.ADDR = RegAddress;
 	ad9520.Data.BYTE_RXTX_COUNT = AD9520_ONE_BYTE;
@@ -953,10 +957,10 @@ static uint8_t AD9520_ReadReg(uint16_t RegAddress) {
 
 	ad9520.Data.RxTxData[0] = ad9520.Data.InstrHeader_MSB;
 	ad9520.Data.RxTxData[1] = ad9520.Data.InstrHeader_LSB;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.RxTxData, 2);
-	ad9520.delay_fp(25);
+	//ad9520.spi_tx_fp(&ad9520.Data.RxTxData[0], 2);
+	//ad9520.delay_fp(50);
 	ad9520.spi_rx_fp(&Reg, 1);
-	ad9520.delay_fp(25);
+	//ad9520.delay_fp(50);
 	return Reg;
 }
 
@@ -971,9 +975,9 @@ static void AD9520_WriteReg(uint16_t RegAddress, uint8_t RegValue) {
 
 	ad9520.Data.RxTxData[0] = ad9520.Data.InstrHeader_MSB;
 	ad9520.Data.RxTxData[1] = ad9520.Data.InstrHeader_LSB;
-	ad9520.Data.RxTxData[3] = RegValue;
-	ad9520.spi_tx_fp((uint8_t*)&ad9520.Data.RxTxData, 3);
-	ad9520.delay_fp(25);
+	ad9520.Data.RxTxData[2] = RegValue;
+	ad9520.spi_tx_fp(&ad9520.Data.RxTxData[0], 3);
+	//ad9520.delay_fp(50);
 }
 
 /* Hardware dependent functions. */
@@ -994,7 +998,7 @@ void AD9520_ResetCtrl(uint8_t RstCtrl) {
 /*
  * @brief Receive data from the chip.
  */
-void Ad9520_SpiRxData(uint8_t *pData, uint8_t Size) {
+static void AD9520_SpiRxData(uint8_t *pData, uint8_t Size) {
 
 	HAL_GPIO_WritePin(SPI6SNSS_GPIO_Port, SPI6SNSS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Receive(AD9520Spi, pData, Size, 25);
@@ -1004,15 +1008,126 @@ void Ad9520_SpiRxData(uint8_t *pData, uint8_t Size) {
 /*
  * @brief Transmit data to the chip.
  */
-void Ad9520_SpiTxData(uint8_t *pData, uint8_t Size) {
+static void AD9520_SpiTxData(uint8_t *pData, uint8_t Size) {
 
 	HAL_GPIO_WritePin(SPI6SNSS_GPIO_Port, SPI6SNSS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(AD9520Spi, pData, Size, 25);
 	HAL_GPIO_WritePin(SPI6SNSS_GPIO_Port, SPI6SNSS_Pin, GPIO_PIN_SET);
 }
 
+/*
+ * @brief Clocking data.
+ */
+static void AD9520_ClockData(void) {
 
+	HAL_GPIO_WritePin(AD9520_CLK_PORT, AD9520_CLK_PIN, GPIO_PIN_SET);
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+	HAL_GPIO_WritePin(AD9520_CLK_PORT, AD9520_CLK_PIN, GPIO_PIN_RESET);
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+}
 
+/*
+ * @brief Transmit data to the chip (MSB first).
+ */
+static void AD9520_ESpiTxData(uint8_t* pData, uint8_t Size) {
+
+	uint8_t TxData, PinState;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOG_CLK_ENABLE();
+
+	/* Transmitting the data to the shift register. */
+	TxData = *pData;
+
+	/* Configurate MCU pin to output. */
+	GPIO_InitStruct.Pin = AD9520_NSS_PIN | AD9520_CLK_PIN | AD9520_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(AD9520_NSS_PORT, &GPIO_InitStruct);
+	/* Activate NSS pin. */
+	HAL_GPIO_WritePin(AD9520_NSS_PORT, AD9520_NSS_PIN, GPIO_PIN_RESET);
+	/* Write command word. */
+	for (uint8_t i = Size; i > 0; i--) {
+		for (uint8_t i = AD9520_BIT_NUMBER; i > 0; i--) {
+			/* MSB first. */
+			PinState = (TxData & AD9520_BIT_MASK) ? (PinState = 1) : (PinState = 0);
+			HAL_GPIO_WritePin(AD9520_DATA_INOUT_PORT, AD9520_DATA_INOUT_PIN, PinState);
+			/* Clocking data. */
+			AD9520_ClockData();
+			/* Getting next bit.*/
+			TxData <<= 1;
+		}
+		pData++;
+		TxData = *pData;
+	}
+	/* Deactivate NSS pin. */
+	HAL_GPIO_WritePin(AD9520_NSS_PORT, AD9520_NSS_PIN, GPIO_PIN_SET);
+}
+
+/*
+ * @brief Receive data from the chip (MSB first).
+ */
+static void AD9520_ESpiRxData(uint8_t* pData, uint8_t Size) {
+
+	uint8_t TxData, PinState;
+	uint16_t RxData;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOG_CLK_ENABLE();
+
+	/* Transmitting the data to the shift register. */
+	TxData = ad9520.Data.RxTxData[0];
+
+	/* Configurate MCU pin to output. */
+	GPIO_InitStruct.Pin = AD9520_NSS_PIN | AD9520_CLK_PIN | AD9520_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(AD9520_NSS_PORT, &GPIO_InitStruct);
+	/* Activate NSS pin. */
+	HAL_GPIO_WritePin(AD9520_NSS_PORT, AD9520_NSS_PIN, GPIO_PIN_RESET);
+	/* Write command word. */
+	for (uint8_t i = AD9520_CMD_WORD_SIZE; i > 0; i--) {
+		for (uint8_t i = AD9520_BIT_NUMBER; i > 0; i--) {
+			/* MSB first. */
+			PinState = (TxData & AD9520_BIT_MASK) ? (PinState = 1) : (PinState = 0);
+			HAL_GPIO_WritePin(AD9520_DATA_INOUT_PORT, AD9520_DATA_INOUT_PIN, PinState);
+			/* Clocking data. */
+			AD9520_ClockData();
+			/* Getting next bit.*/
+			TxData <<= 1;
+		}
+		TxData = ad9520.Data.RxTxData[1];
+	}
+	/* Configurate MCU pin to input. */
+	GPIO_InitStruct.Pin = AD9520_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	HAL_GPIO_Init(AD9520_DATA_INOUT_PORT, &GPIO_InitStruct);
+	/* Read data byte. */
+	RxData = 0;
+	for (uint8_t i = Size; i > 0; i--) {
+		for (uint8_t i = AD9520_BIT_NUMBER; i > 0; i--) {
+			/* Clocking data. */
+			HAL_GPIO_WritePin(AD9520_CLK_PORT, AD9520_CLK_PIN, GPIO_PIN_SET);
+			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+			/* MSB first. */
+			RxData |= HAL_GPIO_ReadPin(AD9520_DATA_INOUT_PORT, AD9520_DATA_INOUT_PIN);
+			RxData <<= 1;
+			/* Clocking data. */
+			HAL_GPIO_WritePin(AD9520_CLK_PORT, AD9520_CLK_PIN, GPIO_PIN_RESET);
+			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+		}
+	}
+	RxData >>= 1;
+	/* Deactivate NSS pin. */
+	HAL_GPIO_WritePin(AD9520_NSS_PORT, AD9520_NSS_PIN, GPIO_PIN_SET);
+
+	*pData = RxData;
+}
 
 
 
