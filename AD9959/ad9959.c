@@ -17,14 +17,17 @@ static SPI_HandleTypeDef* AD9959Spi = &hspi1;
 /* Private function prototypes. */
 //static uint8_t AD9959_ReadByte(uint8_t Address);
 //static void AD9959_WriteByte(uint8_t Address, uint32_t Value, uint8_t Size);
-static void AD9959_SpiRxData(uint8_t *pData, uint8_t Size);
+static void AD9959_ClockData(void);
+static void AD9959_ESpiRxData(uint8_t* pData, uint8_t Size);
+static void AD9959_ESpiTxData(uint8_t* pData, uint8_t Size);
 static void AD9959_SpiTxData(uint8_t *pData, uint8_t Size);
+static void AD9959_SpiRxData(uint8_t *pTxData, uint8_t *pRxData, uint8_t Size);
 
 /* Init general struct. */
 static AD9959_GStr_t ad9959 = {
 		.delay_fp = HAL_Delay,
-		.spi_rx_fp = AD9959_SpiRxData,
-		.spi_tx_fp = AD9959_SpiTxData
+		.spi_rx_fp = AD9959_ESpiRxData,
+		.spi_tx_fp = AD9959_ESpiTxData
 };
 
 /*
@@ -32,9 +35,46 @@ static AD9959_GStr_t ad9959 = {
  */
 void AD9959_Init(void) {
 
-	AD9959_FunctReg1(0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1);
+	//uint8_t Temp[10];
+
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+
+//	/* Init pins. */
+//	GPIO_InitStruct.Pin = AD9959_NSS_PIN | AD9959_RST_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_SET);
+
+//	/* Reset after power up . */
+//	HAL_GPIO_WritePin(AD9959_RST_PORT, AD9959_RST_PIN, GPIO_PIN_SET);
+//	HAL_Delay(500);
+//	HAL_GPIO_WritePin(AD9959_RST_PORT, AD9959_RST_PIN, GPIO_PIN_RESET);
+//	HAL_Delay(100);
+
+	/* Enable the channels. */
+	AD9959_ChSelectReg(0, 0, 0x0F);
+	/* Initial configuration. */
+	AD9959_FunctReg1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
 	/* Set amplitude. */
-	AD9959_SetAmplitude(500, 0, 0, 0, 0, 0);
+	AD9959_SetFrequency(81250000);
+	AD9959_SetAmplitude(800, 0, 0, 1, 0, 0);
+
+	/* Enable the channels. */
+//	AD9959_ChSelectReg(0, 0, 0x0F);
+//	AD9959_SetPhase(0);
+
+
+//	Temp[0] = AD9959_ReadReg(AD9959_CH_SEL, 1)->RegData[0];
+//	Temp[1] = AD9959_ReadReg(AD9959_CH_FUNCTION, 3)->RegData[1];
+//	Temp[2] = AD9959_ReadReg(AD9959_FUNCTION1, 3)->RegData[0];
+//	Temp[3] = AD9959_ReadReg(AD9959_CH_AMPLITUDE_CTRL, 3)->RegData[2];
+
 
 }
 
@@ -69,7 +109,7 @@ uint16_t AD9959_SetPhase(float Phase) {
 /*
  * @brief Amplitude control register.
  *
- * @param Amplitude 			: Amplitude in millivolts from 0 to 1750mV.
+ * @param Amplitude 			: Amplitude in millivolts from 0 to 800mV.
  * @param LoadArrAtIoUpdate 	: Load ARR at I/O_UPDATE.
  * 									0 - the amplitude ramp rate timer is loaded only upon timeout (timer = 1) and is not loaded due to an I/O_UPDATE input
  * 										signal (default),
@@ -90,8 +130,10 @@ uint16_t AD9959_SetPhase(float Phase) {
  */
 void AD9959_SetAmplitude(float Amplitude, uint8_t LoadArrAtIoUpdate, uint8_t RampUpDownEn, uint8_t AmplMultiplierEn, uint8_t IncDecStepSize, uint8_t AmplRampRate) {
 
-	uint16_t AmplitudeScaleFactor = (uint16_t)((Amplitude / AD9959_VOLTAGE_RATIO));
+	uint16_t AmplitudeScaleFactor = (uint16_t)((Amplitude * AD9959_VOLTAGE_RATIO));
 	AD9959_AmplCtrl_t AmplitudeCtrl;
+
+	if(AmplitudeScaleFactor > AD9959_BIT_DEPTH) { AmplitudeScaleFactor = AD9959_BIT_DEPTH; }
 
 	AmplitudeCtrl.AMPL_SCALE_FACTOR_LOW = AmplitudeScaleFactor;
 	AmplitudeCtrl.AMPL_SCALE_FACTOR_HIGH = AmplitudeScaleFactor >> 8;
@@ -384,17 +426,15 @@ void AD9959_FunctReg2(uint8_t SysClkOffset, uint8_t MultiDevSyncMask, uint8_t Mu
  */
 uint8_t AD9959_ReadSyncStatus(void) {
 
-	static uint8_t SyncStatus;
+	static uint16_t SyncStatus;
 
 	ad9959.RxTxData.READ_WRITE = AD9959_READ_CMD;
 	ad9959.RxTxData.REG_ADDRESS = AD9959_FUNCTION2;
-	ad9959.spi_tx_fp(&ad9959.RxTxData.InstrByte, 1);
-	ad9959.delay_fp(1);
-	ad9959.spi_rx_fp(&SyncStatus, 1);
+	ad9959.spi_rx_fp((uint8_t*)&SyncStatus, 2);
 	ad9959.delay_fp(1);
 
-	SyncStatus = SyncStatus & 0x20;
-	return SyncStatus ;
+	SyncStatus = (SyncStatus >> 8 ) & 0x20;
+	return SyncStatus;
 }
 
 /*
@@ -521,6 +561,25 @@ void AD9959_ChPhaseOffsetWord0(uint16_t ChPhaseOffsetWord) {
 	ad9959.delay_fp(1);
 }
 
+/*
+ * @brief Read specific register.
+ *
+ * @return RegAddress 	:
+ */
+AD9959_ReadData_t* AD9959_ReadReg(uint8_t RegAddress, uint8_t Size) {
+
+	static AD9959_ReadData_t Data;
+
+	ad9959.RxTxData.READ_WRITE = AD9959_READ_CMD;
+	ad9959.RxTxData.REG_ADDRESS = RegAddress;
+	ad9959.spi_rx_fp(&Data.RegData[0], Size);
+	ad9959.delay_fp(1);
+
+	__NOP();
+
+	return &Data;
+}
+
 /* Private functions. */
 
 /*
@@ -547,13 +606,119 @@ void AD9959_ChPhaseOffsetWord0(uint16_t ChPhaseOffsetWord) {
 /* Hardware dependent functions. */
 
 /*
+ * @brief Clocking data.
+ */
+static void AD9959_ClockData(void) {
+
+	HAL_GPIO_WritePin(AD9959_CLK_PORT, AD9959_CLK_PIN, GPIO_PIN_SET);
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+	HAL_GPIO_WritePin(AD9959_CLK_PORT, AD9959_CLK_PIN, GPIO_PIN_RESET);
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+}
+
+/*
+ * @brief Transmit data to the chip (MSB first).
+ */
+static void AD9959_ESpiTxData(uint8_t* pData, uint8_t Size) {
+
+	uint8_t TxData, PinState;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* Transmitting the data to the shift register. */
+	TxData = *pData;
+
+	/* Configurate MCU pin to output. */
+	GPIO_InitStruct.Pin = AD9959_NSS_PIN | AD9959_CLK_PIN | AD9959_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(AD9959_NSS_PORT, &GPIO_InitStruct);
+	/* Activate NSS pin. */
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_RESET);
+	/* Write command word. */
+	for (uint8_t i = Size; i > 0; i--) {
+		for (uint8_t j = AD9959_BIT_NUMBER; j > 0; j--) {
+			/* MSB first. */
+			PinState = (TxData & AD9959_BIT_MASK) ? (PinState = 1) : (PinState = 0);
+			HAL_GPIO_WritePin(AD9959_DATA_INOUT_PORT, AD9959_DATA_INOUT_PIN, PinState);
+			/* Clocking data. */
+			AD9959_ClockData();
+			/* Getting next bit.*/
+			TxData <<= 1;
+		}
+		pData++;
+		TxData = *pData;
+	}
+	/* Deactivate NSS pin. */
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_SET);
+}
+
+/*
+ * @brief Receive data from the chip (MSB first).
+ */
+static void AD9959_ESpiRxData(uint8_t* pData, uint8_t Size) {
+
+	uint8_t TxData, PinState;
+	uint16_t RxData;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* Transmitting the data to the shift register. */
+	TxData = ad9959.RxTxData.InstrByte;
+
+	/* Configurate MCU pin to output. */
+	GPIO_InitStruct.Pin = AD9959_NSS_PIN | AD9959_CLK_PIN | AD9959_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(AD9959_NSS_PORT, &GPIO_InitStruct);
+	/* Activate NSS pin. */
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_RESET);
+	/* Write command word. */
+	for (uint8_t i = AD9959_BIT_NUMBER; i > 0; i--) {
+		/* MSB first. */
+		PinState = (TxData & AD9959_BIT_MASK) ? (PinState = 1) : (PinState = 0);
+		HAL_GPIO_WritePin(AD9959_DATA_INOUT_PORT, AD9959_DATA_INOUT_PIN, PinState);
+		/* Clocking data. */
+		AD9959_ClockData();
+		/* Getting next bit.*/
+		TxData <<= 1;
+	}
+	/* Configurate MCU pin to input. */
+	GPIO_InitStruct.Pin = AD9959_DATA_INOUT_PIN | AD9959_DATA_IN_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(AD9959_DATA_INOUT_PORT, &GPIO_InitStruct);
+	/* Read data byte. */
+	RxData = 0;
+	for (uint8_t i = Size; i > 0; i--) {
+		for (uint8_t j = AD9959_BIT_NUMBER; j > 0; j--) {
+			/* MSB first. */
+			RxData |= HAL_GPIO_ReadPin(AD9959_DATA_INOUT_PORT, AD9959_DATA_INOUT_PIN);
+			RxData <<= 1;
+			/* Clocking data. */
+			AD9959_ClockData();
+		}
+		RxData >>= 1;
+		*pData = RxData;
+		RxData = 0;
+		pData++;
+	}
+
+	/* Deactivate NSS pin. */
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_SET);
+}
+
+/*
  * @brief Receive data from the chip.
  */
-static void AD9959_SpiRxData(uint8_t *pData, uint8_t Size) {
+static void AD9959_SpiRxData(uint8_t *pTxData, uint8_t *pRxData, uint8_t Size) {
 
-	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Receive(AD9959Spi, pData, Size, 25);
-	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(AD9959Spi, pTxData, 1, 25);
+	HAL_SPI_Receive(AD9959Spi, pRxData, Size, 25);
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_SET);
 }
 
 /*
@@ -561,9 +726,9 @@ static void AD9959_SpiRxData(uint8_t *pData, uint8_t Size) {
  */
 static void AD9959_SpiTxData(uint8_t *pData, uint8_t Size) {
 
-	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(AD9959Spi, pData, Size, 25);
-	HAL_GPIO_WritePin(AD9959_CS_PORT, AD9959_CS_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(AD9959_NSS_PORT, AD9959_NSS_PIN, GPIO_PIN_SET);
 }
 
 

@@ -7,6 +7,7 @@
 #include "stm32f4xx_hal.h"
 #include "main.h"
 #include "ad9520.h"
+#include "Common.h"
 
 
 /* External variables. */
@@ -37,28 +38,39 @@ uint8_t AD9520_Init(void) {
 
 	/* Reset chip. */
 	AD9520_ResetCtrl(1);
-	HAL_Delay(100);
+	HAL_Delay(50);
 	AD9520_ResetCtrl(0);
-	HAL_Delay(100);
+	HAL_Delay(50);
 
 	/* Is the chip available? */
 	if (AD9520_GetPartID() != AD9520x_TYPE) {
 		return AD9520x_NO_DEVICE;
 	}
+
+	/* Select internal VCO as clock source. */
+	AD9520_IntVcoModeSelect();
+	/* Select external clock source. */
+	//AD9520_ExtDistribModeSelect();
+
 	/* Left enabled only outputs from 3 to 8. Remaining outputs set to safe power-down mode. */
+	HAL_Delay(100);
 	AD9520_OutCtrl(0, 1, 2, 0, 3, 0);
 	AD9520_OutCtrl(1, 1, 2, 0, 3, 0);
 	AD9520_OutCtrl(2, 1, 2, 0, 3, 0);
 	AD9520_OutCtrl(9, 1, 2, 0, 3, 0);
 	AD9520_OutCtrl(10, 1, 2, 0, 3, 0);
 	AD9520_OutCtrl(11, 1, 2, 0, 3, 0);
+//	AD9520_OutCtrl(6, 1, 2, 0, 3, 0);
+//	AD9520_OutCtrl(7, 1, 2, 0, 3, 0);
+//	AD9520_OutCtrl(8, 1, 2, 0, 3, 0);
+
 	/* IO update. */
 	AD9520_IoUpdate();
 	HAL_Delay(100);
-	/* Select internal VCO as clock source. */
-	AD9520_IntVcoModeSelect();
-	/* Select external clock source. */
-	//AD9520_ExtDistribModeSelect();
+
+	/* Sync DDS. */
+//	HAL_Delay(3000);
+//	DEV_IssueSyncPulse();
 
 	return ad9520.PartId;
 }
@@ -73,10 +85,10 @@ void AD9520_ExtDistribModeSelect(void) {
 	/* Bypass the VCO divider. */
 	AD9520_VcoDivCtrl(6);
 	/* LVPECL channel dividers setting up. */
-	AD9520_ChDividersCtrl(0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
-	AD9520_ChDividersCtrl(1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
-	AD9520_ChDividersCtrl(2, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
-	AD9520_ChDividersCtrl(3, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0);
+	AD9520_ChDividersCtrl(0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0);
+	AD9520_ChDividersCtrl(1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0);
+	AD9520_ChDividersCtrl(2, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0);
+	AD9520_ChDividersCtrl(3, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0);
 	/* IO update. */
 	AD9520_IoUpdate();
 	HAL_Delay(150);
@@ -102,13 +114,13 @@ void AD9520_IntVcoModeSelect(void) {
 	/* Enable reference 1 as input. */
 	AD9520_PllCtrl7(0, 1, 0, 0, 0, 0, 0, 0);
 	/* LVPECL channel dividers setting up. */
-	AD9520_ChDividersCtrl(0, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(1, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(2, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
-	AD9520_ChDividersCtrl(3, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
+	AD9520_ChDividersCtrl(3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
 	AD9520_IoUpdate();
 	/* Set VCO divider. */
-	AD9520_VcoDivCtrl(2);
+	AD9520_VcoDivCtrl(0);
 	/* Select VCO as source. */
 	AD9520_InClkCtrl(0, 1, 0, 0, 0);
 	/* IO update. */
@@ -1001,6 +1013,7 @@ void AD9520_ResetCtrl(uint8_t RstCtrl) {
 static void AD9520_SpiRxData(uint8_t *pData, uint8_t Size) {
 
 	HAL_GPIO_WritePin(SPI6SNSS_GPIO_Port, SPI6SNSS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(AD9520Spi, &ad9520.Data.RxTxData[0], 2, 25);
 	HAL_SPI_Receive(AD9520Spi, pData, Size, 25);
 	HAL_GPIO_WritePin(SPI6SNSS_GPIO_Port, SPI6SNSS_Pin, GPIO_PIN_SET);
 }

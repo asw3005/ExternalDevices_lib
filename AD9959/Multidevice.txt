@@ -1,0 +1,11 @@
+/* For the multidevice synchronisation you should select device role. */
+
+/* Enable device role. */
+AD9959_ChSelectReg(0, 0, 0x0F);
+if (BoardAddr == MASTER_DEV_ADDR) {
+	AD9959_FunctReg2(2, 0, 1, 0, 0, 1, 0, 0);
+	AD9959_FunctReg2(2, 0, 1, 1, 0, 1, 0, 0);
+} else {
+	AD9959_FunctReg2(2, 0, 0, 0, 0, 1, 0, 0);
+	AD9959_FunctReg2(2, 0, 0, 1, 0, 1, 0, 0);
+}

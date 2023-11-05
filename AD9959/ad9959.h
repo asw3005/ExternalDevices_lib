@@ -9,13 +9,27 @@
 
 #include "stm32f1xx.h"
 
-#define AD9959_SYSTEM_CLOCK_RATE 	250000000.0f
-#define AD9959_BIT_DEPTH 			1024
-#define AD9959_VOLTAGE_RATIO		1.708984375f
+#define AD9959_SYSTEM_CLOCK_RATE 	500000000.0f
+#define AD9959_BIT_DEPTH 			1023
+//#define AD9959_VOLTAGE_RATIO		1.708984375f
+#define AD9959_VOLTAGE_RATIO		1.28f
 
-/* Define chip select port and pin. */
-#define AD9959_CS_PORT 				GPIOA
-#define AD9959_CS_PIN 				GPIO_PIN_0
+/* Ports' selection. */
+#define AD9959_RST_PIN 					GPIO_PIN_6
+#define AD9959_NSS_PIN 					GPIO_PIN_4
+#define AD9959_CLK_PIN 					GPIO_PIN_5
+#define AD9959_DATA_IN_PIN				GPIO_PIN_7
+#define AD9959_DATA_INOUT_PIN			GPIO_PIN_7
+#define AD9959_RST_PORT 				GPIOA
+#define AD9959_NSS_PORT					GPIOA
+#define AD9959_CLK_PORT 				GPIOA
+#define AD9959_DATA_IN_PORT				GPIOA
+#define AD9959_DATA_INOUT_PORT			GPIOA
+
+/* Significant data bits. */
+#define AD9959_CMD_WORD_SIZE			1
+#define AD9959_BIT_NUMBER				8
+#define AD9959_BIT_MASK					0x80
 
 /*
  * @brief Register maps.
@@ -64,6 +78,8 @@ typedef enum {
 /* Function pointer prototypes. */
 typedef void(*delay_fptr)(uint32_t);
 typedef void(*rxtx_fptr)(uint8_t* pData, uint8_t Size);
+
+
 
 /*
  * @brief
@@ -322,7 +338,7 @@ typedef union __attribute__((aligned(1), packed)) {
 /*
  * @brief Instruction byte.
  */
-typedef struct {
+typedef struct __attribute__((aligned(1), packed)) {
 	union {
 		uint8_t InstrByte;
 		struct {
@@ -333,12 +349,20 @@ typedef struct {
 		};
 	};
 
-	union {
-		uint8_t Data[4];
-		uint32_t Data32;
-	};
+	uint8_t Data[4];
+
 
 } AD9959_RxTxData_t;
+
+
+/*
+ * @brief Reading data.
+ */
+typedef struct {
+
+	uint8_t RegData[4];
+
+} AD9959_ReadData_t;
 
 /*
  * @brief
@@ -382,6 +406,7 @@ void AD9959_ChannelFunctReg(uint8_t SineWaveOutEn, uint8_t ClrPhaseAcc, uint8_t 
 							uint8_t LoadSrrIoUpdate, uint8_t LinearSweepEn, uint8_t LinearSweepNoDwell, uint8_t AfpSelect);
 void AD9959_FreqTuneWord0(uint32_t FreqTuneWord);
 void AD9959_ChPhaseOffsetWord0(uint16_t ChPhaseOffsetWord);
+AD9959_ReadData_t* AD9959_ReadReg(uint8_t RegAddress, uint8_t Size);
 
 
 #endif /* AD9959_H_ */
