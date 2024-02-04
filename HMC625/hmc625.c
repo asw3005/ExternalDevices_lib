@@ -4,7 +4,7 @@
  * Created on: Sep 6, 2023
  * Author: asw3005
  */
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "main.h"
 #include "hmc625.h"
 
@@ -35,6 +35,23 @@ static HMC625_GStr_t hmc625 = {
  * @brief Initialization the chip.
  */
 void HMC625_Init(void) {
+
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+
+	GPIO_InitStruct.Pin = HMC625_CLK_PIN|HMC625_DATA_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = HMC625_LE_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(HMC625_LE_PORT, &GPIO_InitStruct);
 
 	HAL_GPIO_WritePin(HMC625_DATA_PORT, HMC625_DATA_PIN, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(HMC625_CLK_PORT, HMC625_CLK_PIN, GPIO_PIN_RESET);

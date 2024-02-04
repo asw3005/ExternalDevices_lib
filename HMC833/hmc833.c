@@ -4,12 +4,14 @@
  * Created on: Sep 7, 2023
  * Author: asw3005
  */
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "hmc833.h"
 #include "math.h"
 
 /* External variables. */
+#ifdef HMC833_SPI_HARD
 extern SPI_HandleTypeDef hspi1;
+#endif /* HMC833_SPI_HARD */
 
 
 /* Private function prototypes. */
@@ -26,7 +28,9 @@ static void HMC833_ESpiRxData(uint8_t *pTxData, uint8_t *pRxData, uint8_t Size);
 #endif /* HMC833_SPI_SOFT */
 
 /* Private variables. */
+#ifdef HMC833_SPI_HARD
 static SPI_HandleTypeDef* HMC833Spi = &hspi1;
+#endif /* HMC833_SPI_HARD */
 static HMC833_GStr_t hmc833 = {
 		.delay_fp = HAL_Delay,
 		#ifdef HMC833_SPI_HARD
@@ -44,15 +48,51 @@ static HMC833_GStr_t hmc833 = {
  */
 void HMC833_Init(void) {
 
-	/* Select HMC mode. */
+	uint32_t ChipID = 0;
+
+	/* Pin init. */
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	__HAL_RCC_GPIOG_CLK_ENABLE();
+
+	GPIO_InitStruct.Pin = HMC833_CE_PIN | HMC833_CS_PIN | HMC833_CLK_PIN | HMC833_SDI_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(HMC833_CS_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = HMC833_SDO_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(HMC833_SDO_PORT, &GPIO_InitStruct);
+
+	/* Enable chip. Select HMC mode. */
+	HAL_GPIO_WritePin(HMC833_CE_PORT, HMC833_CE_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(HMC833_CLK_PORT, HMC833_CLK_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(HMC833_CS_PORT, HMC833_CS_PIN, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(HMC833_CS_PORT, HMC833_CS_PIN, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(HMC833_CS_PORT, HMC833_CS_PIN, GPIO_PIN_RESET);
 
 	/* Check is device available? */
-	if (HMC833_GetChipId() != HMC833_CHIP_ID) {
+	ChipID = HMC833_GetChipId();
+	if (ChipID != HMC833_CHIP_ID) {
+
+
+
+		__NOP();
 		return;
 	}
 
+
+
+
+
+
+
+
+
+	__NOP();
 
 
 
@@ -728,7 +768,7 @@ static uint32_t HMC833_ReadReg(uint8_t RegAddress) {
 	hmc833.RxData.TxBuff[1] = 0;
 	hmc833.RxData.TxBuff[2] = 0;
 	hmc833.RxData.TxBuff[3] = 0;
-	hmc833.rx_fp(&hmc833.RxData.TxBuff[0], &hmc833.RxData.RxBuff[0], 4);
+	hmc833.rx_fp(&hmc833.RxData.TxBuff[0], &hmc833.RxData.RxBuff[0], 3);
 
 	hmc833.RxData.R_InstrData_H_MSB = hmc833.RxData.RxBuff[0];
 	hmc833.RxData.R_InstrData_H_LSB = hmc833.RxData.RxBuff[1];
@@ -780,12 +820,13 @@ static void HMC833_ESpiRxData(uint8_t *pTxData, uint8_t *pRxData, uint8_t Size) 
 	uint8_t TxByte = 0, PinSate;
 	uint16_t RxByte = 0;
 
+	/* Assertion serial enable. */
 	HAL_GPIO_WritePin(HMC833_CS_PORT, HMC833_CS_PIN, GPIO_PIN_SET);
 	/* Write instruction byte. */
 	TxByte = *pTxData;
 	for (uint8_t TxBits = HMC833_W_BIT_NUMBER; TxBits > 0; TxBits--) {
 		PinSate = (TxByte & HMC833_BIT_MASK) ? 1 : 0;
-		HAL_GPIO_WritePin(HMC833_SDO_PORT, HMC833_SDO_PIN, PinSate);
+		HAL_GPIO_WritePin(HMC833_SDI_PORT, HMC833_SDI_PIN, PinSate);
 		HMC833_ESpiClk();
 		TxByte <<= 1;
 	}
@@ -795,16 +836,19 @@ static void HMC833_ESpiRxData(uint8_t *pTxData, uint8_t *pRxData, uint8_t Size) 
 		for (uint8_t RxBits = HMC833_BIT_NUMBER; RxBits > 0; RxBits--) {
 			HAL_GPIO_WritePin(HMC833_CLK_PORT, HMC833_CLK_PIN, GPIO_PIN_SET);
 			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
-			RxByte |= HAL_GPIO_ReadPin(HMC833_SDI_PORT, HMC833_SDI_PIN);
+			RxByte |= HAL_GPIO_ReadPin(HMC833_SDO_PORT, HMC833_SDO_PIN);
 			HAL_GPIO_WritePin(HMC833_CLK_PORT, HMC833_CLK_PIN, GPIO_PIN_RESET);
 			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
 			RxByte <<= 1;
 		}
 		RxByte >>= 1;
 		*pRxData = RxByte;
+		RxByte = 0;
 		pRxData++;
 	}
+	/* 32th clock. */
 	HMC833_ESpiClk();
+	/* De-assertion serial enable. */
 	HAL_GPIO_WritePin(HMC833_CS_PORT, HMC833_CS_PIN, GPIO_PIN_RESET);
 }
 
@@ -815,17 +859,19 @@ static void HMC833_ESpiTxData(uint8_t *pData, uint8_t Size) {
 
 	uint8_t TxByte = 0, PinSate;
 
+	/* Assertion serial enable. */
 	HAL_GPIO_WritePin(HMC833_CS_PORT, HMC833_CS_PIN, GPIO_PIN_SET);
 	for (uint8_t i = Size; i > 0; i--) {
 		TxByte = *pData;
 		for (uint8_t TxBits = HMC833_BIT_NUMBER; TxBits > 0; TxBits--) {
 			PinSate = (TxByte & HMC833_BIT_MASK) ? 1 : 0;
-			HAL_GPIO_WritePin(HMC833_SDO_PORT, HMC833_SDO_PIN, PinSate);
+			HAL_GPIO_WritePin(HMC833_SDI_PORT, HMC833_SDI_PIN, PinSate);
 			HMC833_ESpiClk();
 			TxByte <<= 1;
 		}
 		pData++;
 	}
+	/* De-assertion serial enable. */
 	HAL_GPIO_WritePin(HMC833_CS_PORT, HMC833_CS_PIN, GPIO_PIN_RESET);
 }
 #endif /* HMC833_SPI_SOFT */

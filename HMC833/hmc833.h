@@ -8,10 +8,10 @@
 #ifndef HMC833_H_
 #define HMC833_H_
 
-#include "stm32f1xx.h"
+#include "stm32f4xx.h"
 
 /* Select hardware or software SPI. */
-#define HMC833_SPI_HARD
+//#define HMC833_SPI_HARD
 #ifndef HMC833_SPI_HARD
 #define HMC833_SPI_SOFT
 #endif /* HMC833_SPI_HARD */
@@ -22,15 +22,17 @@
 #define HMC833_VCO_ID				0
 
 /* Pin definitions serial port. */
-#define HMC833_CS_PIN 				GPIO_PIN_0
-#define HMC833_CS_PORT 				GPIOA
+#define HMC833_CE_PIN 				GPIO_PIN_10
+#define HMC833_CE_PORT 				GPIOG
+#define HMC833_CS_PIN 				GPIO_PIN_11
+#define HMC833_CS_PORT 				GPIOG
 #ifdef HMC833_SPI_SOFT
-#define HMC833_CLK_PIN 				GPIO_PIN_0
-#define HMC833_CLK_PORT 			GPIOA
-#define HMC833_SDI_PIN 				GPIO_PIN_0
-#define HMC833_SDI_PORT 			GPIOA
-#define HMC833_SDO_PIN 				GPIO_PIN_0
-#define HMC833_SDO_PORT 			GPIOA
+#define HMC833_CLK_PIN 				GPIO_PIN_13
+#define HMC833_CLK_PORT 			GPIOG
+#define HMC833_SDI_PIN 				GPIO_PIN_14
+#define HMC833_SDI_PORT 			GPIOG
+#define HMC833_SDO_PIN 				GPIO_PIN_12
+#define HMC833_SDO_PORT 			GPIOG
 /* Rx Tx constants. */
 #define HMC833_BIT_NUMBER			8
 #define HMC833_W_BIT_NUMBER			7
@@ -567,9 +569,9 @@ typedef struct {
 			uint8_t R_InstrData_H_MSB;
 		};
 		struct {
-			uint32_t R_LOCK_DETECT0			: 1;
+			//uint32_t R_LOCK_DETECT0			: 1;
 			uint32_t R_REG_DATA 			: 24;
-			uint32_t R_LOCK_DETECT1			: 7;
+			uint32_t R_LOCK_DETECT1			: 8;
 		};
 	};
 	uint8_t RxBuff[4];

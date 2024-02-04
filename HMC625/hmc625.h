@@ -8,7 +8,7 @@
 #ifndef HMC625_H_
 #define HMC625_H_
 
-#include "stm32f1xx.h"
+#include "stm32f4xx.h"
 
 /* Select SPI or Parallel mode (if serial mode is undefined the parallel mode selected). */
 #define SERIAL_MODE
@@ -24,11 +24,11 @@
 #ifdef SERIAL_MODE
 /* Pin definitions serial port. */
 #define HMC625_LE_PIN 		GPIO_PIN_0
-#define HMC625_CLK_PIN 		GPIO_PIN_1
-#define HMC625_DATA_PIN 	GPIO_PIN_2
-#define HMC625_LE_PORT 		GPIOA
-#define HMC625_CLK_PORT 	GPIOA
-#define HMC625_DATA_PORT 	GPIOA
+#define HMC625_CLK_PIN 		GPIO_PIN_10
+#define HMC625_DATA_PIN 	GPIO_PIN_12
+#define HMC625_LE_PORT 		GPIOD
+#define HMC625_CLK_PORT 	GPIOC
+#define HMC625_DATA_PORT 	GPIOC
 /* Significant data bits. */
 #define HMC625_DATA_NUMBER	6
 #define HMC625_DATA_MASK	0x80
@@ -51,7 +51,7 @@
 
 /* Function pointer prototypes. */
 typedef void(*delay_fptr)(uint32_t);
-typedef void(*rxtx_fptr)(uint8_t* pData, uint8_t Size);
+typedef void(*hmc625tx_fptr)(uint8_t* pData, uint8_t Size);
 
 /*
  * @brief General struct.
@@ -60,7 +60,7 @@ typedef struct {
 
 	/* Function pointers. */
 	delay_fptr delay_fp;
-	rxtx_fptr tx_fp;
+	hmc625tx_fptr tx_fp;
 
 } HMC625_GStr_t;
 

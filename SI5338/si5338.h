@@ -8,19 +8,14 @@
 #ifndef SI5338_H_
 #define SI5338_H_
 
-#include "stm32f1xx.h"
+#include "stm32f4xx.h"
 
-#define SI5338_STRONE_BYTEVAL_MAX  	256
-#define SI5338_STRTWO_BYTEVAL_MAX	96
-#define SI5338_NUM_REGS_MAX 		(SI5338_STRONE_BYTEVAL_MAX + SI5338_STRTWO_BYTEVAL_MAX)
+#define SI5338_NUM_REGS_MAX 		350
 
 /* I2C bus addresses. */
 #define SI5338_ADDRESS0				0x70
 #define SI5338_ADDRESS1				0x71
 #define SI5338_ADDRESS_SHIFTED 		(SI5338_ADDRESS0 << 1)
-#define SI5338_CURRENT_ADDR 		SI5338_ADDRESS_SHIFTED
-
-
 
 /*
  * @brief Register maps.
@@ -28,7 +23,7 @@
 typedef enum {
 
 	SI5338_DEV_REV_ID,
-	SI5338_DEV_START_CFG
+	SI5338_DEV_START_CFG = 2
 
 } SI5338_REG_MAP_t;
 
@@ -43,7 +38,7 @@ typedef enum {
 
 /* Function pointer prototypes. */
 typedef void(*delay_fptr)(uint32_t);
-typedef void(*rxtx_fptr)(uint8_t MemAddr, uint8_t* pData, uint8_t Size);
+typedef void(*si5338rxtx_fptr)(uint8_t MemAddr, uint8_t* pData, uint8_t Size);
 
 /*
  * @brief Register addressing bytes.
@@ -68,13 +63,13 @@ typedef struct {
 /*
  * @brief
  */
-typedef struct {
+typedef struct __attribute__((aligned(1), packed)) {
 
 	union {
 		uint8_t DevCfg2;
 		struct {
-			uint8_t DEV_CFG2_5_0	: 5;
-			uint8_t RESERVED0 		: 3;
+			uint8_t DEV_CFG2_5_0	: 6;
+			uint8_t RESERVED0 		: 2;
 		};
 	};
 
@@ -87,19 +82,9 @@ typedef struct {
 		};
 	};
 
-	union {
 		uint8_t DevCfg4;
-		struct {
-			uint8_t DEV_CFG4_7_0 	: 8;
-		};
-	};
-
-	union {
 		uint8_t DevCfg5;
-		struct {
-			uint8_t DEV_CFG5_7_0 	: 8;
-		};
-	};
+
 } SI5338_DevCfg_t;
 
 /*
@@ -107,10 +92,12 @@ typedef struct {
  */
 typedef struct {
 
+	/*I2C addr. */
+	uint8_t addr;
 	/* Function pointers. */
 	delay_fptr delay_fp;
-	rxtx_fptr i2c_rx_fp;
-	rxtx_fptr i2c_tx_fp;
+	si5338rxtx_fptr i2c_rx_fp;
+	si5338rxtx_fptr i2c_tx_fp;
 
 } SI5338_GStr_t;
 
@@ -119,5 +106,8 @@ typedef struct {
 void SI5338_Init(void);
 uint8_t SI5338_GetDevRevID(void);
 SI5338_ReadyDevCfg_t* SI5338_GetDevCfg(void);
+
+uint8_t SI5338_ReadReg(uint8_t address);
+void SI5338_WriteReg(uint8_t address, uint8_t value);
 
 #endif /* SI5338_H_ */
