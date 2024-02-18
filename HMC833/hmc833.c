@@ -7,6 +7,7 @@
 #include "stm32f4xx_hal.h"
 #include "hmc833.h"
 #include "math.h"
+#include "Common.h"
 
 /* External variables. */
 #ifdef HMC833_SPI_HARD
@@ -50,6 +51,9 @@ void HMC833_Init(void) {
 
 	uint32_t ChipID = 0;
 
+	/* Clock select. */
+	float fvco, Nint, Nfrac, R, fxtal, fpd, ffrac, fn/*, fvcocheck, foutcheck*/;
+	uint16_t ExactReg = 0;
 	/* Pin init. */
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -77,25 +81,109 @@ void HMC833_Init(void) {
 	/* Check is device available? */
 	ChipID = HMC833_GetChipId();
 	if (ChipID != HMC833_CHIP_ID) {
-
-
-
 		__NOP();
 		return;
 	}
 
+	/* Calculate the frequency you need. */
+	fxtal 	= 60.0f;
+	fvco 	= 2805.0f;
+	R 		= 1.0f;
+	Nfrac 	= 0.0f;
+
+	fpd 	= fxtal / R;
+	Nint 	= floorf(fvco / fpd);
+	//Nfrac   = (fvco / fpd) - Nint;
+	//ffrac = roundf(Nfrac * 16777216.0f);
+
+	fn = Nint * fpd;
+	ffrac = ceilf((16777216.0f * (fvco - fn)) / fpd);
+
+	ExactReg = fpd / (gcd(fvco, fpd));
 
 
+	/* Check parameters. */
+//	fvcocheck = (fpd * 1000000) * (Nint + (ffrac / 16777216.0f));
+//	foutcheck = fvcocheck / 1;
 
 
+	/* Configuring fractional or integer modes. */
+	HMC833_SdCfg(2, 2, 0, 1, 1, 1, 0, 0);
+	/* Select reference divider. */
+	HMC833_RefDivCfg(1);
+	/* Select analog enable configuration. */
+	HMC833_AnalogEnable(1, 0);
 
+	/* VCO subsystem. */
+	HMC833_VcoBiases(1, 3, 0);
 
+	HAL_Delay(100);
+	/* Auto calibration. Set default address for the VCO subsystem. */
+	HMC833_VcoSubsys(HMC833_VCO_SUBSYS_ID, HMC833_VCO_TUNING, HMC833_GetVcoTune()->VcoTuneReg);
 
+	/* Set integer part. */
+	HMC833_SetFreqIntPart(Nint);
+
+	HMC833_ExactFreqchPerFpd(ExactReg);
+	/* Set fractional part. */
+	HMC833_SetFreqFracPart(ffrac);
 
 	__NOP();
 
+}
 
+void HMC833_SetFreq(float Frequency) {
 
+	/* Clock select. */
+	float fvco, Nint, Nfrac, R, fxtal, fpd, ffrac, fn;
+	uint16_t ExactReg = 0;
+
+//	/* Calculate the frequency you need. */
+//	fxtal 	= 60.0f;
+//	fvco 	= Frequency;
+//	R 		= 1.0f;
+//	Nfrac 	= 0.0f;
+//
+//	fpd 	= fxtal / R;
+//	Nint 	= floorf(fvco / fpd);
+//	Nfrac   = (fvco / fpd) - Nint;
+//	ffrac = roundf(Nfrac * 16777216.0f);
+//
+//	HAL_Delay(100);
+//	/* Auto calibration. Set default address for the VCO subsystem. */
+//	HMC833_VcoSubsys(HMC833_VCO_SUBSYS_ID, HMC833_VCO_TUNING, HMC833_GetVcoTune()->VcoTuneReg);
+//
+//	/* Set integer part. */
+//	HMC833_SetFreqIntPart(Nint);
+//	/* Set fractional part. */
+//	HMC833_SetFreqFracPart(ffrac);
+
+	/* Calculate the frequency you need. */
+	fxtal 	= 60.0f;
+	fvco 	= Frequency;
+	R 		= 1.0f;
+	Nfrac 	= 0.0f;
+
+	fpd 	= fxtal / R;
+	Nint 	= floorf(Frequency / fpd);
+	//Nfrac   = (fvco / fpd) - Nint;
+	//ffrac = roundf(Nfrac * 16777216.0f);
+
+	fn = Nint * fpd;
+	ffrac = ceilf((16777216.0f * (Frequency - fn)) / fpd);
+
+	ExactReg = fpd / (gcd(Frequency, fpd));
+
+	HAL_Delay(100);
+	/* Auto calibration. Set default address for the VCO subsystem. */
+	//HMC833_VcoSubsys(HMC833_VCO_SUBSYS_ID, HMC833_VCO_TUNING, HMC833_GetVcoTune()->VcoTuneReg);
+
+	/* Set integer part. */
+	HMC833_SetFreqIntPart(Nint);
+
+	HMC833_ExactFreqchPerFpd(ExactReg);
+	/* Set fractional part. */
+	HMC833_SetFreqFracPart(ffrac);
 }
 
 /* PLL SUBSYSTEM FUNCTIONS */
@@ -793,9 +881,8 @@ static void HMC833_WriteReg(uint8_t RegAddress, uint32_t Data) {
 	hmc833.TxData.TxBuff[1] = hmc833.TxData.W_InstrData_H_LSB;
 	hmc833.TxData.TxBuff[2] = hmc833.TxData.W_InstrData_L_MSB;
 	hmc833.TxData.TxBuff[3] = hmc833.TxData.W_InstrData_L_LSB;
-	hmc833.tx_fp(&hmc833.RxData.TxBuff[0], 4);
+	hmc833.tx_fp(&hmc833.TxData.TxBuff[0], 4);
 }
-
 
 
 /* Hardware dependent functions. */

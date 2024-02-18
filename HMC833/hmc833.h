@@ -20,6 +20,7 @@
 /* HMC833 some constants. */
 #define HMC833_CHIP_ID 				0xA7975
 #define HMC833_VCO_ID				0
+#define HMC833_FVCO					3000.0f
 
 /* Pin definitions serial port. */
 #define HMC833_CE_PIN 				GPIO_PIN_10
@@ -604,6 +605,7 @@ HMC833_Gpo2_t* HMC833_GetGpo2(void);
 HMC833_Bist_t* HMC833_GetBist(void);
 HMC833_VcoTune_t* HMC833_GetVcoTune(void);
 
+void HMC833_SetFreq(float Frequency);
 void HMC833_RefDivCfg(uint32_t RefDiv);
 void HMC833_SetFreqIntPart(uint32_t IntValue);
 void HMC833_SetFreqFracPart(uint32_t FracValue);
@@ -622,7 +624,7 @@ void HMC833_VcoAutocal(uint8_t VtuneRes, uint8_t VcoCurveAdj, uint8_t WaitStateS
 					   uint8_t NoVspiTrg, uint8_t FsmVspiClkSel, uint8_t XtalFallEdgeFsm);
 void HMC833_PhaseDetector(uint8_t PdDelSel, uint8_t ShortPdInputs, uint8_t PdPhaseSel, uint8_t PdUpEn, uint8_t PdDnEn, uint8_t CspMode,
 						  uint8_t ForceCpUp, uint8_t ForceCpDown, uint8_t ForceCpMidRail, uint8_t MCntClkGating);
-
+void HMC833_AnalogEnable(uint8_t GpoPadEn, uint8_t HighFreqRef);
 
 void HMC833_VcoTuning(uint8_t Cal, uint8_t Caps);
 void HMC833_VcoConfig(uint8_t FundDoublerModeSel, uint8_t ManRfoMode, uint8_t RfBuffBias);
