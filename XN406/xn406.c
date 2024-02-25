@@ -4,9 +4,10 @@
  * Created on: Oct 2, 2023
  * Author: asw3005
  */
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "xn406.h"
 #include "math.h"
+#include "Common.h"
 
 /* External variables. */
 extern SPI_HandleTypeDef hspi1;
@@ -46,18 +47,116 @@ static XN406_GStr_t xn406 = {
  */
 void XN406_Init(void) {
 
-	/* Select HMC mode. */
-	HAL_GPIO_WritePin(XN406_CS_PORT, XN406_CS_PIN, GPIO_PIN_SET);
+	uint32_t ChipID = 0;
+
+	/* Clock select. */
+	float fvco, Nint, R, fxtal, fpd, ffrac, fn;
+	//uint16_t ExactReg = 0;
+	/* Pin init. */
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	__HAL_RCC_GPIOG_CLK_ENABLE();
+
+	GPIO_InitStruct.Pin = XN406_CE_PIN | XN406_CS_PIN | XN406_CLK_PIN | XN406_SDI_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(XN406_CE_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = XN406_SDO_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(XN406_SDO_PORT, &GPIO_InitStruct);
+
+	/* Enable chip. Select HMC mode. */
+	HAL_GPIO_WritePin(XN406_CE_PORT, XN406_CE_PIN, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(XN406_CS_PORT, XN406_CS_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(XN406_CLK_PORT, XN406_CLK_PIN, GPIO_PIN_RESET);
 
 	/* Check is device available? */
-	if (XN406_GetChipId() != XN406_CHIP_ID) {
+	ChipID = XN406_GetChipId();
+	if (ChipID != XN406_CHIP_ID) {
+		__NOP();
 		return;
 	}
 
+	/* Calculate the frequency you need. */
+	fxtal 	= 60.0f;
+	fvco 	= 2800.2f;
+	R 		= 1.0f;
+
+	fpd 	= fxtal / R;
+	Nint 	= floorf(fvco / fpd);
+
+	fn = Nint * fpd;
+	ffrac = ceilf((16777216.0f * (fvco - fn)) / fpd);
+	//ExactReg = fpd / (gcd(fvco, fpd));
+
+	/* Chip enable control. */
+	XN406_RstRegCfg(1, 1);
+	/* Select reference divider. */
+	XN406_RefDivCfg(1);
+	/* VCO subsystem control.. */
+	XN406_VcoSubsys(0, 1, 0x001F);
+	XN406_VcoSubsys(0, 2, 0x01C1);
+	XN406_VcoSubsys(0, 3, 0x0050);
+	XN406_VcoSubsys(0, 4, 0x0141);
+	XN406_VcoSubsys(0, 5, 0x00AA);
+	XN406_VcoSubsys(0, 6, 0x00FF);
+	/* */
+	XN406_SdCfg(2, 2, 0, 1, 1);
+	XN406_LockDetect(5, 1, 2, 0, 0, 0);
+	XN406_AnalogEnable(1, 0 ,0);
+	/* 100, 100, 107 Eliminating spurs by offset correction (3thd position). */
+	XN406_ChargePump(70, 70, 35, 0, 1, 0);
+	/* Dis AFC SPI trigger. */
+	//XN406_VcoAutocal(1, 0, 0, 1, 1, 0, 0, 0);
+	XN406_VcoAutocal(1, 0, 0, 0, 1, 0, 0, 0);
+	XN406_GpoSpiRdiv(1, 0, 0, 0, 0, 1);
+	//XN406_OffseEnCtrl(1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 3, 3, 1, 0, 0);
+
+	HAL_Delay(100);
+	/* Auto calibration. Set default address for the VCO subsystem. */
 
 
 
+
+	XN406_ExactFreqchCtrl(0, 0);
+	/* Set integer part. */
+	XN406_SetFreqIntPart(Nint);
+	/* En AFC SPI trigger. */
+	//XN406_VcoAutocal(1, 0, 0, 0, 1, 0, 0, 0);
+	/* Set fractional part. */
+	XN406_SetFreqFracPart(ffrac);
+}
+
+void XN406_SetFreq(float Frequency) {
+
+	/* Clock select. */
+	float Nint, R, fxtal, fpd, ffrac, fn;
+	//uint16_t ExactReg = 0;
+
+	/* Calculate the frequency you need. */
+	fxtal 	= 60.0f;
+	R 		= 1.0f;
+
+	fpd 	= fxtal / R;
+	Nint 	= floorf(Frequency / fpd);
+	fn = Nint * fpd;
+	ffrac = ceilf((16777216.0f * (Frequency - fn)) / fpd);
+
+	//ExactReg = fpd / (gcd(Frequency, fpd));
+
+	HAL_Delay(100);
+	/* Auto calibration. Set default address for the VCO subsystem. */
+
+	/* Set integer part. */
+	XN406_SetFreqIntPart(Nint);
+
+	XN406_ExactFreqchCtrl(0, 0);
+	/* Set fractional part. */
+	XN406_SetFreqFracPart(ffrac);
 }
 
 /* PLL SUBSYSTEM FUNCTIONS */
@@ -682,7 +781,7 @@ static uint32_t XN406_ReadReg(uint8_t RegAddress) {
 	xn406.RxData.TxBuff[1] = 0;
 	xn406.RxData.TxBuff[2] = 0;
 	xn406.RxData.TxBuff[3] = 0;
-	xn406.rx_fp(&xn406.RxData.TxBuff[0], &xn406.RxData.RxBuff[0], 4);
+	xn406.rx_fp(&xn406.RxData.TxBuff[0], &xn406.RxData.RxBuff[0], 3);
 
 	xn406.RxData.R_InstrData_H_MSB = xn406.RxData.RxBuff[0];
 	xn406.RxData.R_InstrData_H_LSB = xn406.RxData.RxBuff[1];
@@ -707,7 +806,7 @@ static void XN406_WriteReg(uint8_t RegAddress, uint32_t Data) {
 	xn406.TxData.TxBuff[1] = xn406.TxData.W_InstrData_H_LSB;
 	xn406.TxData.TxBuff[2] = xn406.TxData.W_InstrData_L_MSB;
 	xn406.TxData.TxBuff[3] = xn406.TxData.W_InstrData_L_LSB;
-	xn406.tx_fp(&xn406.RxData.TxBuff[0], 4);
+	xn406.tx_fp(&xn406.TxData.TxBuff[0], 4);
 }
 
 
@@ -734,12 +833,13 @@ static void XN406_ESpiRxData(uint8_t *pTxData, uint8_t *pRxData, uint8_t Size) {
 	uint8_t TxByte = 0, PinSate;
 	uint16_t RxByte = 0;
 
+	/* Assertion serial enable. */
 	HAL_GPIO_WritePin(XN406_CS_PORT, XN406_CS_PIN, GPIO_PIN_SET);
 	/* Write instruction byte. */
 	TxByte = *pTxData;
 	for (uint8_t TxBits = XN406_W_BIT_NUMBER; TxBits > 0; TxBits--) {
 		PinSate = (TxByte & XN406_BIT_MASK) ? 1 : 0;
-		HAL_GPIO_WritePin(XN406_SDO_PORT, XN406_SDO_PIN, PinSate);
+		HAL_GPIO_WritePin(XN406_SDI_PORT, XN406_SDI_PIN, PinSate);
 		XN406_ESpiClk();
 		TxByte <<= 1;
 	}
@@ -749,16 +849,19 @@ static void XN406_ESpiRxData(uint8_t *pTxData, uint8_t *pRxData, uint8_t Size) {
 		for (uint8_t RxBits = XN406_BIT_NUMBER; RxBits > 0; RxBits--) {
 			HAL_GPIO_WritePin(XN406_CLK_PORT, XN406_CLK_PIN, GPIO_PIN_SET);
 			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
-			RxByte |= HAL_GPIO_ReadPin(XN406_SDI_PORT, XN406_SDI_PIN);
+			RxByte |= HAL_GPIO_ReadPin(XN406_SDO_PORT, XN406_SDO_PIN);
 			HAL_GPIO_WritePin(XN406_CLK_PORT, XN406_CLK_PIN, GPIO_PIN_RESET);
 			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
 			RxByte <<= 1;
 		}
 		RxByte >>= 1;
 		*pRxData = RxByte;
+		RxByte = 0;
 		pRxData++;
 	}
+	/* 32th clock. */
 	XN406_ESpiClk();
+	/* De-assertion serial enable. */
 	HAL_GPIO_WritePin(XN406_CS_PORT, XN406_CS_PIN, GPIO_PIN_RESET);
 }
 
@@ -769,17 +872,19 @@ static void XN406_ESpiTxData(uint8_t *pData, uint8_t Size) {
 
 	uint8_t TxByte = 0, PinSate;
 
+	/* Assertion serial enable. */
 	HAL_GPIO_WritePin(XN406_CS_PORT, XN406_CS_PIN, GPIO_PIN_SET);
 	for (uint8_t i = Size; i > 0; i--) {
 		TxByte = *pData;
 		for (uint8_t TxBits = XN406_BIT_NUMBER; TxBits > 0; TxBits--) {
 			PinSate = (TxByte & XN406_BIT_MASK) ? 1 : 0;
-			HAL_GPIO_WritePin(XN406_SDO_PORT, XN406_SDO_PIN, PinSate);
+			HAL_GPIO_WritePin(XN406_SDI_PORT, XN406_SDI_PIN, PinSate);
 			XN406_ESpiClk();
 			TxByte <<= 1;
 		}
 		pData++;
 	}
+	/* De-assertion serial enable. */
 	HAL_GPIO_WritePin(XN406_CS_PORT, XN406_CS_PIN, GPIO_PIN_RESET);
 }
 #endif /* XN406_SPI_SOFT */

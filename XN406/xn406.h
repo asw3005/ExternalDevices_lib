@@ -8,7 +8,7 @@
 #ifndef XN406_H_
 #define XN406_H_
 
-#include "stm32f1xx.h"
+#include "stm32f4xx.h"
 
 /* Select hardware or software SPI. */
 //#define XN406_SPI_HARD
@@ -22,15 +22,17 @@
 #define XN406_VCO_ID				0
 
 /* Pin definitions serial port. */
-#define XN406_CS_PIN 				GPIO_PIN_0
-#define XN406_CS_PORT 				GPIOA
+#define XN406_CE_PIN 				GPIO_PIN_10
+#define XN406_CE_PORT 				GPIOG
+#define XN406_CS_PIN 				GPIO_PIN_11
+#define XN406_CS_PORT 				GPIOG
 #ifdef XN406_SPI_SOFT
-#define XN406_CLK_PIN 				GPIO_PIN_0
-#define XN406_CLK_PORT 				GPIOA
-#define XN406_SDI_PIN 				GPIO_PIN_0
-#define XN406_SDI_PORT 				GPIOA
-#define XN406_SDO_PIN 				GPIO_PIN_0
-#define XN406_SDO_PORT 				GPIOA
+#define XN406_CLK_PIN 				GPIO_PIN_13
+#define XN406_CLK_PORT 				GPIOG
+#define XN406_SDI_PIN 				GPIO_PIN_14
+#define XN406_SDI_PORT 				GPIOG
+#define XN406_SDO_PIN 				GPIO_PIN_12
+#define XN406_SDO_PORT 				GPIOG
 /* Rx Tx constants. */
 #define XN406_BIT_NUMBER			8
 #define XN406_W_BIT_NUMBER			7
@@ -551,9 +553,8 @@ typedef struct {
 			uint8_t R_InstrData_H_MSB;
 		};
 		struct {
-			uint32_t R_LOCK_DETECT0			: 1;
 			uint32_t R_REG_DATA 			: 24;
-			uint32_t R_LOCK_DETECT1			: 7;
+			uint32_t R_LOCK_DETECT1			: 8;
 		};
 	};
 	uint8_t RxBuff[4];
@@ -580,6 +581,7 @@ typedef struct {
 
 /* Public function prototypes. */
 void XN406_Init(void);
+void XN406_SetFreq(float Frequency);
 uint32_t XN406_GetChipId(void);
 XN406_Locked_t* XN406_GetLocked(void);
 XN406_VcoTune_t* XN406_GetVcoTune(void);
@@ -592,6 +594,7 @@ void XN406_VcoSubsys(uint8_t VcoSubsysId, uint8_t VcoSubsysRegAddr, uint16_t Vco
 void XN406_SdCfg(uint8_t Seed, uint8_t Order, uint8_t FracBypass, uint8_t AutoSeed, uint8_t FracEn);
 void XN406_LockDetect(uint8_t LdWinCnt, uint8_t EnIntLd, uint8_t LdDigWinDuration, uint8_t LdDigTimFreqCtrl,uint8_t AutoRelockOneTry,
 					  uint8_t LdWinType);
+void XN406_AnalogEnable(uint8_t GpoPadEn, uint8_t HighFreqRef, uint8_t EightGhzDivBy2);
 void XN406_ChargePump(uint8_t CpDnGain, uint8_t CpUpGain, uint8_t OffsetCurrent, uint8_t OffsetUpEn, uint8_t OffsetDnEn, uint8_t HiKcp);
 void XN406_VcoAutocal(uint8_t VtuneRes, uint8_t WaitStateSetUp, uint8_t BypassVco, uint8_t NoVspiTrg, uint8_t FsmVspiClkSel,
 					  uint8_t XtalFallEdgeFsm, uint8_t ForceRdivBypass, uint8_t CntDelay);
