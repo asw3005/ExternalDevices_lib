@@ -8,7 +8,7 @@
 #ifndef SI57X_H_
 #define SI57X_H_
 
-#include "stm32f1xx.h"
+#include "stm32f4xx.h"
 
 /* I2C bus addresses. */
 #define SI57x_ADDRESS				0x55
@@ -78,7 +78,7 @@ typedef union {
 /*
  * @brief Reference frequency and N1 divider.
  */
-typedef struct {
+typedef struct __attribute__((aligned(1), packed)) {
 	union {
 		uint8_t RefFreqBit3732N1DivReg;
 		struct {
@@ -123,10 +123,11 @@ typedef struct __attribute__((aligned(1), packed)) {
 /*
  * @brief Frequencies and divider table.
  */
-typedef struct {
+typedef struct __attribute__((aligned(1), packed)) {
 	/* Current frequency. */
-	double CurrentFreq;
-
+	float CurrentFreq;
+	/**/
+	uint8_t N1DivRef;
 	/* Usual data. */
 	uint8_t HighSpeedDivider;
 	union {
@@ -140,12 +141,12 @@ typedef struct {
 	union {
 		uint64_t RefFrequency;
 		struct {
-			uint64_t ZERO_BIT63_38 			: 26;
-			uint64_t RFREQ_BIT37_32 		: 6;
-			uint64_t RFREQ_BIT31_24 		: 8;
-			uint64_t RFREQ_BIT23_16 		: 8;
-			uint64_t RFREQ_BIT15_8 			: 8;
 			uint64_t RFREQ_BIT7_0 			: 8;
+			uint64_t RFREQ_BIT15_8 			: 8;
+			uint64_t RFREQ_BIT23_16 		: 8;
+			uint64_t RFREQ_BIT31_24 		: 8;
+			uint64_t RFREQ_BIT37_32 		: 6;
+			uint64_t ZERO_BIT63_38 			: 26;
 		};
 	};
 
@@ -176,7 +177,9 @@ typedef struct {
 
 
 /* Public function prototypes. */
-void SI57x_SetFreq(double NewFreq, uint8_t DevPpmCoeff);
+void SI57x_Init(void);
+void SI57x_SetFreq(float NewFreq, uint8_t DevPpmCoeff);
+void SI57x_SelPresetFreq(uint8_t RegAddress, uint8_t PresetNumber);
 void SI57x_FreezeDco(uint8_t FreezeDco);
 void SI57x_RstFreezeMemCtrl(uint8_t Recall, uint8_t FreezeVcadc, uint8_t FreezeM, uint8_t NewFreq, uint8_t RstReg);
 
