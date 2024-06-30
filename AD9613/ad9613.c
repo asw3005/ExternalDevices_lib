@@ -3,7 +3,7 @@
  * Created on: Aug 23, 2023
  * Author: asw3005
  */
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "main.h"
 #include "ad9613.h"
 
@@ -17,14 +17,18 @@ static SPI_HandleTypeDef* AD9613Spi = &hspi1;
 static uint8_t AD9613_ReadByte(uint8_t Address);
 static void AD9613_WriteByte(uint8_t Address, uint8_t Value);
 
+static void AD9613_ClockData(void);
+static void AD9613_ESpiTxData(uint8_t* pData, uint8_t Size);
+static void AD9613_ESpiRxData(uint8_t* pData, uint8_t Size);
+
 static void AD9613_SpiRxData(uint8_t *pData, uint8_t Size);
 static void AD9613_SpiTxData(uint8_t *pData, uint8_t Size);
 
 /* Init general struct. */
 static AD9613_GStr_t ad9613 = {
 		.delay_fp = HAL_Delay,
-		.spi_rx_fp = AD9613_SpiRxData,
-		.spi_tx_fp = AD9613_SpiTxData
+		.spi_rx_fp = AD9613_ESpiRxData,
+		.spi_tx_fp = AD9613_ESpiTxData
 };
 
 /*
@@ -32,11 +36,79 @@ static AD9613_GStr_t ad9613 = {
  */
 void AD9613_Init(void) {
 
+
+	uint16_t pattern;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	/* Configurate MCU pin to output. */
+	GPIO_InitStruct.Pin = AD9613_NSS_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(AD9613_NSS_PORT, &GPIO_InitStruct);
+	/* Deactivate NSS pin. */
+	HAL_GPIO_WritePin(AD9613_NSS_PORT, AD9613_NSS_PIN, GPIO_PIN_SET);
+
 	/* Reset the chip. */
 	AD9613_SpiPortCfg(0, 1);
-	if (AD9613_GetChipId() != AD9613_CHIID) { return; }
+	HAL_Delay(100);
+
+	if (AD9613_GetChipId() != AD9643_CHIID || AD9613_GetChipId() != AD9613_CHIID) {
 
 
+		AD9613_SetUserTestPattern(0xAA55, 0xBB55, 0xAABB, 0xAB);
+		AD9613_EnDisDcs(0);
+		AD9613_TestMode(7, 0, 0, 0);
+
+		pattern = AD9613_ReadByte(AD9613_SPI_PORT_CFG);
+		pattern = AD9613_ReadByte(AD9613_CHIP_ID);
+		pattern = AD9613_ReadByte(AD9613_CHIP_GRADE);
+		pattern = AD9613_ReadByte(AD9613_CHANNEL_INDEX);
+
+		pattern = AD9613_ReadByte(AD9613_TEST_MODE);
+		pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN1_LSB);
+		pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN1_MSB);
+		pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN2_LSB);
+		pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN2_MSB);
+		pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN3_LSB);
+		pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN3_MSB);
+		pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN4_LSB);
+
+		pattern = AD9613_ReadByte(AD9613_GLOBAL_CLOCK);
+		pattern = AD9613_ReadByte(AD9613_CLOCK_DIVIDE);
+		__NOP();
+		return;
+	}
+
+
+
+
+
+	AD9613_SetUserTestPattern(0xAA55, 0xBB55, 0xAABB, 0xAB);
+	AD9613_EnDisDcs(0);
+	AD9613_TestMode(4, 0, 0, 0);
+
+	pattern = AD9613_ReadByte(AD9613_SPI_PORT_CFG);
+	pattern = AD9613_ReadByte(AD9613_CHIP_ID);
+	pattern = AD9613_ReadByte(AD9613_CHIP_GRADE);
+	pattern = AD9613_ReadByte(AD9613_CHANNEL_INDEX);
+
+	pattern = AD9613_ReadByte(AD9613_TEST_MODE);
+	pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN1_LSB);
+	pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN1_MSB);
+	pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN2_LSB);
+	pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN2_MSB);
+	pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN3_LSB);
+	pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN3_MSB);
+	pattern = AD9613_ReadByte(AD9613_USER_TEST_PATTERN4_LSB);
+
+	pattern = AD9613_ReadByte(AD9613_GLOBAL_CLOCK);
+	pattern = AD9613_ReadByte(AD9613_CLOCK_DIVIDE);
+
+	__NOP();
 
 }
 
@@ -167,6 +239,7 @@ void AD9613_PwrModes(uint8_t IntPwrDown, uint8_t ExtPwrDownPinf) {
 	PwrModes.EXT_PWR_DOWN_PINF = ExtPwrDownPinf;
 
 	AD9613_WriteByte(AD9613_POWER_MODES, PwrModes.PwrModesReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -179,6 +252,7 @@ void AD9613_PwrModes(uint8_t IntPwrDown, uint8_t ExtPwrDownPinf) {
 void AD9613_EnDisDcs(uint8_t EnDisDcs) {
 
 	AD9613_WriteByte(AD9613_GLOBAL_CLOCK, EnDisDcs & 0x01);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -196,6 +270,7 @@ void AD9613_ClockDivide(uint8_t ClkDivRatio, uint8_t InClkDivPhaseAdj) {
 	ClkDivide.IN_CLK_DIV_PHASE_ADJ = InClkDivPhaseAdj;
 
 	AD9613_WriteByte(AD9613_CLOCK_DIVIDE, ClkDivide.ClkDivideReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -233,6 +308,7 @@ void AD9613_TestMode(uint8_t OutTestMode, uint8_t RstPnShortGen, uint8_t RstPnLo
 	TestMode.USER_TEST_MODE_CTRL = UserTestModeCtrl;
 
 	AD9613_WriteByte(AD9613_TEST_MODE, TestMode.TestModeReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -250,6 +326,7 @@ void AD9613_OffsetAdj(int8_t OffsetAdjInLsb) {
 	if (OffsetAdjInLsb >= 0) { OffsetAdj.OFFSET_SIGN = 0; }
 
 	AD9613_WriteByte(AD9613_OFFSET_ADJUST, OffsetAdj.OffsetAdjReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -276,6 +353,7 @@ void AD9613_OutputMode(uint8_t OutFormat, uint8_t OutInvert, uint8_t OutEnBar) {
 	OutMode.OUT_EN_BAR = OutEnBar;
 
 	AD9613_WriteByte(AD9613_OUTPUT_MODE, OutMode.OutModeReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -295,6 +373,7 @@ void AD9613_OutputMode(uint8_t OutFormat, uint8_t OutInvert, uint8_t OutEnBar) {
 void AD9613_OutputAdj(uint8_t OutAdj) {
 
 	AD9613_WriteByte(AD9613_OUTPUT_ADJUST, OutAdj & 0x07);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -315,6 +394,7 @@ void AD9613_ClkPhaseCtrl(uint8_t OddEvenMode, uint8_t InvertDcoClk) {
 	ClkPhase.INVERT_DCO_CLK = InvertDcoClk;
 
 	AD9613_WriteByte(AD9613_CLOCK_PHASE_CTRL, ClkPhase.ClkPhaseCtrlReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -336,6 +416,7 @@ void AD9613_DcoOutDelay(uint8_t EnDcoClkDelay, uint8_t DcoClkDelay) {
 	DcoOutDelay.EN_DCO_CLK_DELAY = DcoClkDelay;
 
 	AD9613_WriteByte(AD9613_DCO_OUTPUT_DELAY, DcoOutDelay.DcoOutDelayReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -359,6 +440,7 @@ void AD9613_InVoltageSel(int8_t InVoltageSel) {
 	if (InVoltageSel >= 0) { InSpanSel.SPAN_SIGN = 0; }
 
 	AD9613_WriteByte(AD9613_INPUT_SPAN_SEL, InSpanSel.InputSpanSelReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -372,17 +454,22 @@ void AD9613_InVoltageSel(int8_t InVoltageSel) {
 void AD9613_SetUserTestPattern(uint16_t UserPattern1, uint16_t UserPattern2, uint16_t UserPattern3, uint8_t UserPattern4) {
 
 	ad9613.RxTxData.READ_WRITE = AD9613_WRITE_CMD;
-	ad9613.RxTxData.REG_ADDRESS = AD9613_USER_TEST_PATTERN1_LSB;
-	ad9613.RxTxData.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.RxTxData.Data[0] = UserPattern1;
-	ad9613.RxTxData.Data[1] = UserPattern1 >> 8;
-	ad9613.RxTxData.Data[2] = UserPattern2;
-	ad9613.RxTxData.Data[3] = UserPattern2 >> 8;
+	ad9613.RxTxData.REG_ADDRESS = AD9613_USER_TEST_PATTERN4_LSB;
+	ad9613.RxTxData.DATA_LENGTH_W0W1 = AD9613_STREAM_MODE;
+	/* Reverse instruction byte (MSB byte). */
+	ad9613.RxTxData.Data[0] = (ad9613.RxTxData.InstrByte & 0xFF00) >> 8;
+	ad9613.RxTxData.Data[1] = ad9613.RxTxData.InstrByte;
+	/* data to transfer. */
+	ad9613.RxTxData.Data[8] = UserPattern1;
+	ad9613.RxTxData.Data[7] = UserPattern1 >> 8;
+	ad9613.RxTxData.Data[6] = UserPattern2;
+	ad9613.RxTxData.Data[5] = UserPattern2 >> 8;
 	ad9613.RxTxData.Data[4] = UserPattern3;
-	ad9613.RxTxData.Data[5] = UserPattern3 >> 8;
-	ad9613.RxTxData.Data[6] = UserPattern4;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.RxTxData.InstrByte, 9);
-	ad9613.delay_fp(5);
+	ad9613.RxTxData.Data[3] = UserPattern3 >> 8;
+	ad9613.RxTxData.Data[2] = UserPattern4;
+	ad9613.spi_tx_fp(&ad9613.RxTxData.Data[0], 9);
+	ad9613.delay_fp(1);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /*
@@ -409,6 +496,7 @@ void AD9613_SyncCtrl(uint8_t MasterSyncBuffEn, uint8_t ClkDivSyncEn, uint8_t Clk
 	SyncCtrl.CLK_DIV_NEXT_SYNC_EN = ClkDivNextSyncOnly;
 
 	AD9613_WriteByte(AD9613_SYNC_CTRL, SyncCtrl.SyncControlReg);
+	AD9613_WriteByte(AD9613_TRANSFER, 0x01);
 }
 
 /* Private functions. */
@@ -425,10 +513,22 @@ static uint8_t AD9613_ReadByte(uint8_t Address) {
 	ad9613.RxTxData.READ_WRITE = AD9613_READ_CMD;
 	ad9613.RxTxData.REG_ADDRESS = Address;
 	ad9613.RxTxData.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.RxTxData.InstrByte, 2);
+
+	AD9613_ESpiRxData(&ReadBack, 1);
 	ad9613.delay_fp(1);
-	ad9613.spi_rx_fp((uint8_t*)&ReadBack, 1);
-	ad9613.delay_fp(1);
+
+//	ad9613.spi_tx_fp((uint8_t*)&ad9613.RxTxData.InstrByte, 2);
+//	ad9613.delay_fp(1);
+//	ad9613.spi_rx_fp((uint8_t*)&ReadBack, 1);
+//	ad9613.delay_fp(1);
+//	HAL_GPIO_WritePin(AD9613_CS_PORT, AD9613_CS_PIN, GPIO_PIN_RESET);
+//	//HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)&ad9613.RxTxData.InstrByte, (uint8_t*)&ReadBack, 3, 10);
+//	HAL_SPI_Transmit(AD9613Spi, (uint8_t*)&ad9613.RxTxData.InstrByte, 2, 25);
+//	HAL_SPI_Receive(AD9613Spi, (uint8_t*)&ReadBack, 1, 25);
+//
+//	HAL_GPIO_WritePin(AD9613_CS_PORT, AD9613_CS_PIN, GPIO_PIN_SET);
+//	ad9613.delay_fp(1);
+
 	return ReadBack;
 }
 
@@ -443,13 +543,135 @@ static void AD9613_WriteByte(uint8_t Address, uint8_t Value) {
 	ad9613.RxTxData.READ_WRITE = AD9613_WRITE_CMD;
 	ad9613.RxTxData.REG_ADDRESS = Address;
 	ad9613.RxTxData.DATA_LENGTH_W0W1 = AD9613_ONE_BYTE;
-	ad9613.RxTxData.Data[0] = Value;
-	ad9613.spi_tx_fp((uint8_t*)&ad9613.RxTxData.InstrByte, 3);
+
+	/* Reverse instruction byte (MSB byte). */
+	ad9613.RxTxData.Data[0] = (ad9613.RxTxData.InstrByte & 0xFF00) >> 8;
+	ad9613.RxTxData.Data[1] = ad9613.RxTxData.InstrByte;
+	/* Data to transfer. */
+	ad9613.RxTxData.Data[2] = Value;
+	ad9613.spi_tx_fp(&ad9613.RxTxData.Data[0], 3);
 	ad9613.delay_fp(1);
+
 }
 
 
 /* Hardware dependent functions. */
+
+/*
+ * @brief Clocking data.
+ */
+static void AD9613_ClockData(void) {
+
+	HAL_GPIO_WritePin(AD9613_CLK_PORT, AD9613_CLK_PIN, GPIO_PIN_SET);
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+	HAL_GPIO_WritePin(AD9613_CLK_PORT, AD9613_CLK_PIN, GPIO_PIN_RESET);
+	__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+}
+
+/*
+ * @brief Transmit data to the chip (MSB first).
+ */
+static void AD9613_ESpiTxData(uint8_t* pData, uint8_t Size) {
+
+	uint8_t TxData, PinState;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	/* Transmitting the data to the shift register. */
+	TxData = *pData;
+
+	/* Configurate MCU pin to output. */
+	GPIO_InitStruct.Pin = AD9613_NSS_PIN | AD9613_CLK_PIN | AD9613_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(AD9613_NSS_PORT, &GPIO_InitStruct);
+	/* Activate NSS pin. */
+	HAL_GPIO_WritePin(AD9613_NSS_PORT, AD9613_NSS_PIN, GPIO_PIN_RESET);
+	/* Write command word. */
+	for (uint8_t i = Size; i > 0; i--) {
+		for (uint8_t j = AD9613_BIT_NUMBER; j > 0; j--) {
+			/* MSB first. */
+			PinState = (TxData & AD9613_BIT_MASK) ? (PinState = 1) : (PinState = 0);
+			HAL_GPIO_WritePin(AD9613_DATA_INOUT_PORT, AD9613_DATA_INOUT_PIN, PinState);
+			/* Clocking data. */
+			AD9613_ClockData();
+			/* Getting next bit.*/
+			TxData <<= 1;
+		}
+		pData++;
+		TxData = *pData;
+	}
+	/* Deactivate NSS pin. */
+	HAL_GPIO_WritePin(AD9613_NSS_PORT, AD9613_NSS_PIN, GPIO_PIN_SET);
+}
+
+/*
+ * @brief Receive data from the chip (MSB first).
+ */
+static void AD9613_ESpiRxData(uint8_t* pData, uint8_t Size) {
+
+	uint8_t TxData, PinState;
+	uint16_t RxData;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	/* Transmitting instruction byte to the shift register (MSB byte). */
+	TxData = (ad9613.RxTxData.InstrByte & 0xFF00) >> 8;
+
+	/* Configurate MCU pin to output. */
+	GPIO_InitStruct.Pin = AD9613_NSS_PIN | AD9613_CLK_PIN | AD9613_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(AD9613_NSS_PORT, &GPIO_InitStruct);
+	/* Activate NSS pin. */
+	HAL_GPIO_WritePin(AD9613_NSS_PORT, AD9613_NSS_PIN, GPIO_PIN_RESET);
+	/* Write command word. */
+	for (uint8_t i = AD9613_CMD_WORD_SIZE; i > 0; i--) {
+		for (uint8_t j = AD9613_BIT_NUMBER; j > 0; j--) {
+			/* MSB first. */
+			PinState = (TxData & AD9613_BIT_MASK) ? (PinState = 1) : (PinState = 0);
+			HAL_GPIO_WritePin(AD9613_DATA_INOUT_PORT, AD9613_DATA_INOUT_PIN, PinState);
+			/* Clocking data. */
+			AD9613_ClockData();
+			/* Getting next bit.*/
+			TxData <<= 1;
+		}
+		/* LSB byte. */
+		TxData = ad9613.RxTxData.InstrByte;
+	}
+	/* Configurate MCU pin to input. */
+	GPIO_InitStruct.Pin = AD9613_DATA_INOUT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(AD9613_DATA_INOUT_PORT, &GPIO_InitStruct);
+	/* Read data byte. */
+	RxData = 0;
+	for (uint8_t i = Size; i > 0; i--) {
+		for (uint8_t j = AD9613_BIT_NUMBER; j > 0; j--) {
+			/* Clocking data. */
+			HAL_GPIO_WritePin(AD9613_CLK_PORT, AD9613_CLK_PIN, GPIO_PIN_SET);
+			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+
+			/* MSB first. */
+			RxData |= HAL_GPIO_ReadPin(AD9613_DATA_INOUT_PORT, AD9613_DATA_INOUT_PIN);
+			RxData <<= 1;
+			/* Clocking data. */
+			HAL_GPIO_WritePin(AD9613_CLK_PORT, AD9613_CLK_PIN, GPIO_PIN_RESET);
+			__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();__NOP();
+		}
+	}
+	RxData >>= 1;
+	/* Deactivate NSS pin. */
+	HAL_GPIO_WritePin(AD9613_NSS_PORT, AD9613_NSS_PIN, GPIO_PIN_SET);
+
+	*pData = RxData;
+}
 
 /*
  * @brief Receive data from the chip.

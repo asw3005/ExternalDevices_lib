@@ -8,15 +8,28 @@
 #ifndef AD9613_H_
 #define AD9613_H_
 
-#include "stm32f1xx.h"
+#include "stm32f4xx.h"
 
 /* Chip ID. */
 #define AD9613_CHIID 	0x83
+#define AD9643_CHIID 	0x82
 
 /* Define chip select port and pin. */
-#define AD9613_CS_PORT 	GPIOA
-#define AD9613_CS_PIN 	GPIO_PIN_0
+#define AD9613_CS_PORT 	GPIOB
+#define AD9613_CS_PIN 	GPIO_PIN_4
 
+/* Ports' selection. */
+#define AD9613_NSS_PIN 					GPIO_PIN_4
+#define AD9613_CLK_PIN 					GPIO_PIN_3
+#define AD9613_DATA_INOUT_PIN			GPIO_PIN_5
+#define AD9613_NSS_PORT					GPIOB
+#define AD9613_CLK_PORT 				GPIOB
+#define AD9613_DATA_INOUT_PORT			GPIOB
+
+/* Significant data bits. */
+#define AD9613_CMD_WORD_SIZE			2
+#define AD9613_BIT_NUMBER				8
+#define AD9613_BIT_MASK					0x80
 
 
 /*
@@ -48,7 +61,8 @@ typedef enum {
 	AD9613_USER_TEST_PATTERN3_LSB,
 	AD9613_USER_TEST_PATTERN3_MSB,
 	AD9613_USER_TEST_PATTERN4_LSB,
-	AD9613_SYNC_CTRL 					= 0x3A
+	AD9613_SYNC_CTRL 					= 0x3A,
+	AD9613_UPDATE_REG					= 0xFF
 
 } AD9613_REG_MAPS_t;
 
@@ -221,7 +235,7 @@ typedef union {
 /*
  * @brief Instruction byte.
  */
-typedef struct {
+typedef struct __attribute__((aligned(1), packed)) {
 	union {
 		uint16_t InstrByte;
 		struct {
@@ -231,7 +245,7 @@ typedef struct {
 			uint16_t READ_WRITE 			: 1;
 		};
 	};
-	uint8_t Data[8];
+	uint8_t Data[9];
 
 } AD9613_RxTxData_t;
 
@@ -253,6 +267,8 @@ typedef struct {
 
 
 /* Public function prototypes. */
+void AD9613_Init(void);
+
 uint8_t AD9613_GetChipId(void);
 uint8_t AD9613_GetChipGrade(void);
 uint8_t AD9613_GetRstBitState(void);
