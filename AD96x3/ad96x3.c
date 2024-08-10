@@ -62,12 +62,18 @@ void AD96x3_Init(void) {
 	}
 
 	/* Configuring the user test pattern. */
-	AD96x3_SetUserTestPattern(0xAA55, 0xBB55, 0xAABB, 0x55);
-	if (ChipId != AD9643_CHIPID) {
-		AD96x3_WriteByte(AD96x3_USER_TEST_PATTERN4_MSB, 0x55);
+	/* NOTE!  You code, if you have a 12 bit ADC, must be shifted to the left. Rest LSB bits will be zero. */
+	AD96x3_SetUserTestPattern(0x3210, 0x6540, 0x9870, 0xA0);
+	if (ChipId == AD9643_CHIPID) {
+		/* The MSB byte of ADC pattern. */
+		AD96x3_WriteByte(AD96x3_USER_TEST_PATTERN4_MSB, 0xCB);
 	}
-	AD96x3_EnDisDcs(0);
-	AD96x3_TestMode(7, 0, 0, 0);
+	//AD96x3_DcoOutDelay(1, 10);
+	//AD96x3_EnDisDcs(1);
+	AD96x3_TestMode(8, 0, 0, 0);
+	//AD96x3_OutputAdj(0);
+	AD96x3_OutputMode(1, 0, 0);
+	AD96x3_ClockDivide(0, 0);
 
 	pattern = AD96x3_ReadByte(AD96x3_SPI_PORT_CFG);
 	pattern = AD96x3_ReadByte(AD96x3_CHIP_ID);
