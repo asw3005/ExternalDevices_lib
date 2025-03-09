@@ -15,7 +15,7 @@
 #define	INA226_ID_DIE				0x2260
 
 /* I2C bus addresses. */
-#define INA226_ADDR0				0x70
+#define INA226_ADDR0				0x40
 #define INA226_ADDR_SHIFTED 		(INA226_ADDR0 << 1)
 #define INA226_CURRENT_ADDR 		INA226_ADDR_SHIFTED
 
@@ -104,6 +104,18 @@ typedef struct {
 	uint16_t DieID;
 
 } INA226_ChipID_t;
+
+/*
+ * @brief Measurements.
+ */
+typedef struct {
+
+	float ShuntVoltage;
+	float BusVoltage;
+	float Current;
+	float Power;
+
+} INA226_Meas_t;
 
 /*
  * @brief General struct.

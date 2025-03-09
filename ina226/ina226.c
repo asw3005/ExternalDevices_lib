@@ -37,6 +37,8 @@ void INA226_Init(void) {
 
 		/* Set INA226_CURRENT_LSB = INA226_MAX_EXPECTED_CURRENT / 32768.0f. */
 
+		//INA226_WriteReg(uint8_t reg_address, uint16_t value);
+
 		/* Set INA226_POWER_LSB = 25.0f * INA226_CURRENT_LSB. */
 
 		/* Set INA226_CALIBRATION_VAL = 0.00512f / (INA226_CURRENT_LSB * RSHUNT). */
@@ -45,6 +47,19 @@ void INA226_Init(void) {
 	}
 
 	__NOP();
+}
+
+/*
+ * @brief Read shunt voltage, bus voltage, power, current.
+ */
+INA226_Meas_t INA226_GetMeas(void) {
+
+	static INA226_Meas_t Meas;
+
+
+
+
+	return Meas;
 }
 
 /*
