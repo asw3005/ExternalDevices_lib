@@ -1,5 +1,8 @@
- /* Fifo control logic. */
-module FifoControl (
+/* Fifo control logic. */
+module FifoControl
+(
+
+
 
 /* Input clock to write data to the FIFO. */
 input wrclk,
@@ -17,7 +20,7 @@ input [31:0] FTimStopValue,
 input [31:0] STimStopValue,
 input [31:0] Thr0StopValue,
 input [31:0] Thr1StopValue,
-input [DATA_IN_WIDTH - 1:0] DataIn,
+input [128 - 1:0] DataIn,
 input [31:0] SpiCmd,
 input SpiCmdLock,
 
@@ -31,9 +34,9 @@ output reg [0:0] SpiMiso
 /* Parameters. */
 parameter SPI_DUMMY_MSB		= 31;
 parameter SPI_DUMMY_LSB 	= 16;
-parameter SPI_RW		 		= 15;
-parameter SPI_DC_MSB	 		= 14;
-parameter SPI_DC_LSB	 		= 11;
+parameter SPI_RW		 	= 15;
+parameter SPI_DC_MSB	 	= 14;
+parameter SPI_DC_LSB	 	= 11;
 parameter SPI_RSVD_MSB 		= 10;
 parameter SPI_RSVD_LSB 		= 5;
 parameter SPI_ADDR_MSB 		= 4;
@@ -41,13 +44,14 @@ parameter SPI_ADDR_LSB 		= 0;
 	
 parameter SPI_READ			= 1'b1;
 parameter SPI_WRITE			= 1'b0;
-parameter SPI_DATA			= 4'b0001;
+parameter SPI_READ_BACK		= 4'b0001;
 parameter SPI_COMMAND		= 4'b0010;
 parameter SPI_SAMPLECNT		= 4'b0011;
 parameter SPI_SCNTTEST		= 4'b0100;
 parameter SPI_ADCRTEST		= 4'b0101;
-parameter SPI_RFIFO0			= 4'b0110;
-parameter SPI_RFIFO1			= 4'b0111;
+parameter SPI_RFIFO0		= 4'b0110;
+parameter SPI_RFIFO1		= 4'b0111;
+parameter SPI_RPIPE			= 4'b1000;
 parameter SPI_RSVD			= {6{1'b0}};
 parameter SPI_DEF_ADDR		= {5{1'b0}};
 
@@ -65,8 +69,8 @@ parameter THR0_STOP_VAL		= 32'd256;
 parameter THR1_STOP_VAL		= 32'd256;
 parameter FIFO_FULL_WIDTH	= 8'd10;
 
-parameter SPI_CLK_CNTWIDTH = 32;
-parameter DATA_IN_WIDTH 	= 128;
+parameter SPI_CLK_CNTWIDTH 	= 32;
+//parameter DATA_IN_WIDTH 	= 128;
 parameter FIFO_OUT_WIDTH 	= 128;
 parameter DATA_OUT_WIDTH 	= 128;
 
@@ -92,11 +96,12 @@ wire [10:0] WRUseFifo1;
 wire [FIFO_OUT_WIDTH - 1:0] Fifo0Out;
 wire [FIFO_OUT_WIDTH - 1:0] Fifo1Out;
 reg [DATA_OUT_WIDTH - 1:0] SpiData;
-//reg [8 - 1:0] SpiData;
 
 /* Registers. */
-reg [0:0] RClk0 				= 1'b0;
-reg [0:0] RClk1 				= 1'b0;
+//reg PipeClkAct				= 1'b0;
+
+reg [0:0] RClk0 			= 1'b0;
+reg [0:0] RClk1 			= 1'b0;
 
 reg [SPI_CLK_CNTWIDTH - 1:0] SpiClkCnt	= {SPI_CLK_CNTWIDTH{1'b0}};
 
@@ -104,6 +109,8 @@ reg [7:0] RSpiClkCnt = 8'd0;
 
 reg [31:0] FTimStopCnt 		= {32{1'b0}};
 reg [31:0] STimStopCnt 		= {32{1'b0}};
+reg [15:0] FTimWReqCnt 		= {15{1'b0}};
+reg [15:0] STimWReqCnt 		= {15{1'b0}};
 reg [31:0] FTimStopVal		= FTIM_STOP_VAL;
 reg [31:0] STimStopVal		= STIM_STOP_VAL;
 reg [31:0] FifoOutSample	= {32{1'b0}};
@@ -112,8 +119,6 @@ reg [7:0] Fifo1FullCnt		= {8{1'b0}};
 /* One data block is four 16 bit samples (128  bit width). */
 reg [31:0] Thr0StopVal		= THR0_STOP_VAL;
 reg [31:0] Thr1StopVal		= THR1_STOP_VAL;
-reg [0:0] FStartDetect 		= 1'b0;
-reg [0:0] SStartDetect		= 1'b0;
 reg [0:0] Fifo0Full 			= 1'b0;
 reg [0:0] Fifo1Full			= 1'b0;
 reg [0:0] FifoSampleAct 	= 1'b0;
@@ -154,10 +159,10 @@ FIFO_IO FIFO_IO_inst1(	.aclr(rst | fifo_srst),
 								.wrfull(WFull[1]),
 								.wrusedw(WRUseFifo1)
 							);
-
-
-/* Reg update. */
-always @(posedge clk) begin
+							
+						
+/* FIFO write reg update logic. */
+always @(posedge wrclk) begin
 
 	if(rst) begin
 		FTimStopVal 	<= FTIM_STOP_VAL;
@@ -166,10 +171,10 @@ always @(posedge clk) begin
 		Thr1StopVal 	<= THR1_STOP_VAL;
 		FTimStopCnt 	<= {32{1'b0}};
 		STimStopCnt 	<= {32{1'b0}};
+		FTimWReqCnt 	<= {16{1'b0}};
+		STimWReqCnt 	<= {16{1'b0}};
 		Fifo0FullCnt	<= {8{1'b0}};
 		Fifo1FullCnt	<= {8{1'b0}};
-		FStartDetect 	<= 1'b0;
-		SStartDetect 	<= 1'b0;
 		Fifo0Full 		<= 1'b0;
 		Fifo1Full 		<= 1'b0;
 		WReq				<= {4{1'b0}};
@@ -185,12 +190,10 @@ always @(posedge clk) begin
 		else begin	
 		
 			if(FAcqStart & !Fifo0Full) begin 
-				FStartDetect <= 1'b1;
 				WReq[0] <= 1'b1;
 			end
 			
 			if(SAcqStart & !Fifo1Full) begin 
-				SStartDetect <= 1'b1;
 				WReq[1] <= 1'b1;
 			end
 
@@ -198,45 +201,51 @@ always @(posedge clk) begin
 			
 				if(FTimStopCnt == FTimStopVal - 1'd1) begin
 					FTimStopCnt <= {32{1'b0}};
-					FStartDetect <= 1'b0;
 					WReq[0] <= 1'b0;
 					Fifo0Full <= 1'b1;
 				end
-				else if(FStartDetect) begin
+				else if(WReq[0]) begin
 					FTimStopCnt <= FTimStopCnt + 1'd1;	
 				end
 			
 			
 				if(STimStopCnt == STimStopVal - 1'd1) begin
 					STimStopCnt <= {32{1'b0}};
-					SStartDetect <= 1'b0;
 					WReq[1] <= 1'b0;
 					Fifo1Full <= 1'b1;
 				end
-				else if(SStartDetect) begin
+				else if(WReq[1]) begin
 					STimStopCnt <= STimStopCnt + 1'd1;	
 				end
 			end
 			else begin
 			
-				if(FStartDetect) begin
-					if(WRUseFifo0 >= Thr0StopVal - 1'd1) begin
-						FStartDetect <= 1'b0;
+				if(WReq[0]) begin
+					if(FTimWReqCnt == Thr0StopVal - 1'd1) begin
 						WReq[0] <= 1'b0;
+						FTimWReqCnt <= {16{1'b0}};
 						Fifo0Full <= 1'b1;
+					end
+					else begin
+						FTimWReqCnt <= FTimWReqCnt + 1'd1;
 					end
 				end	
 				
-				if(SStartDetect) begin
-					if(WRUseFifo1 >= Thr1StopVal - 1'd1) begin
-						SStartDetect <= 1'b0;
+				if(WReq[1]) begin
+					if(STimWReqCnt == Thr1StopVal - 1'd1) begin
 						WReq[1] <= 1'b0;
+						STimWReqCnt <= {16{1'b0}};
 						Fifo1Full <= 1'b1;
+					end
+					else begin
+						STimWReqCnt <= STimWReqCnt + 1'd1;
 					end
 				end	
 			
 			end
+
 			
+			/* FIFO full flag reset. */
 			if(Fifo0FullCnt == FIFO_FULL_WIDTH - 1'd1) begin
 				Fifo0FullCnt <= {8{1'b0}};
 				Fifo0Full <= 1'b0;
@@ -258,18 +267,18 @@ always @(posedge clk) begin
 
 end
 
-
+/* FIFO read logic. */
 always @(negedge SpiClk or posedge SpiCs) begin
 
 	if(SpiCs) begin
 			SpiClkCnt 		<= {SPI_CLK_CNTWIDTH{1'b0}};
-			SpiData 			<= {DATA_OUT_WIDTH{1'b0}};
+			SpiData 		<= {DATA_OUT_WIDTH{1'b0}};
 			//SpiData 			<= {8{1'b0}};
 			FifoOutSample 	<= {32{1'b0}};
 			FifoSampleAct 	<= 1'b0;
 			DataOutAct 		<= 1'b0;
 			DummyLock		<= 1'b0;
-			RReq				<= {4{1'b0}};
+			RReq			<= {4{1'b0}};
 			RClk0 			<= 1'b0;
 			RClk1 			<= 1'b0;
 	end
@@ -293,61 +302,93 @@ always @(negedge SpiClk or posedge SpiCs) begin
 				FifoSampleAct <= 1'b0;
 			end
 		end
-		
+//		{ SpiMiso, SpiData[127:0] } <= { SpiData[127:0], 1'b0 };
 		if(DataOutAct) begin
 			SpiMiso <= SpiData[127];
 			SpiData[127:1] <= SpiData[126:0];
 			SpiData[0] <= 1'b0;
-			
-//			SpiMiso <= SpiData[7];
-//			SpiData[7:1] <= SpiData[6:0];
-//			SpiData[0] <= 1'b0;
 
 			if(SpiClkCnt == 32'd125) begin
-			//if(SpiClkCnt == 32'd6) begin
+			
+				if(SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RPIPE) begin
+					RClk0 <= 1;
+					RClk1 <= 1;
+				end
+			
 			
 				if(SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO0) begin
-					RClk0 <= 1;
+					if(WRUseFifo0[9:0] > 0) begin
+						RClk0 <= 1;
+					end
 				end
 				else if(SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO1) begin
-					RClk1 <= 1;
+					if(WRUseFifo1[9:0] > 0) begin
+						RClk1 <= 1;
+					end
 				end
 				
 			end
 			
 			if(SpiClkCnt == 32'd126) begin
-			//if(SpiClkCnt == 32'd6) begin
+			
+				if(SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RPIPE) begin
+					RClk0 <= 0;
+					RClk1 <= 0;
+				end
 			
 				if(SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_ADCRTEST) begin					
 					SpiData <= { 32'hABCDEFAB, 32'hABCDEFAB, 32'hABCDEFAB, 32'hABCDEFAB };
-					//SpiData <= { 8'hAA };
 				end
 				else if(SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO0) begin
-					RClk0 <= 0;
-					SpiData <= Fifo0Out;
+					if(WRUseFifo0[9:0] > 0) begin
+						RClk0 <= 0;
+						SpiData <= Fifo0Out;
+					end
+					else begin
+						SpiData <= 0;
+					end
 				end
 				else if(SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO1) begin
-					RClk1 <= 0;
-					SpiData <= Fifo1Out;
+					if(WRUseFifo1[9:0] > 0) begin
+						RClk1 <= 0;
+						SpiData <= Fifo1Out;
+					end
+					else begin
+						SpiData <= 0;
+					end
 				end
 				
 			end
 			
-			if(SpiClkCnt == 32'd127) begin
-			//if(SpiClkCnt == 32'd7) begin							
+			if(SpiClkCnt == 32'd127) begin							
 				SpiClkCnt <= {32{1'b0}};				
 			end
-		//{ SpiMiso, SpiData[127:0] } <= { SpiData[127:0], 1'b0 };
 		end	
 		
 		/* Dummy 32bit word. 64-th bit to shift to output bit FifoOutSample[31] . */
-		if(SpiCmdLock & !DummyLock) begin	
-		
+		if(SpiCmdLock & !DummyLock) begin
+
+			if(SpiClkCnt == 32'd60) begin
+				if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO0) begin
+					RReq[0] <= 1;
+				end
+				if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO1) begin
+					RReq[1] <= 1;
+				end
+			end
 			
+			if(SpiClkCnt == 32'd61) begin
+				if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO0) begin
+					RClk0 <= 1;
+				end
+				if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO1) begin
+					RClk1 <= 1;
+				end
+			end
 			
 			if(SpiClkCnt == 32'd62) begin			
 				if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_SAMPLECNT) begin
-					FifoOutSample <= { {5{1'b0}}, WRUseFifo0, {5{1'b0}}, WRUseFifo1 };
+					FifoOutSample <= { {5{1'b0}}, WRUseFifo1, {5{1'b0}}, WRUseFifo0 };
 					FifoSampleAct <= 1'b1;
 				end
 				else if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_SCNTTEST) begin
@@ -355,18 +396,17 @@ always @(negedge SpiClk or posedge SpiCs) begin
 					FifoSampleAct <= 1'b1;
 				end				
 				else if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO0) begin
-					RReq[0] <= 1;
+					RClk0 <= 0;
 					SpiData <= Fifo0Out;
 					DataOutAct <= 1'b1;
 				end 
 				else if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_RFIFO1) begin
-					RReq[1] <= 1;
+					RClk1 <= 0;
 					SpiData <= Fifo1Out;
 					DataOutAct <= 1'b1;
 				end 
 				else if(SpiCmd[SPI_RW] == SPI_READ & SpiCmd[SPI_DC_MSB:SPI_DC_LSB] == SPI_ADCRTEST) begin
 					SpiData <= { 32'hABCDEFAB, 32'hABCDEFAB, 32'hABCDEFAB, 32'hABCDEFAB };
-					//SpiData <= { 8'hAA };
 					DataOutAct <= 1'b1;
 				end				
 			end

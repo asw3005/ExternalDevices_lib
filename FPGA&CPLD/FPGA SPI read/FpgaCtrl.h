@@ -15,7 +15,7 @@
 /* Write tag. */
 #define SPI_WRITE			0
 /* Data tag to R/W operation. */
-#define SPI_DATA			1
+#define SPI_READ_BACK		1
 /* Command tag to R/W operation. */
 #define SPI_COMMAND			2
 /* Sample data counter tag to R. */
@@ -27,12 +27,16 @@
 /* Read FIFO0 and FIFO1. */
 #define SPI_RFIFO0			6
 #define SPI_RFIFO1			7
+#define SPI_RPIPE			8
 
-#define DATA_IN_MAX16		(4*10)
+#define DEFAULT_RSAMPLE		15
+#define FIFO_PIPELINE_FACT 	4
 #define DATA_OUT_MAX32		16
-#define ADC_SAMPLE			32 //8192
-#define ADC_SAMPLE_BUFF0	32 //8192
-#define ADC_SAMPLE_BUFF1	32 //8192
+#define ADC_SAMPLE_WIDTH	2
+#define ADC_SAMPLE_CNT		4
+#define FIFO_DEPTH			1024
+#define ADC_SAMPLE_BUFF0	(((ADC_SAMPLE_WIDTH*ADC_SAMPLE_CNT)*FIFO_DEPTH) + FIFO_PIPELINE_FACT)//8192
+#define ADC_SAMPLE_BUFF1	(((ADC_SAMPLE_WIDTH*ADC_SAMPLE_CNT)*FIFO_DEPTH) + FIFO_PIPELINE_FACT) //8192
 
 /* Ports' selection. */
 #define FPGA_FIFOCLK_PIN 	GPIO_PIN_3
@@ -138,21 +142,41 @@ typedef struct {
  */
 typedef struct {
 
-	uint16_t TestDataBuff[ADC_SAMPLE];
 	uint16_t Buff0[ADC_SAMPLE_BUFF0];
 	uint16_t Buff1[ADC_SAMPLE_BUFF1];
 
 } FPGA_ADCData_t;
 
 /*
+ * @brief FPGA settings.
+ */
+typedef struct __attribute__((aligned(1), packed)) {
+
+	uint32_t FPGA_CtrlReg;
+	uint32_t FPGA_PeriodLimiter;
+	uint32_t FPGA_FStartTim;
+	uint32_t FPGA_SStartTim;
+	uint32_t FPGA_FStopTim;
+	uint32_t FPGA_SStopTim;
+	uint32_t FPGA_ThrStartHigh;
+	uint32_t FPGA_ThrStartLow;
+	uint32_t FPGA_Thr0Stop;
+	uint32_t FPGA_Thr1Stop;
+
+} FPGA_Settings_t;
+
+/*
  * @brief General struct.
  */
 typedef struct {
 
-	uint16_t DataIn[DATA_IN_MAX16];
 	SPI_CmdWord_t SpiCmdWord;
 	uint32_t DataOut[DATA_OUT_MAX32];
-
+	/* */
+	uint8_t isReadReqActive;
+	/* */
+	uint8_t isFIFO0ReadCmpl;
+	uint8_t isFIFO1ReadCmpl;
 	/* Read sample complete. */
 	uint8_t IsReadADCCmpl;
 	/* Function pointers. */
@@ -167,7 +191,17 @@ typedef struct {
 
 void FPGA_Init(void);
 void FPGA_RstFifo(void);
+void FPGA_TestRead(void);
+void FPGA_StartAcq(void);
+void FPGA_UpdateRegisters(void);
+void FPGA_RstFpgaRegisters(void);
+FPGA_SampleCnt_t* FPGA_GetSample(void);
+FPGA_ADCData_t* FPGA_GetFIfoData(void);
+FPGA_ADCData_t* FPGA_GetFIfo0Data(void);
+FPGA_ADCData_t* FPGA_GetFIfo1Data(void);
+FPGA_Settings_t* FPGA_GetSetSettings(void);
 FPGA_SampleCnt_t* FPGA_ReadSampleData(void);
+FPGA_SampleCnt_t FPGA_PipeDelayDummyRead(void);
 FPGA_SampleCnt_t* FPGA_ReadTestSampleData(void);
 
 void FPGA_ReadTestAdcData(uint8_t ReadCnt, uint8_t* Buff);
