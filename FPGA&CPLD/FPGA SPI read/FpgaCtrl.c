@@ -170,7 +170,7 @@ FPGA_SampleCnt_t* FPGA_GetSample(void) {
 		}
 
 
-		//FPGA_ReadAdcData(FIFO_PIPELINE_FACT, SPI_RPIPE, (uint8_t*)&ADCData_inst.Buff0, 0);
+		//FPGA_PipeDelayDummyRead();
 		//CounterData = FPGA_ReadSampleData();
 		FPGA_ReadAdcData(CounterData->Fifo0Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
 		FPGA_ReadAdcData(CounterData->Fifo1Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
@@ -223,11 +223,25 @@ FPGA_ADCData_t* FPGA_GetFIfo1Data(void) {
 FPGA_SampleCnt_t FPGA_PipeDelayDummyRead(void) {
 
 	/* Read FIFO data. */
-	FPGA_ReadAdcData(FIFO_PIPELINE_FACT, SPI_RPIPE, (uint8_t*)&ADCData_inst.Buff0, 0);
+	uint32_t RawData;
+
+	/* SPI command word prepare. */
+	FPGA_Reg.SpiCmdWord.SPI_RW = SPI_READ;
+	FPGA_Reg.SpiCmdWord.SPI_DC = SPI_RPIPE;
+	FPGA_Reg.SpiCmdWord.SPI_ADDR = 0;
+	FPGA_Reg.SpiCmdWord.SPI_RSVD5_10 = 0;
+
+	/* Activate CS. */
+	HAL_GPIO_WritePin(FPGA_NSS_PORT, FPGA_NSS_PIN, GPIO_PIN_RESET);
+	/* Write command. Blocking. */
+	HAL_SPI_Transmit(FPGASpi, (uint8_t*)&FPGA_Reg.SpiCmdWord, 2, 5);
+	/* 32-bit dummy read (generate some extra pipeline clocks for FIFO reading). */
+	HAL_SPI_Receive(FPGASpi, (uint8_t*)&RawData, 2, 5);
+	/* Deactivate CS. */
+	HAL_GPIO_WritePin(FPGA_NSS_PORT, FPGA_NSS_PIN, GPIO_PIN_SET);
 
 	return *(FPGA_ReadSampleData());
 }
-
 
 /*
  * @brief Test FPGA FIFO read.
@@ -245,17 +259,17 @@ void FPGA_TestRead(void) {
 		/* Read numbers of data to read. */
 		CounterData = FPGA_ReadSampleData();
 		/* Read FIFO data. */
-		FPGA_ReadAdcData(FIFO_PIPELINE_FACT, SPI_RPIPE, (uint8_t*)&ADCData_inst.Buff0, 0);
-		//FPGA_ReadAdcData(FIFO_PIPELINE_FACT, SPI_RPIPE, (uint8_t*)&ADCData_inst.Buff1, 0);
+		//FPGA_PipeDelayDummyRead();
 		CounterData = FPGA_ReadSampleData();
 		__NOP();
-		FPGA_ReadAdcData(DEFAULT_RSAMPLE, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
-		FPGA_ReadAdcData(DEFAULT_RSAMPLE, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
+		FPGA_ReadAdcData(CounterData->Fifo0Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
+		FPGA_ReadAdcData(CounterData->Fifo1Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
 		CounterData = FPGA_ReadSampleData();
 		__NOP();
 
 		/* Reset FIFO. */
-		//FPGA_RstFifo();
+		FPGA_RstFifo();
+		HAL_Delay(1);
 		__NOP();
 
 		/* Software start. */
@@ -263,14 +277,18 @@ void FPGA_TestRead(void) {
 		HAL_Delay(1);
 		__NOP();
 		CounterData = FPGA_ReadSampleData();
-		FPGA_ReadAdcData(FIFO_PIPELINE_FACT, SPI_RPIPE, (uint8_t*)&ADCData_inst.Buff0, 0);
-		//FPGA_ReadAdcData(FIFO_PIPELINE_FACT, SPI_RPIPE, (uint8_t*)&ADCData_inst.Buff1, 0);
+		//FPGA_PipeDelayDummyRead();
 		CounterData = FPGA_ReadSampleData();
-		FPGA_ReadAdcData(DEFAULT_RSAMPLE, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
-		FPGA_ReadAdcData(DEFAULT_RSAMPLE, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
+		FPGA_ReadAdcData(CounterData->Fifo0Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
+		FPGA_ReadAdcData(CounterData->Fifo1Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
 		CounterData = FPGA_ReadSampleData();
 		__NOP();
 		HAL_Delay(10);
+
+		/* Reset FIFO. */
+		FPGA_RstFifo();
+		HAL_Delay(1);
+		__NOP();
 	}
 }
 
@@ -429,7 +447,7 @@ void FPGA_ReadTestAdcData(uint8_t ReadCnt, uint8_t* Buff) {
  * @brief Read ADC data.
  *
  * @param ReadDataNumber : read data FIFO (max FIFO_DEPTH parameter).
- * @param FifoNumber : SPI_RFIFO0 or SPI_RFIFO1 or SPI_RPIPE.
+ * @param FifoNumber : SPI_RFIFO0 or SPI_RFIFO1.
  * @param Buff : data storage to write to.
  * @param Size : amount of data in 16-bit words times 4 (4 16-bit data sample by one ADC clock).
  */
@@ -442,9 +460,7 @@ void FPGA_ReadAdcData(uint16_t ReadDataNumber, uint8_t FifoNumber, uint8_t* Buff
 
 	/* SPI command word prepare. */
 	FPGA_Reg.SpiCmdWord.SPI_RW = SPI_READ;
-//	if(FifoNumber != SPI_RPIPE) {
 //		if((FifoNumber != SPI_RFIFO1) && (FifoNumber != SPI_RFIFO0)) { FifoNumber = SPI_RFIFO0; }
-//	}
 
 	FPGA_Reg.SpiCmdWord.SPI_DC = FifoNumber;
 	FPGA_Reg.SpiCmdWord.SPI_ADDR = 0;
