@@ -53,7 +53,7 @@ parameter SYNC_RST_DELAY 		= 5'd31;
 parameter PRG_START_RST_DELAY 	= 5'd31;
 parameter LIMIT_TIME_100MHz 	= 32'd100_000_000;
 //parameter LIMIT_TIME_100MHz 	= 32'd50_000;
-parameter FAST_LOCK_TIME 		= 8'd15;
+parameter FAST_LOCK_TIME 		= 8'd5;
 
 /* Registers. */
 parameter ControlReg 			= 0;
@@ -71,19 +71,14 @@ reg [15:0][31:0] RegMap;
 reg [31:0] SpiCmdWord 			= { SPI_DUMMY, SPI_READ, SPI_READ_BACK, SPI_RSVD, SPI_DEF_ADDR };
 reg [31:0] SpiData				= {32{1'b0}};
 reg [7:0] SpiClkCnt				= {8{1'b0}};
-reg [7:0] IntADDRCnt			= {8{1'b0}};
 reg [4:0] SyncCnt				= {5{1'b0}};
 reg [0:0] SyncCntActive 		= 1'b0;
 reg [4:0] PrgStartCnt			= {5{1'b0}};
 reg [0:0] PrgStartCntActive 	= 1'b0;
 reg [0:0] CmdWordLock			= 1'b0;
-reg [0:0] IntAddrCntLock 		= 1'b0;
-
-reg [0:0] RWLock				= 1'b0;
-reg [4:0] CmdLock				= 5'b0;
 
 reg [0:0] DataWordLock			= 1'b0;
-reg [7:0] FastLockCnt			= 8'd0;
+reg [0:0] FastDataLock			= 0;
 
 /* Reg update. */
 always @(posedge clk) begin
@@ -104,23 +99,24 @@ always @(posedge clk) begin
 		DataReg[12] 			<= { {28{1'b0}}, 4'hC };
 		DataReg[13] 			<= { {28{1'b0}}, 4'hD };
 		DataReg[14] 			<= { {28{1'b0}}, 4'hE };
-		DataReg[15] 			<= { {28{1'b0}}, 4'hF };	
+		DataReg[15] 			<= { {28{1'b0}}, 4'hF };
+		RegMap 					<= DataReg;
 		SyncCnt					<= {5{1'b0}};
 		SyncCntActive 			<= 1'b0;
 		PrgStartCnt				<= {5{1'b0}};
 		PrgStartCntActive 		<= 1'b0;
-		FastLockCnt 			<= 8'd0;
+		FastDataLock 			<= 0;
 	end
 	else begin
 	
-			if(DataWordLock) begin
-				if(SpiCmdWord[SPI_RW] == SPI_WRITE & SpiCmdWord[SPI_DC_MSB:SPI_DC_LSB] == SPI_COMMAND & FastLockCnt == 8'd15) begin
+			if(DataWordLock & !FastDataLock) begin
+				if(SpiCmdWord[SPI_RW] == SPI_WRITE & SpiCmdWord[SPI_DC_MSB:SPI_DC_LSB] == SPI_COMMAND /*& FastDataLock == FAST_LOCK_TIME*/) begin
 					RegMap[SpiCmdWord[SPI_ADDR_MSB:SPI_ADDR_LSB]] <= { SpiData[15:0], SpiData[31:16] };
+					FastDataLock <= 1;
 				end
-				FastLockCnt <= FastLockCnt + 8'd1;
 			end
 			else if(SpiCs) begin
-				FastLockCnt <= 8'd0;
+				FastDataLock <= 0;
 			end
 			
 	
@@ -165,11 +161,9 @@ always @(posedge SpiClk or posedge SpiCs) begin
 
 	if(SpiCs) begin
 		SpiClkCnt 		<= {8{1'b0}};
-		IntADDRCnt 		<= {8{1'b0}};
 		SpiCmdWord 		<= { SPI_DUMMY, SPI_READ, SPI_READ_BACK , SPI_RSVD, SPI_DEF_ADDR };
-		SpiData 			<= {32{1'b0}};
+		SpiData 		<= {32{1'b0}};
 		CmdWordLock		<= 1'b0;
-		IntAddrCntLock <= 1'b0;
 		DataWordLock   <= 1'b0;
 	end
 	else begin
@@ -209,6 +203,6 @@ always @(posedge SpiClk or posedge SpiCs) begin
 end 
 
 assign 	SpiCmd = SpiCmdWord,
-			SpiCmdLock = CmdWordLock;
+		SpiCmdLock = CmdWordLock;
 
 endmodule /* END OF MODULE */
