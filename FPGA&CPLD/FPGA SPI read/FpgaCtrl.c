@@ -66,7 +66,7 @@ void FPGA_Init(void) {
 	HAL_SPI_RegisterCallback(FPGASpi, HAL_SPI_RX_COMPLETE_CB_ID, SPI_RxDmaFullCallback);
 
 
-	/* Reset FPGA registers(ADDRST - additional reset pin). */
+	/* Reset FPGA registers(ADDRST - additional reset pin). May should wait more time because of SFP module that gives the clock. */
 	HAL_Delay(100);
 	FPGA_RstFpgaRegisters();
 	HAL_Delay(100);
@@ -100,6 +100,7 @@ void FPGA_Init(void) {
 
 	/* Sync.  Init registers' update. */
 	//FPGA_WriteCtrlReg(0, 0, 0, 0, 0, 1, 0);
+	HAL_Delay(1);
 	FPGA_UpdateRegisters();
 
 	__NOP();
@@ -170,10 +171,17 @@ FPGA_SampleCnt_t* FPGA_GetSample(void) {
 		}
 
 
-		//FPGA_PipeDelayDummyRead();
+//		//FPGA_PipeDelayDummyRead();
+//		//CounterData = FPGA_ReadSampleData();
+//		FPGA_ReadAdcData(CounterData->Fifo0Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
+//		FPGA_ReadAdcData(CounterData->Fifo1Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
+//		//CounterData = FPGA_ReadSampleData();
+//		__NOP();
+
+		FPGA_PipeDelayDummyRead();
 		//CounterData = FPGA_ReadSampleData();
-		FPGA_ReadAdcData(CounterData->Fifo0Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
-		FPGA_ReadAdcData(CounterData->Fifo1Cnt + FIFO_PIPELINE_FACT, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
+		FPGA_ReadAdcData(CounterData->Fifo0Cnt, SPI_RFIFO0, (uint8_t*)&ADCData_inst.Buff0, 0);
+		FPGA_ReadAdcData(CounterData->Fifo1Cnt, SPI_RFIFO1, (uint8_t*)&ADCData_inst.Buff1, 0);
 		//CounterData = FPGA_ReadSampleData();
 		__NOP();
 

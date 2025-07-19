@@ -18,11 +18,26 @@ module XYPosDec	#(
 
 
 integer  ix = 0, jx = 0, iy = 0, jy = 0;
-reg [IN_WIDTH - 1:0] X_t, Y_t;
 
-always @(posedge clock)   begin				 
-	X_t <= InputX;
-	Y_t <= InputY;
+reg [IN_WIDTH - 1:0] X_t, Y_t;
+reg [IN_WIDTH - 1:0] X_t0, Y_t0;
+reg [IN_WIDTH - 1:0] X_t1, Y_t1;
+reg [IN_WIDTH - 1:0] X_t2, Y_t2;
+
+always @(posedge clock)   begin	
+
+	X_t0 <= InputX;
+	Y_t0 <= InputY;
+	
+	X_t1 <= X_t0;
+	Y_t1 <= Y_t0;
+
+	X_t2 <= X_t1;
+	Y_t2 <= Y_t1;
+			 
+	X_t <= X_t2;
+	Y_t <= Y_t2;
+	
 end
 							
 always @(posedge clock)											
@@ -40,15 +55,15 @@ begin
                 OutputX <= ix + 1;
             end 
             else if( X_t & (32'd1 << ix) ) begin             
-                jx <= jx + 1;            
+                OutputX <= EER_CODE;            
             end
         end       
     end
 
-    if (jx > 1) begin
-        OutputX <= EER_CODE;
-        jx <= 0;
-    end 
+//    if (jx > 1) begin
+//        OutputX <= EER_CODE;
+//        jx <= 0;
+//    end 
              
 end
 						 
@@ -66,17 +81,20 @@ begin
             if(Y_t == (32'd1 << iy)) begin
                 OutputY <= iy + 1;
             end 
+            /* !!! <= */
             else if( Y_t & (32'd1 << iy) ) begin             
-                jy <= jy + 1;            
+                OutputY <= EER_CODE;            
             end
         end       
     end
 
-    if (jy > 1) begin
-        OutputY <= EER_CODE;
-        jy <= 0;
-    end 
+//    if (jy > 1) begin
+//        OutputY <= EER_CODE;
+//        jy <= 0;
+//    end 
     
-end    
+end
+
+    
     
 endmodule

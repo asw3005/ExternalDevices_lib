@@ -29,7 +29,7 @@
 #define SPI_RFIFO1			7
 #define SPI_RPIPE			8
 
-#define DEFAULT_RSAMPLE		15
+#define DEFAULT_RSAMPLE		256
 #define FIFO_PIPELINE_FACT 	4
 #define DATA_OUT_MAX32		16
 #define ADC_SAMPLE_WIDTH	2
