@@ -9,7 +9,7 @@
 #ifndef DS18B20_H_				  
 #define DS18B20_H_
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 #ifndef NULL
 #define NULL (void *)0	

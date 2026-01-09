@@ -4,15 +4,21 @@
  *
  **/
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "one_wire_uart.h"
 #include "stdio.h"
 
+extern UART_HandleTypeDef huart1;
+UART_HandleTypeDef* ModuleUART = &huart1;
+
 /* Private function prototypes. */
+static void UART_Init_Baud(uint32_t baud);
 static void UART_1WireConvByteToBit(UART_1WireGInst_t *device, uint8_t byte, uint8_t offset);
 static void UART_1WireRxTxComplete(UART_1WireGInst_t *device);
 
 /* Public functions. */
+
+
 
 /*
  * @brief Issued the reset state on the 1 wire bus.
@@ -22,14 +28,14 @@ static void UART_1WireRxTxComplete(UART_1WireGInst_t *device);
  **/
 uint8_t UART_1WireReset(UART_1WireGInst_t *device)
 {	
-	if (device == NULL || device->uart_init_baud == NULL) for (;;) { /*Device's data struct instance is not exist*/ }
+	if (device == NULL) for (;;) { /*Device's data struct instance is not exist*/ }
 	if (device->uart_rx_data == NULL || device->uart_tx_data == NULL || device->delay == NULL) 
 		for (;;)
 		{
 			/*Device's data struct instance is not exist*/ 
 		}
 	
-	device->uart_init_baud(ONEWIRE_BAUD_RATE_RESET_TXRX);
+	UART_Init_Baud(ONEWIRE_BAUD_RATE_RESET_TXRX);
 	device->raw_data.UART_TxBuffer[0] = ONEWIRE_SEND_RESET_PULSE;
 	device->uart_rx_data(device->raw_data.UART_RxBuffer, 1);
 	device->uart_tx_data(device->raw_data.UART_TxBuffer, 1);
@@ -58,7 +64,7 @@ void UART_1WireWriteData(UART_1WireGInst_t *device, uint8_t *data, uint8_t size)
 		UART_1WireConvByteToBit(device, *data, device->raw_data.UART_TxRxOffset);
 		data++;
 	}
-	device->uart_init_baud(ONEWIRE_BAUD_RATE_COMMUNICATION_TXRX);
+	UART_Init_Baud(ONEWIRE_BAUD_RATE_COMMUNICATION_TXRX);
 	device->uart_rx_data(device->raw_data.UART_RxBuffer, device->raw_data.UART_TxRxOffset);
 	device->uart_tx_data(device->raw_data.UART_TxBuffer, device->raw_data.UART_TxRxOffset);
 	device->delay(20);
@@ -80,7 +86,7 @@ void UART_1WireReadData(UART_1WireGInst_t *device, uint8_t* data, uint8_t size)
 	{
 		UART_1WireConvByteToBit(device, ONEWIRE_READ_TIME_SLOT, device->raw_data.UART_TxRxOffset);
 	}	
-	device->uart_init_baud(ONEWIRE_BAUD_RATE_COMMUNICATION_TXRX);
+	UART_Init_Baud(ONEWIRE_BAUD_RATE_COMMUNICATION_TXRX);
 	device->uart_rx_data(device->raw_data.UART_RxBuffer, device->raw_data.UART_TxRxOffset);
 	device->uart_tx_data(device->raw_data.UART_TxBuffer, device->raw_data.UART_TxRxOffset);
 	device->delay(20);
@@ -109,12 +115,12 @@ void UART_1WireReadData(UART_1WireGInst_t *device, uint8_t* data, uint8_t size)
  **/
 uint8_t UART_1WireReadBit(UART_1WireGInst_t *device)
 {	
-	uint8_t rxByte;
+	//uint8_t rxByte;
 	
 	///Write read time slots.
 	device->raw_data.UART_TxBuffer[0] = ONEWIRE_READ_TIME_SLOT;
 	/* Transmit  one read time slot. */
-	device->uart_init_baud(ONEWIRE_BAUD_RATE_COMMUNICATION_TXRX);
+	UART_Init_Baud(ONEWIRE_BAUD_RATE_COMMUNICATION_TXRX);
 	device->uart_rx_data(device->raw_data.UART_RxBuffer, 1);
 	device->uart_tx_data(device->raw_data.UART_TxBuffer, 1);
 	device->delay(5);
@@ -122,6 +128,30 @@ uint8_t UART_1WireReadBit(UART_1WireGInst_t *device)
 	return device->raw_data.UART_RxBuffer[0];
 } 
 
+/*
+ * @brief Function for enable or disable strong pull-up on the one wire bus.
+ * 
+ * param state : if 1 - the strong pull-up is enable, 0 is disable. See the DS2484_CFGReg_t typedef for more detaled.
+ *
+ **/
+void UART_1WireSPU(uint8_t pull_up)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	
+	GPIO_InitStruct.Pin = UART_GPIO_SPU;
+	if (pull_up > 0)
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	}
+	else
+	{
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	}
+	
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(GPIOB, GPIO_InitStruct.Pin, GPIO_PIN_SET);
+}
 
 /* Private functions. */
 
@@ -169,4 +199,23 @@ static void UART_1WireConvByteToBit(UART_1WireGInst_t *device, uint8_t byte, uin
 	device->raw_data.UART_TxRxOffset += 8;
 }
 
-
+/*
+ * brief Reconfig UART baud rate function.
+ *
+ **/
+static void UART_Init_Baud(uint32_t baud)
+{
+	ModuleUART->Instance = USART1;
+	ModuleUART->Init.BaudRate = baud;
+	ModuleUART->Init.WordLength = UART_WORDLENGTH_8B;
+	ModuleUART->Init.StopBits = UART_STOPBITS_1;
+	ModuleUART->Init.Parity = UART_PARITY_NONE;
+	ModuleUART->Init.Mode = UART_MODE_TX_RX;
+	ModuleUART->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	ModuleUART->Init.OverSampling = UART_OVERSAMPLING_16;
+	if (HAL_UART_Init(ModuleUART) != HAL_OK)
+	{
+		for (;;) ;
+		//Error_Handler();
+	}
+}

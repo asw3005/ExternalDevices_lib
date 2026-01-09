@@ -4,14 +4,16 @@
  *
  **/
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "ds18b20.h"
 //#include "calcCRC.h"
 #include "stdio.h"
+#include "stm32f4xx_hal_gpio.h"
+#include "stm32f4xx_hal_uart.h"
 
 /* Define your favorite hardware interface :) */
-//#define UART_COMMUNICATION
-#define I2C_COMMUNICATION
+#define UART_COMMUNICATION
+//#define I2C_COMMUNICATION
 
 /* Select your I2C interface. */
 #ifdef I2C_COMMUNICATION
@@ -25,20 +27,18 @@
 /* Public variables. */
 extern UART_HandleTypeDef huart1;
 /* Private function prototypes. */
-static void UART_ParasitePinRemote(uint8_t pull_up);
-void UART_Init_Baud(uint32_t baud);
 static int8_t UART_TxData(uint8_t *buffer, uint16_t size);
 static int8_t UART_RxData(uint8_t *buffer, uint16_t size);
 /* Private variables. */
 static UART_1WireGInst_t uart_ginst = { 
 		
-	.strong_pull_up = UART_ParasitePinRemote,
 	.isReceiveComplete = (uint16_t *) &huart1.TxXferCount,
-	.uart_init_baud = UART_Init_Baud,	
 	.uart_rx_data = UART_RxData,
 	.uart_tx_data = UART_TxData,
 	.delay = HAL_Delay
 };
+
+
 
 #else 
 #ifdef I2C_COMMUNICATION
@@ -147,7 +147,7 @@ void DS18B20_Get_Temperature(DS18B20_GInst_t *device,
 	DS18B20_DataReadDepth dataDepth)
 {
 	//uint8_t crc8 = 0;
-	float temperature = 0;
+	//float temperature = 0;
 
 	DS18B20_ConvertT(device, rom_cmd);
 	DS18B20_ReadScratchpadBytes(device, rom_cmd, dataDepth);
@@ -429,7 +429,7 @@ void DS18B20_SPU(uint8_t state)
 	DS2482_1WireSPU(&ds2482_ginst, state);
 #else
 #ifdef UART_COMMUNICATION		 
-	UART_1WireSPU(uart_ginst);	
+	UART_1WireSPU(state);	
 #endif /* DS2484 */
 #endif /* DS2482 */
 #endif /* UART_COMMUNICATION */	
@@ -448,7 +448,8 @@ uint8_t DS18B20_TxData(uint8_t *buffer, uint16_t size)
 	return DS2482_1WireWriteData(&ds2482_ginst, buffer, size);
 #else
 #ifdef UART_COMMUNICATION		 
-	//return UART_1WireWriteData(&uart_ginst, buffer, size);	
+	UART_1WireWriteData(&uart_ginst, buffer, size);	
+	return 0;
 #endif /* DS2484 */
 #endif /* DS2482 */
 #endif /* UART_COMMUNICATION */		
@@ -469,7 +470,7 @@ uint8_t DS18B20_RxData(uint8_t *buffer, uint16_t size)
 	return 0;
 #else
 #ifdef UART_COMMUNICATION		 
-	//return UART_1WireReadData(&uart_ginst, buffer, size);	
+	UART_1WireReadData(&uart_ginst, buffer, size);	
 	return 0;
 #endif /* DS2484 */
 #endif /* DS2482 */
@@ -504,48 +505,7 @@ static int8_t I2C_RxData(uint8_t address, uint8_t *buffer, uint16_t size)
 #else
 #ifdef UART_COMMUNICATION
 
-/*
- * @brief DS18B20 parasitic power supply control.
- *
- **/
-static void UART_ParasitePinRemote(uint8_t pull_up)
-{
-	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-	
-	GPIO_InitStruct.Pin = GPIO_PIN_10;
-	if (pull_up > 0)
-	{
-		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	}
-	else
-	{
-		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-	}
-	
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-}
 
-/*
- * brief Reconfig UART baud rate function.
- *
- **/
-void UART_Init_Baud(uint32_t baud)
-{
-	huart1.Instance = USART1;
-	huart1.Init.BaudRate = baud;
-	huart1.Init.WordLength = UART_WORDLENGTH_8B;
-	huart1.Init.StopBits = UART_STOPBITS_1;
-	huart1.Init.Parity = UART_PARITY_NONE;
-	huart1.Init.Mode = UART_MODE_TX_RX;
-	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-	if (HAL_UART_Init(&huart1) != HAL_OK)
-	{
-		for (;;) ;
-		//Error_Handler();
-	}
-}
 
 /*
  * @brief UART transmit data.
@@ -553,7 +513,7 @@ void UART_Init_Baud(uint32_t baud)
  **/
 static int8_t UART_TxData(uint8_t *buffer, uint16_t size)
 {
-	//HAL_UART_Transmit_IT(&huart1, buffer, size);
+	HAL_UART_Transmit_IT(&huart1, buffer, size);
 	//HAL_UART_Transmit_DMA(&huart1, buffer, size);
 	return 0;
 }
@@ -564,7 +524,7 @@ static int8_t UART_TxData(uint8_t *buffer, uint16_t size)
  **/
 static int8_t UART_RxData(uint8_t *buffer, uint16_t size)
 {
-	//HAL_UART_Receive_IT(&huart1, buffer, size);
+	HAL_UART_Receive_IT(&huart1, buffer, size);
 	//HAL_UART_Receive_DMA(&huart1, buffer, size);
 	return 0;
 }

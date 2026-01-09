@@ -9,12 +9,13 @@
 #ifndef ONE_WIRE_UART_H_				  
 #define ONE_WIRE_UART_H_
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 #ifndef NULL
 #define NULL (void *)0	
 #endif //NULL
 
+#define UART_GPIO_SPU GPIO_PIN_9
 
 /*
  * @brief State of line  after reseting line. 
@@ -84,14 +85,6 @@ typedef enum
 typedef void(*usart_init)(uint32_t baud);
 
 /*
- * @brief Remote control for the external strong pull up.
- *
- * @param pull_up : Zero is no pull up, more than zero is pull up enable.
- *
- **/
-typedef void(*parasite_power_pin_remote)(uint8_t pull_up);
-
-/*
  *	@brief Delay function typedef pointer. 
  *	
  *	@param period : Time in milliseconds.
@@ -106,7 +99,7 @@ typedef void(*onewire_delay_fptr)(uint32_t period);
  *	@param size : Amount bytes of data.
  *
  **/
-typedef void (*usart_txrx_data_fptr)(uint8_t *buffer, uint8_t size);
+typedef int8_t (*usart_txrx_data_fptr)(uint8_t *buffer, uint16_t size);
 
 /*
  *	@brief Raw data from the DS18B20 temperature sensor. 
@@ -134,8 +127,6 @@ typedef struct
 	///Input raw data.
 	ONE_WIRE_UART_RawData_t raw_data;
 	//Pointers for the rx, tx delay functions.
-	parasite_power_pin_remote strong_pull_up;
-	usart_init uart_init_baud;
 	usart_txrx_data_fptr uart_tx_data;
 	usart_txrx_data_fptr uart_rx_data;
 	onewire_delay_fptr delay;
@@ -146,6 +137,7 @@ typedef struct
  *	@brief Public function prototypes.
  *
  **/
+ void UART_1WireSPU(uint8_t pull_up);
 uint8_t UART_1WireReset(UART_1WireGInst_t *device);
 void UART_1WireWriteData(UART_1WireGInst_t *device, uint8_t *data, uint8_t size);
 void UART_1WireReadData(UART_1WireGInst_t *device, uint8_t* data, uint8_t size);
