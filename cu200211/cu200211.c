@@ -14,7 +14,7 @@
  * @brief Include files.
  *
  **/
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "cu200211.h"
 
 #include "stdlib.h"
@@ -104,20 +104,61 @@ void CU200211_SendTimeDate(uint8_t ScreenLine, uint8_t LeadZero, uint8_t Hours, 
 }
 
 /*
+ * @brief Send temperature to the screen.
+ * 
+ * @param ScreenLine : CU200211_FIRST_STR or CU200211_SECOND_STR.
+ * @param TmpNumber :
+ * @param Temperature :
+ * @param Humidity :
+ * @param Pressure :
+ *
+ **/
+void CU200211_SendSTemp(uint8_t ScreenLine, char TmpNumber, float Temperature, uint8_t Humidity, uint16_t Pressure) {
+
+	char StrBuff[CU200211_LINE_SIZE + 1] = { ' ' };
+
+	if (Temperature >= 100.0f) { Temperature = 99.9f; }
+
+	if (Temperature >= 10) {
+		CU200211_SendString(ScreenLine, StrBuff, sprintf(StrBuff, "%c %3.1f\"C"
+																  "  %2u%%"
+																  "  %umm",
+																  TmpNumber, Temperature, Humidity, Pressure));
+	} else if (Temperature < 10 && Temperature >= 0) {
+		CU200211_SendString(ScreenLine, StrBuff, sprintf(StrBuff, "%c  %3.1f\"C"
+				  	  	  	  	  	  	  	  	  	  	  	  	  "  %2u%%"
+				  	  	  	  	  	  	  	  	  	  	  	  	  "  %umm",
+																  TmpNumber, Temperature, Humidity, Pressure));
+	} else if (Temperature <= -10) {
+		CU200211_SendString(ScreenLine, StrBuff, sprintf(StrBuff, "%c%3.1f\"C"
+				  	  	  	  	  	  	  	  	  	  	  	  	  "  %2u%%"
+				  	  	  	  	  	  	  	  	  	  	  	  	  "  %umm",
+																  TmpNumber, Temperature, Humidity, Pressure));
+	} else if (Temperature < 0) {
+		CU200211_SendString(ScreenLine, StrBuff, sprintf(StrBuff, "%c %3.1f\"C"
+				  	  	  	  	  	  	  	  	  	  	  	  	  "  %2u%%"
+				  	  	  	  	  	  	  	  	  	  	  	  	  "  %umm",
+																  TmpNumber, Temperature, Humidity, Pressure));
+	}
+
+	__asm__("nop"); 
+}
+
+/*
  * @brief Send temperature, humidity and pressure to the screen.
  * 
  * @param ScreenLine : CU200211_FIRST_STR or CU200211_SECOND_STR.
  * @param LeadZero : if 0, discard the leading zero from hours.
- * @param Hours :
- * @param Minutes :
- * @param Seconds :
+ * @param Temperature :
+ * @param Humidity :
+ * @param Pressure :
  *
  **/
 void CU200211_SendTmpHumPress(uint8_t ScreenLine, float Temperature, uint8_t Humidity, uint16_t Pressure) {
 
 	char StrBuff[CU200211_LINE_SIZE + 1] = { ' ' };
 
-	if (Temperature >= 100) { Temperature = 99.9; }
+	if (Temperature >= 100.0f) { Temperature = 99.9f; }
 	if (Humidity >= 100) { Humidity = 99; }
 	//if (Pressure >= 1000) { Pressure = 999; }
 
@@ -143,6 +184,8 @@ void CU200211_SendTmpHumPress(uint8_t ScreenLine, float Temperature, uint8_t Hum
 				  	  	  	  	  	  	  	  	  	  	  	  	  "  %umm",
 																  Temperature, Humidity, Pressure));
 	}
+
+	__asm__("nop"); 
 }
 
 /*
@@ -186,8 +229,8 @@ void CU200211_SendString(uint8_t Line, char *pBuffer, uint8_t Size) {
  **/
 void CU200211_ArrowTest(void) {
 
-		uint8_t LineSelector 	= 0;
-		uint8_t CharCounter 	= 0x20;
+		//uint8_t LineSelector 	= 0;
+		//uint8_t CharCounter 	= 0x20;
 
 		CU200211_Arrows_t ArrowTest = {
 

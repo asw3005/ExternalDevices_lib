@@ -13,7 +13,7 @@
 #ifndef CU200211_H_
 #define CU200211_H_
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 #ifndef NULL
 #define NULL (void *)0	
@@ -208,5 +208,6 @@ void CU200211_SendString(uint8_t Line, char *pBuffer, uint8_t Size);
 void CU200211_SendTimeDate(uint8_t ScreenLine, uint8_t LeadZero, uint8_t Hours, uint8_t Minutes, uint8_t Seconds,
 							uint8_t Month, uint8_t Date, uint8_t Year);
 void CU200211_SendTmpHumPress(uint8_t ScreenLine, float Temperature, uint8_t Humidity, uint16_t Pressure);
+void CU200211_SendSTemp(uint8_t ScreenLine, char TmpNumber, float Temperature, uint8_t Humidity, uint16_t Pressure);
 
 #endif /* CU200211_H_ */
