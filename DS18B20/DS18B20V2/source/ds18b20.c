@@ -179,8 +179,8 @@ void DS18B20_ReadScratchpadBytes(DS18B20_GInst_t *device,
 	/* Write command. */
 	device->tx_data(&command, 1);
 	//device->delay(5);
-	/* Read data from the sensor. */
 	device->rx_data((uint8_t*)&device->scratchpad_data.Temperature, amountOfbytes);
+	/* Read data from the sensor. */
 	//device->delay(15);	
 }
 
@@ -248,7 +248,7 @@ void DS18B20_Get_PowerSupplyType(DS18B20_GInst_t *device)
 	device->tx_data(&data[0], 2);
 	//device->delay(5);
 	device->rx_data((uint8_t *)&device->converted_data.PowerSupplyType, 1);
-	//device->delay(1);
+	device->delay(1);
 }
 
 /*

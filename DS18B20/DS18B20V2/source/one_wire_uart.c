@@ -7,6 +7,7 @@
 #include "stm32f4xx_hal.h"
 #include "one_wire_uart.h"
 #include "stdio.h"
+#include "stm32f4xx_hal_gpio.h"
 
 extern UART_HandleTypeDef huart1;
 UART_HandleTypeDef* ModuleUART = &huart1;
@@ -141,16 +142,18 @@ void UART_1WireSPU(uint8_t pull_up)
 	GPIO_InitStruct.Pin = UART_GPIO_SPU;
 	if (pull_up > 0)
 	{
-		GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+		HAL_GPIO_WritePin(GPIOB, GPIO_InitStruct.Pin, GPIO_PIN_SET);
 	}
 	else
 	{
 		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+		HAL_GPIO_WritePin(GPIOB, GPIO_InitStruct.Pin, GPIO_PIN_RESET);
 	}
 	
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-	HAL_GPIO_WritePin(GPIOB, GPIO_InitStruct.Pin, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(GPIOB, GPIO_InitStruct.Pin, GPIO_PIN_SET);
 }
 
 /* Private functions. */
