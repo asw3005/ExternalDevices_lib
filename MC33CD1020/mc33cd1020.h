@@ -313,7 +313,9 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 	struct {
 		/* POLL3_0 default 0x1111. */
 		uint32_t POLL3_0 			: 4;
-		uint32_t RESERVED23_8    	: 20;
+		uint32_t RESERVED21_8    	: 18;
+		uint32_t INT_FLG			: 1;
+		uint32_t FAULT_STATUS		: 1;
 		/* 7bit address + RW. */
 		uint32_t REG_ADDR_RW		: 8;
 	};
@@ -334,7 +336,9 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		/* ASEL5_0 default 0. */
 		uint32_t ASEL5_0 			: 6;
 		uint32_t ASETT0				: 1;
-		uint32_t RESERVED23_8    	: 17;
+		uint32_t RESERVED21_7    	: 15;
+		uint32_t INT_FLG			: 1;
+		uint32_t FAULT_STATUS		: 1;
 		/* 7bit address + RW. */
 		uint32_t REG_ADDR_RW		: 8;
 	};
@@ -411,7 +415,7 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t RESERVED21_11		: 1;
 		/* Default 1. */
 		uint32_t INT_FLG 			: 1;
-		uint32_t RESERVED23  		: 1;
+		uint32_t FAULT_STATUS  		: 1;
 		/* 7bit address + R. */
 		uint32_t REG_ADDR_RW		: 8;
 	};
@@ -454,45 +458,116 @@ typedef struct {
 
 
 /* Public function prototypes. */
+void MC33CD1020_Reset(void); 
+void MC33CD1020_EnterLpmMode(void); 
 uint32_t MC33CD1020_SPICheck(void);
+void MC33CD1020_InterruptRequest(void);
+MC33CD1020_SwStatusRead_t MC33CD1020_ReadSWStatus(void); 
+MC33CD1020_FaultStatus_t MC33CD1020_ReadFaultStatus(void);
+MC33CD1020_LowPwrMode_t MC33CD1020_LowPwrModeCfg(uint8_t rw_bit, uint8_t poll_rate);
+MC33CD1020_LowPwrMode_t MC33CD1020_LowPwrModeCfg(uint8_t rw_bit, uint8_t poll_rate);
+MC33CD1020_AmuxCtrl_t MC33CD1020_AMUXCtrl(uint8_t rw_bit, uint8_t amux_current, uint8_t amux_channel);
+
 MC33CD1020_DevCfg_t MC33CD1020_DevCfg(uint8_t rw_bit, 
 											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
 											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7,
 											uint8_t intb_out, uint8_t wakeb_vddqcheck,
 											uint8_t vbat_ovdis, uint8_t sbpoll_time
-											);
- MC33CD1020_UniSP_t MC33CD1020_TriStateSP(uint8_t rw_bit, 
+											) ;
+MC33CD1020_UniSP_t MC33CD1020_TriStateSP(uint8_t rw_bit, 
 											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
 											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
 											);
- MC33CD1020_UniSG_t MC33CD1020_TriStateSG(uint8_t rw_bit, 
+MC33CD1020_UniSG_t MC33CD1020_TriStateSG(uint8_t rw_bit, 
 											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
 											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
 											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
 											uint8_t sg12, uint8_t sg13
 											);
- MC33CD1020_WettCurrentSP_t MC33CD1020_WettCurrentSP(uint8_t rw_bit, 
-											uint8_t wettcurrent_sp0, uint8_t wettcurrent_sp1, uint8_t wettcurrent_sp2, uint8_t wettcurrent_sp3,
-											uint8_t wettcurrent_sp4, uint8_t wettcurrent_sp5, uint8_t wettcurrent_sp6, uint8_t wettcurrent_sp7
+MC33CD1020_WettCurrentSP_t MC33CD1020_WettCurrentSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
 											);
- MC33CD1020_WettCurrentSGReg0_t MC33CD1020_WettCurrentSGReg0(uint8_t rw_bit, 
-											uint8_t wettcurrent_sg0, uint8_t wettcurrent_sg1, uint8_t wettcurrent_sg2, uint8_t wettcurrent_sg3,
-											uint8_t wettcurrent_sg4, uint8_t wettcurrent_sg5, uint8_t wettcurrent_sg6, uint8_t wettcurrent_sg7
+MC33CD1020_WettCurrentSGReg0_t MC33CD1020_WettCurrentSGReg0(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3,
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7
 											);
- MC33CD1020_WettCurrentSGReg1_t MC33CD1020_WettCurrentSGReg1(uint8_t rw_bit, 
-											uint8_t wettcurrent_sg8, uint8_t wettcurrent_sg9, uint8_t wettcurrent_sg10, uint8_t wettcurrent_sg11,
-											uint8_t wettcurrent_sg12, uint8_t wettcurrent_sg13
-											);																					 
- MC33CD1020_UniSP_t MC33CD1020_ContWettCurrentSP(uint8_t rw_bit, 
-											uint8_t contwett_current_sp0, uint8_t contwett_current_sp1, uint8_t contwett_current_sp2, uint8_t contwett_current_sp3, 
-											uint8_t contwett_current_sp4, uint8_t contwett_current_sp5, uint8_t contwett_current_sp6, uint8_t contwett_current_sp7
+MC33CD1020_WettCurrentSGReg1_t MC33CD1020_WettCurrentSGReg1(uint8_t rw_bit, 
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											);
+MC33CD1020_UniSP_t MC33CD1020_ContWettCurrentSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
 											);
 MC33CD1020_UniSG_t MC33CD1020_ContWettCurrentSG(uint8_t rw_bit, 
-											uint8_t contwett_current_sg0, uint8_t contwett_current_sg1,	uint8_t contwett_current_sg2, uint8_t contwett_current_sg3,
-											uint8_t contwett_current_sg4, uint8_t contwett_current_sg5, uint8_t contwett_current_sg6, uint8_t contwett_current_sg7,
-											uint8_t contwett_current_sg8, uint8_t contwett_current_sg9, uint8_t contwett_current_sg10, uint8_t contwett_current_sg11, 
-											uint8_t contwett_current_sg12, uint8_t contwett_current_sg13
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3,
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11, 
+											uint8_t sg12, uint8_t sg13
 											);
+MC33CD1020_UniSP_t MC33CD1020_IntEnSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											);
+MC33CD1020_UniSG_t MC33CD1020_IntEnSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											);
+MC33CD1020_UniSP_t MC33CD1020_WakeUpEnSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											);
+MC33CD1020_UniSG_t MC33CD1020_WakeUpEnSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											);
+MC33CD1020_UniSP_t MC33CD1020_CmpOnlySP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											);
+MC33CD1020_UniSG_t MC33CD1020_CmpOnlySG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											);
+MC33CD1020_UniSP_t MC33CD1020_LpmVoltageThrSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											);
+MC33CD1020_UniSG_t MC33CD1020_LpmVoltageThrSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											);
+MC33CD1020_UniSP_t MC33CD1020_PollCurrentSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											);
+MC33CD1020_UniSG_t MC33CD1020_PollCurrentSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											); 																						 											 
+
+MC33CD1020_UniSP_t MC33CD1020_UniRegSP(MC33CD1020_UniSP_t* uniregSP, uint8_t addr_rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											);
+MC33CD1020_UniSG_t MC33CD1020_UniRegSG(MC33CD1020_UniSG_t* uniregSG, uint8_t addr_rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											);
+
 
 
 #endif /* MC33CD1020_H_ */

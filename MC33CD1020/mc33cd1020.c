@@ -7,6 +7,7 @@
 #include "mc33cd1020.h"
 #include "spi.h"
 #include "stm32g4xx_hal.h"
+#include <stdint.h>
 //#include <stdint.h>
 
 
@@ -127,29 +128,18 @@ uint32_t MC33CD1020_SPICheck(void) {
 											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
 											) {
 
+	uint32_t ReadBack = 0;
 	static MC33CD1020_UniSP_t TriStateSP = { 0 };
 
-	TriStateSP.REG_ADDR_RW = (MC33CD1020_TRISTATE_SP | rw_bit);
-	TriStateSP.SP0 = sp0;
-	TriStateSP.SP1 = sp1;
-	TriStateSP.SP2 = sp2;
-	TriStateSP.SP3 = sp3;
-	TriStateSP.SP4 = sp4;
-	TriStateSP.SP5 = sp5;
-	TriStateSP.SP6 = sp6;
-	TriStateSP.SP7 = sp7;
-
-	mc33cd1020_inst.spi_tx((uint8_t *)&TriStateSP.UniSPReg, sizeof(TriStateSP.UniSPReg));
-	MC33CD1020_TxCheck();
+	ReadBack = MC33CD1020_UniRegSP(&TriStateSP, (MC33CD1020_TRISTATE_SP | rw_bit), sp0, sp1, sp2, sp3, sp4, sp5, sp6, sp7).UniSPReg;
 	if(!rw_bit) {
-		mc33cd1020_inst.spi_rx((uint8_t*)&TriStateSP.UniSPReg, sizeof(TriStateSP.UniSPReg));
-		MC33CD1020_RxCheck();
+		TriStateSP.UniSPReg = ReadBack;
 	}
 
 	return TriStateSP;
  }
 
-  /*
+/*
  * @brief Tri-state SG register. The tri-state command is use to set the input nodes as high-impedance. The configurable
  *			comparator (4.0 V default) on each input remains active. The MCU may change or update the tri-state register
  *			via software at any time in normal mode. The tri-state register defaults to 1 (inputs are tri-stated). Any inputs in
@@ -170,30 +160,13 @@ uint32_t MC33CD1020_SPICheck(void) {
 											uint8_t sg12, uint8_t sg13
 											) {
 
+	uint32_t ReadBack = 0;												
 	static MC33CD1020_UniSG_t TriStateSG = { 0 };
 
-	TriStateSG.REG_ADDR_RW = (MC33CD1020_TRISTATE_SG | rw_bit);
-	TriStateSG.SG0 = sg0;
-	TriStateSG.SG1 = sg1;
-	TriStateSG.SG2 = sg2;
-	TriStateSG.SG3 = sg3;
-	TriStateSG.SG4 = sg4;
-	TriStateSG.SG5 = sg5;
-	TriStateSG.SG6 = sg6;
-	TriStateSG.SG7 = sg7;
-	TriStateSG.SG8 = sg8;
-	TriStateSG.SG9 = sg9;
-	TriStateSG.SG10 = sg10;
-	TriStateSG.SG11 = sg11;
-	TriStateSG.SG12 = sg12;
-	TriStateSG.SG13 = sg13;
+	ReadBack = MC33CD1020_UniRegSG(&TriStateSG, (MC33CD1020_TRISTATE_SG | rw_bit), sg0, sg1, sg2, sg3, sg4, sg5, sg6, sg7, sg8,  sg9, sg10, sg11, sg12, sg13).UniSGReg;
 
-
-	mc33cd1020_inst.spi_tx((uint8_t *)&TriStateSG.UniSGReg, sizeof(TriStateSG.UniSGReg));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
-		mc33cd1020_inst.spi_rx((uint8_t*)&TriStateSG.UniSGReg, sizeof(TriStateSG.UniSGReg));
-		MC33CD1020_RxCheck();
+		TriStateSG.UniSGReg = ReadBack;
 	}
 
 	return TriStateSG;
@@ -202,7 +175,7 @@ uint32_t MC33CD1020_SPICheck(void) {
 /*
  * @brief Wetting current levels, SP0 - SP7.
  *
- * @param WettCurrent_spx : The IC contains configurable wetting currents (Default = 16 mA). The MCU may change or update the wetting current register via
+ * @param WettCurrent spx : The IC contains configurable wetting currents (Default = 16 mA). The MCU may change or update the wetting current register via
  *                      	software at any time in normal mode.
  *                          	0 - 2.0 mA,
  *                          	1 - 8.0 mA,
@@ -213,22 +186,22 @@ uint32_t MC33CD1020_SPICheck(void) {
  *
  **/
  MC33CD1020_WettCurrentSP_t MC33CD1020_WettCurrentSP(uint8_t rw_bit, 
-											uint8_t wettcurrent_sp0, uint8_t wettcurrent_sp1, uint8_t wettcurrent_sp2, uint8_t wettcurrent_sp3,
-											uint8_t wettcurrent_sp4, uint8_t wettcurrent_sp5, uint8_t wettcurrent_sp6, uint8_t wettcurrent_sp7
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
 											) {
 
 	static MC33CD1020_WettCurrentSP_t WettCurrentSP = { 0 };
 
 	WettCurrentSP.WettCurrentSPReg = 0;
 	WettCurrentSP.REG_ADDR_RW = (MC33CD1020_WETTCURRENT_LVL_SP | rw_bit);
-	WettCurrentSP.SP0 = wettcurrent_sp0;
-	WettCurrentSP.SP1 = wettcurrent_sp1;
-	WettCurrentSP.SP2 = wettcurrent_sp2;
-	WettCurrentSP.SP3 = wettcurrent_sp3;
-	WettCurrentSP.SP4 = wettcurrent_sp4;
-	WettCurrentSP.SP5 = wettcurrent_sp5;
-	WettCurrentSP.SP6 = wettcurrent_sp6;
-	WettCurrentSP.SP7 = wettcurrent_sp7;
+	WettCurrentSP.SP0 = sp0;
+	WettCurrentSP.SP1 = sp1;
+	WettCurrentSP.SP2 = sp2;
+	WettCurrentSP.SP3 = sp3;
+	WettCurrentSP.SP4 = sp4;
+	WettCurrentSP.SP5 = sp5;
+	WettCurrentSP.SP6 = sp6;
+	WettCurrentSP.SP7 = sp7;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&WettCurrentSP.WettCurrentSPReg, sizeof(WettCurrentSP.WettCurrentSPReg));
 	MC33CD1020_TxCheck();
@@ -243,7 +216,7 @@ uint32_t MC33CD1020_SPICheck(void) {
 /*
  * @brief Wetting current levels, SG0 - SG7.
  *
- * @param WettCurrent_sgx : The IC contains configurable wetting currents (Default = 16 mA). The MCU may change or update the wetting current register via
+ * @param WettCurrent sgx : The IC contains configurable wetting currents (Default = 16 mA). The MCU may change or update the wetting current register via
  *                      	software at any time in normal mode.
  *                          	0 - 2.0 mA,
  *                          	1 - 8.0 mA,
@@ -254,22 +227,22 @@ uint32_t MC33CD1020_SPICheck(void) {
  *
  **/
  MC33CD1020_WettCurrentSGReg0_t MC33CD1020_WettCurrentSGReg0(uint8_t rw_bit, 
-											uint8_t wettcurrent_sg0, uint8_t wettcurrent_sg1, uint8_t wettcurrent_sg2, uint8_t wettcurrent_sg3,
-											uint8_t wettcurrent_sg4, uint8_t wettcurrent_sg5, uint8_t wettcurrent_sg6, uint8_t wettcurrent_sg7
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3,
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7
 											) {
 
 	static MC33CD1020_WettCurrentSGReg0_t WettCurrentSG = { 0 };
 
 	WettCurrentSG.WettCurrentSGReg0 = 0;
 	WettCurrentSG.REG_ADDR_RW = (MC33CD1020_WETTCURRENT_LVL_SGR0 | rw_bit);
-	WettCurrentSG.SG0 = wettcurrent_sg0;
-	WettCurrentSG.SG1 = wettcurrent_sg1;
-	WettCurrentSG.SG2 = wettcurrent_sg2;
-	WettCurrentSG.SG3 = wettcurrent_sg3;
-	WettCurrentSG.SG4 = wettcurrent_sg4;
-	WettCurrentSG.SG5 = wettcurrent_sg5;
-	WettCurrentSG.SG6 = wettcurrent_sg6;
-	WettCurrentSG.SG7 = wettcurrent_sg7;
+	WettCurrentSG.SG0 = sg0;
+	WettCurrentSG.SG1 = sg1;
+	WettCurrentSG.SG2 = sg2;
+	WettCurrentSG.SG3 = sg3;
+	WettCurrentSG.SG4 = sg4;
+	WettCurrentSG.SG5 = sg5;
+	WettCurrentSG.SG6 = sg6;
+	WettCurrentSG.SG7 = sg7;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&WettCurrentSG.WettCurrentSGReg0, sizeof(WettCurrentSG.WettCurrentSGReg0));
 	MC33CD1020_TxCheck();
@@ -284,7 +257,7 @@ uint32_t MC33CD1020_SPICheck(void) {
 /*
  * @brief Wetting current levels, SG8 - SG13.
  *
- * @param WettCurrent_sgx : The IC contains configurable wetting currents (Default = 16 mA). The MCU may change or update the wetting current register via
+ * @param WettCurrent sgx : The IC contains configurable wetting currents (Default = 16 mA). The MCU may change or update the wetting current register via
  *                      	software at any time in normal mode.
  *                          	0 - 2.0 mA,
  *                          	1 - 8.0 mA,
@@ -295,20 +268,20 @@ uint32_t MC33CD1020_SPICheck(void) {
  *
  **/
  MC33CD1020_WettCurrentSGReg1_t MC33CD1020_WettCurrentSGReg1(uint8_t rw_bit, 
-											uint8_t wettcurrent_sg8, uint8_t wettcurrent_sg9, uint8_t wettcurrent_sg10, uint8_t wettcurrent_sg11,
-											uint8_t wettcurrent_sg12, uint8_t wettcurrent_sg13
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
 											) {
 
 	static MC33CD1020_WettCurrentSGReg1_t WettCurrentSG = { 0 };
 
 	WettCurrentSG.WettCurrentSGReg1 = 0;
 	WettCurrentSG.REG_ADDR_RW = (MC33CD1020_WETTCURRENT_LVL_SGR1 | rw_bit);
-	WettCurrentSG.SG8 = wettcurrent_sg8;
-	WettCurrentSG.SG9 = wettcurrent_sg9;
-	WettCurrentSG.SG10 = wettcurrent_sg10;
-	WettCurrentSG.SG11 = wettcurrent_sg11;
-	WettCurrentSG.SG12 = wettcurrent_sg12;
-	WettCurrentSG.SG13 = wettcurrent_sg13;
+	WettCurrentSG.SG8 = sg8;
+	WettCurrentSG.SG9 = sg9;
+	WettCurrentSG.SG10 = sg10;
+	WettCurrentSG.SG11 = sg11;
+	WettCurrentSG.SG12 = sg12;
+	WettCurrentSG.SG13 = sg13;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&WettCurrentSG.WettCurrentSGReg1, sizeof(WettCurrentSG.WettCurrentSGReg1));
 	MC33CD1020_TxCheck();
@@ -320,8 +293,8 @@ uint32_t MC33CD1020_SPICheck(void) {
 	return WettCurrentSG;
 }
 
- /*
- * @brief Each switch input has a designated 20 ms timer. The timer starts when the specific switch input crosses the
+/*
+* @brief Each switch input has a designated 20 ms timer. The timer starts when the specific switch input crosses the
 *			comparator threshold. When the 20 ms timer expires, the contact current is reduced from the configured wetting
 *			current (16 mA) to the Sustain current (2mA). The wetting current is defined to be an elevated level that reduces to
 *			the lower sustain current level after the timer has expired. With multiple wetting current timers disabled, power
@@ -330,98 +303,135 @@ uint32_t MC33CD1020_SPICheck(void) {
 *			mode. This allows the MCU to control the amount of time wetting current is applied to the switch contact.
 *			Programming the continuous wetting current bit to logic [0] operates normally with a higher wetting current
 *			followed by sustain current after 20 ms (pulsed Wetting current operation). Programming to logic [1] enables
-*			the continuous wetting current (Table 19) and results in a full time wetting current level. The continuous wetting
+*			the continuous wetting current and results in a full time wetting current level. The continuous wetting
 *			current register defaults to 0 (pulse wetting current operation).
  *
  * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
- * @param contwett_current_spx	: 	0 - normal operation with a higher wetting current followed by sustein current after 20 ms (default),
+ * @param contwett_current spx	: 	0 - normal operation with a higher wetting current followed by sustein current after 20 ms (default),
  * 									1 - operation with a full time wetting current.
  *
  * @retval MC33CD1020_UniSP_t type.
  *
  **/
- MC33CD1020_UniSP_t MC33CD1020_ContWettCurrentSP(uint8_t rw_bit, 
-											uint8_t contwett_current_sp0, uint8_t contwett_current_sp1, uint8_t contwett_current_sp2, uint8_t contwett_current_sp3, 
-											uint8_t contwett_current_sp4, uint8_t contwett_current_sp5, uint8_t contwett_current_sp6, uint8_t contwett_current_sp7
+MC33CD1020_UniSP_t MC33CD1020_ContWettCurrentSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
 											) {
-
+	
+	uint32_t ReadBack = 0;
 	static MC33CD1020_UniSP_t ContWettCurrentSP = { 0 };
 
-	ContWettCurrentSP.REG_ADDR_RW = (MC33CD1020_WETTCURRENT_CONTEN_SP | rw_bit);
-	ContWettCurrentSP.SP0 = contwett_current_sp0;
-	ContWettCurrentSP.SP1 = contwett_current_sp1;
-	ContWettCurrentSP.SP2 = contwett_current_sp2;
-	ContWettCurrentSP.SP3 = contwett_current_sp3;
-	ContWettCurrentSP.SP4 = contwett_current_sp4;
-	ContWettCurrentSP.SP5 = contwett_current_sp5;
-	ContWettCurrentSP.SP6 = contwett_current_sp6;
-	ContWettCurrentSP.SP7 = contwett_current_sp7;
+	ReadBack = MC33CD1020_UniRegSP(&ContWettCurrentSP, (MC33CD1020_WETTCURRENT_CONTEN_SP | rw_bit), sp0, sp1, sp2, sp3, sp4, sp5, sp6, sp7).UniSPReg;
 
-	mc33cd1020_inst.spi_tx((uint8_t *)&ContWettCurrentSP.UniSPReg, sizeof(ContWettCurrentSP.UniSPReg));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
-		mc33cd1020_inst.spi_rx((uint8_t*)&ContWettCurrentSP.UniSPReg, sizeof(ContWettCurrentSP.UniSPReg));
-		MC33CD1020_RxCheck();
+		ContWettCurrentSP.UniSPReg = ReadBack;
 	}
 
 	return ContWettCurrentSP;
  }
 
-  /*
+/*
  * @brief Each switch input has a designated 20 ms timer. The timer starts when the specific switch input crosses the
-*			comparator threshold. When the 20 ms timer expires, the contact current is reduced from the configured wetting
-*			current (16 mA) to the Sustain current (2mA). The wetting current is defined to be an elevated level that reduces to
-*			the lower sustain current level after the timer has expired. With multiple wetting current timers disabled, power
-*			dissipation for the IC must be considered.
-*			The MCU may change or update the continuous wetting current register via software at any time in normal
-*			mode. This allows the MCU to control the amount of time wetting current is applied to the switch contact.
-*			Programming the continuous wetting current bit to logic [0] operates normally with a higher wetting current
-*			followed by sustain current after 20 ms (pulsed Wetting current operation). Programming to logic [1] enables
-*			the continuous wetting current (Table 19) and results in a full time wetting current level. The continuous wetting
-*			current register defaults to 0 (pulse wetting current operation).
+ *			comparator threshold. When the 20 ms timer expires, the contact current is reduced from the configured wetting
+ *			current (16 mA) to the Sustain current (2mA). The wetting current is defined to be an elevated level that reduces to
+ *			the lower sustain current level after the timer has expired. With multiple wetting current timers disabled, power
+ *			dissipation for the IC must be considered.
+ *			The MCU may change or update the continuous wetting current register via software at any time in normal
+ *			mode. This allows the MCU to control the amount of time wetting current is applied to the switch contact.
+ *			Programming the continuous wetting current bit to logic [0] operates normally with a higher wetting current
+ *			followed by sustain current after 20 ms (pulsed Wetting current operation). Programming to logic [1] enables
+ *			the continuous wetting current and results in a full time wetting current level. The continuous wetting
+ *			current register defaults to 0 (pulse wetting current operation).
  *
  * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
- * @param contwett_current_sgx	: 	0 - normal operation with a higher wetting current followed by sustein current after 20 ms (default),
+ * @param contwett_current sgx	: 	0 - normal operation with a higher wetting current followed by sustein current after 20 ms (default),
  * 									1 - operation with a full time wetting current.
  *
  * @retval MC33CD1020_UniSG_t type.
  *
  **/
 MC33CD1020_UniSG_t MC33CD1020_ContWettCurrentSG(uint8_t rw_bit, 
-											uint8_t contwett_current_sg0, uint8_t contwett_current_sg1,	uint8_t contwett_current_sg2, uint8_t contwett_current_sg3,
-											uint8_t contwett_current_sg4, uint8_t contwett_current_sg5, uint8_t contwett_current_sg6, uint8_t contwett_current_sg7,
-											uint8_t contwett_current_sg8, uint8_t contwett_current_sg9, uint8_t contwett_current_sg10, uint8_t contwett_current_sg11, 
-											uint8_t contwett_current_sg12, uint8_t contwett_current_sg13
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3,
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11, 
+											uint8_t sg12, uint8_t sg13
 											) {
 
+	uint32_t ReadBack = 0;												
 	static MC33CD1020_UniSG_t ContWettCurrentSG = { 0 };
 
-	ContWettCurrentSG.REG_ADDR_RW = (MC33CD1020_TRISTATE_SG | rw_bit);
-	ContWettCurrentSG.SG0 = contwett_current_sg0;
-	ContWettCurrentSG.SG1 = contwett_current_sg1;
-	ContWettCurrentSG.SG2 = contwett_current_sg2;
-	ContWettCurrentSG.SG3 = contwett_current_sg3;
-	ContWettCurrentSG.SG4 = contwett_current_sg4;
-	ContWettCurrentSG.SG5 = contwett_current_sg5;
-	ContWettCurrentSG.SG6 = contwett_current_sg6;
-	ContWettCurrentSG.SG7 = contwett_current_sg7;
-	ContWettCurrentSG.SG8 = contwett_current_sg8;
-	ContWettCurrentSG.SG9 = contwett_current_sg9;
-	ContWettCurrentSG.SG10 = contwett_current_sg10;
-	ContWettCurrentSG.SG11 = contwett_current_sg11;
-	ContWettCurrentSG.SG12 = contwett_current_sg12;
-	ContWettCurrentSG.SG13 = contwett_current_sg13;
+	ReadBack = MC33CD1020_UniRegSG(&ContWettCurrentSG, (MC33CD1020_WETTCURRENT_CONTEN_SG | rw_bit), sg0, sg1, sg2, sg3, sg4, sg5, sg6, sg7, sg8,  sg9, sg10, sg11, sg12, sg13).UniSGReg;
 
-
-	mc33cd1020_inst.spi_tx((uint8_t *)&ContWettCurrentSG.UniSGReg, sizeof(ContWettCurrentSG.UniSGReg));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
-		mc33cd1020_inst.spi_rx((uint8_t*)&ContWettCurrentSG.UniSGReg, sizeof(ContWettCurrentSG.UniSGReg));
-		MC33CD1020_RxCheck();
+		ContWettCurrentSG.UniSGReg = ReadBack;
 	}
 
 	return ContWettCurrentSG;
 }
+
+ /*
+ * @brief The interrupt register defines the inputs that are allowed to Interrupt the CD1020 normal mode. Programming
+ *			the interrupt bit to logic [0] disables the specific input from generating an interrupt. Programming the interrupt bit
+ *			to logic [1] enables the specific input to generate an interrupt with switch change of state The MCU may change
+ * 			or update the interrupt register via software at any time in normal mode. The Interrupt register defaults to logic
+ *			[1] (Interrupt enabled).
+ *
+ * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param interrupt enable spx	: 	0 - disables the specific input from generating an interrupt,
+ * 									1 - enables the specific input to generate an interrupt with switch change of state (default).
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+MC33CD1020_UniSP_t MC33CD1020_IntEnSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											) {
+	
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSP_t IntEnSP = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSP(&IntEnSP, (MC33CD1020_INTEN_SP | rw_bit), sp0, sp1, sp2, sp3, sp4, sp5, sp6, sp7).UniSPReg;
+
+	if(!rw_bit) {
+		IntEnSP.UniSPReg = ReadBack;
+	}
+
+	return IntEnSP;
+ }
+
+/*
+ * @brief The interrupt register defines the inputs that are allowed to Interrupt the CD1020 normal mode. Programming
+ *			the interrupt bit to logic [0] disables the specific input from generating an interrupt. Programming the interrupt bit
+ *			to logic [1] enables the specific input to generate an interrupt with switch change of state The MCU may change
+ * 			or update the interrupt register via software at any time in normal mode. The Interrupt register defaults to logic
+ *			[1] (Interrupt enabled).
+ *
+ * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param Interrupt enable sgx	: 	0 - disables the specific input from generating an interrupt,
+ * 									1 - enables the specific input to generate an interrupt with switch change of state (default).
+ *
+ * @retval MC33CD1020_UniSG_t type.
+ *
+ **/
+MC33CD1020_UniSG_t MC33CD1020_IntEnSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											) {
+
+	uint32_t ReadBack = 0;												
+	static MC33CD1020_UniSG_t IntEnSG = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSG(&IntEnSG, (MC33CD1020_INTEN_SG | rw_bit), sg0, sg1, sg2, sg3, sg4, sg5, sg6, sg7, sg8,  sg9, sg10, sg11, sg12, sg13).UniSGReg;
+
+	if(!rw_bit) {
+		IntEnSG.UniSGReg = ReadBack;
+	}
+
+	return IntEnSG;
+ }
 
 /*
  * @brief Low power mode configuration.
@@ -430,71 +440,547 @@ MC33CD1020_UniSG_t MC33CD1020_ContWettCurrentSG(uint8_t rw_bit,
  *                      events. The current sources become active at this time for a time of tACTIVESGPOLLING or tACTIVESBPOLLING for SG
  *                      or SB channels respectively.
  *
- * @param PollRate :  0 - 3.0ms,  1 - 6.0ms,  2 - 12ms,  3 - 24ms,
- *                    4 - 48ms,   5 - 68ms,   6 - 76ms,  7 - 128ms,                      
- *                    8 - 32ms,   9 - 36ms,   10 - 40ms, 11 - 44ms,
- *                    12 - 52ms,  13 - 56ms,  14 - 60ms, 15 - 64ms.
+ * @param rw_bit 	: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param poll_rate	:  	0 - 3.0ms,  1 - 6.0ms,  2 - 12ms,  3 - 24ms,
+ *                    	4 - 48ms,   5 - 68ms,   6 - 76ms,  7 - 128ms,                      
+ *                    	8 - 32ms,   9 - 36ms,   10 - 40ms, 11 - 44ms,
+ *                    	12 - 52ms,  13 - 56ms,  14 - 60ms, 15 - 64ms (default).
+ *
+ * @retval MC33CD1020_LowPwrMode_t type.
  *
  **/
+MC33CD1020_LowPwrMode_t MC33CD1020_LowPwrModeCfg(uint8_t rw_bit, uint8_t poll_rate) {
+
+	static MC33CD1020_LowPwrMode_t LowPwrMode = { 0 };
+
+	LowPwrMode.REG_ADDR_RW = (MC33CD1020_LOWPWRMODE_CFG | rw_bit);
+	LowPwrMode.POLL3_0 = poll_rate;
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&LowPwrMode.LowPwrModeReg, sizeof(LowPwrMode.LowPwrModeReg));
+	MC33CD1020_TxCheck();
+	if(!rw_bit) {
+		mc33cd1020_inst.spi_rx((uint8_t*)&LowPwrMode.LowPwrModeReg, sizeof(LowPwrMode.LowPwrModeReg));
+		MC33CD1020_RxCheck();
+	}
+
+	return LowPwrMode;
+ }
 
 /*
- * @brief Low power mode configuration.
+ * @brief The wake-up register defines the inputs that are allowed to wake the CD1020 from low-power mode.
+ *			Programming the wake-up bit to logic [0] disables the specific input from waking the IC (Table 25). Programming
+ *			the wake-up bit to logic [1] enables the specific input to wake-up with switch change of state The MCU may
+ *			change or update the wake-up register via software at any time in normal mode. The Wake-up register defaults
+ *			to logic [1] (wake-up enabled). If all channels (SG and SB) have the Wake-up bit disabled, the device disables
+ *			the polling timer to reduce the current consumption during low-power mode.
  *
- * @param WettCurrent : The analog voltage on switch inputs may be read by the MCU using the analog command (Table 34). Internal
- *                      to the CD1020 is a 22---to-1 analog multiplexer. The voltage present on the selected input pin is buffered
- *                      and made available on the AMUX output pin. The AMUX output pin is clamped to a maximum of VDDQ volts
- *                      regardless of the higher voltages present on the input pin. After an input has been selected as the analog, the
- *                      corresponding bit in the next MISO data stream is logic [0].
+ * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param wake up enable spx	: 	0 - disables the specific input from waking the IC,
+ * 									1 - enables the specific input to wake-up with switch change of state (default).
  *
+ * @retval MC33CD1020_UniSP_t type.
  *
- * @param AmuxChannel : 0 - no input selected
- *                      1 - SG0, 2 - SG1, 3 - SG2, 4  - SG3,                    
- *                      5 - SG4, 6 - SG5, 7 - SG6, 8  - SG7, 
- *                      9 - SG8, 10 - SG9, 11 - SG10, 12 - SG11, 
- *                      13 - SG12, 14 - SG13.
+ **/
+ MC33CD1020_UniSP_t MC33CD1020_WakeUpEnSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSP_t WakwUpEnSP = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSP(&WakwUpEnSP, (MC33CD1020_WAKEUPEN_SP | rw_bit), sp0, sp1, sp2, sp3, sp4, sp5, sp6, sp7).UniSPReg;
+
+	if(!rw_bit) {
+		WakwUpEnSP.UniSPReg = ReadBack;
+	}
+
+	return WakwUpEnSP;
+ }
+
+ /*
+ * @brief The wake-up register defines the inputs that are allowed to wake the CD1020 from low-power mode.
+ *			Programming the wake-up bit to logic [0] disables the specific input from waking the IC (Table 25). Programming
+ *			the wake-up bit to logic [1] enables the specific input to wake-up with switch change of state The MCU may
+ *			change or update the wake-up register via software at any time in normal mode. The Wake-up register defaults
+ *			to logic [1] (wake-up enabled). If all channels (SG and SB) have the Wake-up bit disabled, the device disables
+ *			the polling timer to reduce the current consumption during low-power mode.
+ *
+ * @param rw_bit 		: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param wakeupen sgx	: 	0 - disables the specific input from waking the IC,
+ * 							1 - enables the specific input to wake-up with switch change of state (default).
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+ MC33CD1020_UniSG_t MC33CD1020_WakeUpEnSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSG_t WakeUpEnSG = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSG(&WakeUpEnSG, (MC33CD1020_WAKEUPEN_SG | rw_bit), sg0, sg1, sg2, sg3, sg4, sg5, sg6, sg7, sg8,  sg9, sg10, sg11, sg12, sg13).UniSGReg;
+
+	if(!rw_bit) {
+		WakeUpEnSG.UniSGReg = ReadBack;
+	}
+
+	return WakeUpEnSG;
+ }
+
+ /*
+ * @brief The comparator only register allows the input comparators to be active during LPM with no polling current. In
+ *			this case, the inputs can receive a digital signal on the order of the LPM clock cycle and wake-up on a change
+ *			of state. This register is intended to be used for signals that are driven by an external chip and drive to 5.0 V.
+ *
+ * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param Comparator only spx	: 	0 - comparators are active during LPM mode with polling current (default),
+ * 									1 - comparators are active during LPM mode with no polling current.
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+ MC33CD1020_UniSP_t MC33CD1020_CmpOnlySP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSP_t CmpOnlySP = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSP(&CmpOnlySP, (MC33CD1020_LPMCMPONLY_SP | rw_bit), sp0, sp1, sp2, sp3, sp4, sp5, sp6, sp7).UniSPReg;
+
+	if(!rw_bit) {
+		CmpOnlySP.UniSPReg = ReadBack;
+	}
+
+	return CmpOnlySP;
+ }
+
+  /*
+ * @brief The comparator only register allows the input comparators to be active during LPM with no polling current. In
+ *			this case, the inputs can receive a digital signal on the order of the LPM clock cycle and wake-up on a change
+ *			of state. This register is intended to be used for signals that are driven by an external chip and drive to 5.0 V.
+ *
+ * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param Comparator only sgx	: 	0 - comparators are active during LPM mode with polling current (default),
+ * 									1 - comparators are active during LPM mode with no polling current.
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+MC33CD1020_UniSG_t MC33CD1020_CmpOnlySG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSG_t CmpOnlySP = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSG(&CmpOnlySP, (MC33CD1020_LPMCMPONLY_SG | rw_bit), sg0, sg1, sg2, sg3, sg4, sg5, sg6, sg7, sg8,  sg9, sg10, sg11, sg12, sg13).UniSGReg;
+
+	if(!rw_bit) {
+		CmpOnlySP.UniSGReg = ReadBack;
+	}
+
+	return CmpOnlySP;
+ }
+
+/*
+ * @brief The CD1020 is able to use different voltage thresholds to wake-up from LPM. When configured as SG, a Logic
+ *			[0] means the input will use the LPM delta voltage threshold to determine the state of the switch. A Logic [1]
+ *			means the input uses the Normal threshold (VICTHR) to determine the state of the switch. When configured as
+ *			an SB, it only uses the 4.0 V threshold regardless of the status of the LPM voltage threshold bit. The user must
+ *			ensure that the correct current level is set to allow the crossing of the normal mode threshold (typically 4.0 V).
+ *
+ * @param rw_bit 					: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param LPM voltage threshold spx	: 	0 - the input will use the LPM delta voltage threshold to determine the state of the switch (SG only) (default),
+ * 										1 - the input will use the Normal threshold (VICTHR) to determine the state of the switch (SG only).
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+MC33CD1020_UniSP_t MC33CD1020_LpmVoltageThrSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSP_t LpmVoltageThrSP = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSP(&LpmVoltageThrSP, (MC33CD1020_LPMVOLTAGETHR_SP | rw_bit), sp0, sp1, sp2, sp3, sp4, sp5, sp6, sp7).UniSPReg;
+
+	if(!rw_bit) {
+		LpmVoltageThrSP.UniSPReg = ReadBack;
+	}
+
+	return LpmVoltageThrSP;
+ }
+
+/*
+ * @brief This means the input uses the LPM delta voltage threshold to determine the state of the switch. A Logic [1]
+ *			means the input uses the Normal threshold to determine the state of the switch. The user must ensure that the
+ *			correct current level is set to allow the crossing of the normal mode threshold (typically 4.0 V)
+
+ *
+ * @param rw_bit 					: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param LPM voltage threshold sgx	: 	0 - the input will use the LPM delta voltage threshold to determine the state of the switch (default),
+ * 										1 - the input will use the Normal threshold (VICTHR) to determine the state of the switch.
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+MC33CD1020_UniSG_t MC33CD1020_LpmVoltageThrSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSG_t LpmVoltageThrSG = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSG(&LpmVoltageThrSG, (MC33CD1020_LPMVOLTAGETHR_SG | rw_bit), sg0, sg1, sg2, sg3, sg4, sg5, sg6, sg7, sg8,  sg9, sg10, sg11, sg12, sg13).UniSGReg;
+
+	if(!rw_bit) {
+		LpmVoltageThrSG.UniSGReg = ReadBack;
+	}
+
+	return LpmVoltageThrSG;
+ }
+
+ /*
+ * @brief The normal polling current for LPM is 2.2 mA for SB channels and 1.0 mA for SG channels, A logic [0] selects
+ *			the normal polling current for each individual channel. The user may choose to select the IWET current value
+ *			as defined in the wetting current level registers by writing a Logic [1] on this bit; this will result in higher LPM
+ *			currents but may be used in cases when a higher polling current is needed.
+ *
+ * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param Polling current spx	: 	0 - normal polling current for each individual channel (default),
+ * 									1 - IWET polling current for each individual channel.
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+MC33CD1020_UniSP_t MC33CD1020_PollCurrentSP(uint8_t rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSP_t PollCurrentSP = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSP(&PollCurrentSP, (MC33CD1020_POLLCURRENTCFG_SP | rw_bit), sp0, sp1, sp2, sp3, sp4, sp5, sp6, sp7).UniSPReg;
+
+	if(!rw_bit) {
+		PollCurrentSP.UniSPReg = ReadBack;
+	}
+
+	return PollCurrentSP;
+ }
+
+/*
+ * @brief A Logic [0] selects the normal polling current for LPM = 1.0 mA. The user may choose to select the IWET current
+ *			value as defined in the wetting current registers for LPM by writing a Logic [1] in this bit; this results in higher
+ *			LPM currents but may be used in cases when a higher polling current is needed.
+
+ *
+ * @param rw_bit 				: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param Polling current sgx 	: 	0 - normal polling current for each individual channel (default),
+ * 									1 - IWET polling current for each individual channel.
+ *
+ * @retval MC33CD1020_UniSP_t type.
+ *
+ **/
+MC33CD1020_UniSG_t MC33CD1020_PollCurrentSG(uint8_t rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											) {
+
+	uint32_t ReadBack = 0;
+	static MC33CD1020_UniSG_t PollCurrentSG = { 0 };
+
+	ReadBack = MC33CD1020_UniRegSG(&PollCurrentSG, (MC33CD1020_POLLCURRENTCFG_SG | rw_bit), sg0, sg1, sg2, sg3, sg4, sg5, sg6, sg7, sg8,  sg9, sg10, sg11, sg12, sg13).UniSGReg;
+
+	if(!rw_bit) {
+		PollCurrentSG.UniSGReg = ReadBack;
+	}
+
+	return PollCurrentSG;
+ }
+
+ /*
+ * @brief Low-power mode (LPM) is used to reduce system quiescent currents. Low-power mode may be entered only by
+ *			sending the low-power command. When returning to normal mode, all register settings is maintained.
+ *			The Enter Low-power mode register is write only and has the effect of going to LPM and beginning operation as
+ *			selected (polling, interrupt timer). When returning form low-power mode, the first SPI transaction will return the
+ *			Fault Status and the intflg bit set to high, as well as the actual status of the Input pins.
+ *
+ **/
+void MC33CD1020_EnterLpmMode(void) {
+
+	static MC33CD1020_UniSP_t EnterLpmMode = { 0 };
+
+	EnterLpmMode.REG_ADDR_RW = (MC33CD1020_ENTERLPM | MC33CD1020_WRITE_SEQ);
+	EnterLpmMode.SP0 = 1;
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&EnterLpmMode.UniSPReg, sizeof(EnterLpmMode.UniSPReg));
+	MC33CD1020_TxCheck();
+ }
+
+/*
+ * @brief The analog voltage on switch inputs may be read by the MCU using the analog command (Table 34). Internal
+ *			to the CD1020 is a 22-to-1 analog multiplexer. The voltage present on the selected input pin is buffered
+ *          and made available on the AMUX output pin. The AMUX output pin is clamped to a maximum of VDDQ volts
+ *          regardless of the higher voltages present on the input pin. After an input has been selected as the analog, the
+ *          corresponding bit in the next MISO data stream is logic [0].
+ *
+ * @param amux_current : 0 - hi Z input impedance (default),
+ *						 1 - IWET.
+ *	
+ * @param amux_channel : 0 - no input selected (default),
+ *
+ *                       1 - SG0, 2 - SG1, 3 - SG2, 4  - SG3,                    
+ *                       5 - SG4, 6 - SG5, 7 - SG6, 8  - SG7, 
+ *                       9 - SG8, 10 - SG9, 11 - SG10, 12 - SG11, 
+ *                       13 - SG12, 14 - SG13.
  *                    
- *                      15 - SP0,  16 - SP1,  17 - SP2,  18 - SP3,
- *                      19 - SP4,  20 - SP5,  21 - SP6,  22 - SP7,
- **/
-
-
- /*
- * @brief Weting current level SP register.
+ *                       5 - SP0,  16 - SP1,  17 - SP2,  18 - SP3,
+ *                       19 - SP4,  20 - SP5,  21 - SP6,  22 - SP7,
+ *
+ * @retval MC33CD1020_AmuxCtrl_t type. 
  *
  **/
+MC33CD1020_AmuxCtrl_t MC33CD1020_AMUXCtrl(uint8_t rw_bit, uint8_t amux_current, uint8_t amux_channel) {
+
+	static MC33CD1020_AmuxCtrl_t AmuxControl = { 0 };
+
+	AmuxControl.REG_ADDR_RW = (MC33CD1020_AMUXCHSEL_SPI | rw_bit);
+	AmuxControl.ASETT0 = amux_current;
+	AmuxControl.ASEL5_0 = amux_channel;
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&AmuxControl.AmuxCtrlReg, sizeof(AmuxControl.AmuxCtrlReg));
+	MC33CD1020_TxCheck();
+	if(!rw_bit) {
+		mc33cd1020_inst.spi_rx((uint8_t*)&AmuxControl.AmuxCtrlReg, sizeof(AmuxControl.AmuxCtrlReg));
+		MC33CD1020_RxCheck();
+	}
+
+	return AmuxControl;
+ }
+
+ /*
+ * @brief The Read switch status register is used to determine the state of each of the inputs and is read only. All of the inputs (SGn and SPn) are returned after the next
+ *			command is sent. A Logic [1] means the switch is closed while a Logic [0] is an open switch.
+ *			Included in the status register are two more bits, the Fault Status bit and intflg bit. The Fault Status bit is a combination of the extended status bits and the wetting
+ *			current fault bits. If any of these bits are set, the Fault Status bit is set. The intflg bit is set when an interrupt occurs on this device.
+ *			After POR, both the Fault Status bit and the intflg bit are set high to indicate an interrupt due to a POR occurring. The intflg bit will be cleared upon reading the
+ *			Read Switch Status register, and the Fault Status bit will remain high until the Fault status register is read and thus the POR fault bit and all other fault flags are
+ *			cleared.
+ *			The Fault Status and Intflg bits are semi-global flags, if a fault or an interrupt occurs, these bit will be returned after writing or reading any command, except for the
+ *			SPICheck and the Wetting Current configuration registers, which use those bits to set/display the device configuration.
+ *
+ * @retval MC33CD1020_SwStatusRead_t type. 
+ * 				0 - no fault, no change of state, open switch,
+ *				1 - indicates a fault has occurred and should be viewed in the fault status registe, change of state detected, closed switch.
+ *
+ **/
+MC33CD1020_SwStatusRead_t MC33CD1020_ReadSWStatus(void) {
+
+	static MC33CD1020_SwStatusRead_t ReadSwStatus = { 0 };
+
+	ReadSwStatus.SwStatusReg = 0;
+	ReadSwStatus.REG_ADDR_RW = (MC33CD1020_READSWSTAT | MC33CD1020_READ_SEQ);
+
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&ReadSwStatus.SwStatusReg, sizeof(ReadSwStatus.SwStatusReg));
+	MC33CD1020_TxCheck();
+	mc33cd1020_inst.spi_rx((uint8_t*)&ReadSwStatus.SwStatusReg, sizeof(ReadSwStatus.SwStatusReg));
+	MC33CD1020_RxCheck();
+
+	return ReadSwStatus;
+ }
+
+  /*
+ * @brief To read the fault status bits, the user should first send a message to the IC with the fault status register address
+ *			followed by any given second command. The MISO response from the second command will contain the fault
+ *			flags information.
+ *
+ * @retval MC33CD1020_FaultStatus_t type. 
+ *			POR 			- Reports a POR event occurred
+ *								0 - flag read (SPI),
+ *								1 - Voltage at VBATP pin dropped below VBATP(POR) voltage.
+ *			SPI_WAKE 		- Part awaken via a SPI message
+ *								0 - flag read (SPI),
+ *								1 - SPI message wakes the IC from LPM.
+ * 			WAKEB_WAKE 		- Part awakens via an external WAKE_B falling edge
+ *								0 - flag read (SPI),
+ *								1 - External WAKE_B falling edge seen.
+ * 			INTB_WAKE 		- Part awakens via an external INT_B falling edge
+ *								0 - flag read (SPI),
+ *								1 - INT_B Wakes the part from LPM (external falling edge).
+ * 			OT 				- Tlim event occurred on the IC
+ *								0 - Temperature drops below thermal warning threshold + hysteresis and flag read (SPI),
+ *								1 - Tlim warning threshold is passed.
+ * 			TEMP_FLG 		- Temperature warning to note elevated IC temperature
+ *								0 - Temperature drops below thermal warning threshold + hysteresis and flag read (SPI),
+ *								1 - tLIM warning threshold is passed.
+ * 			OV 				- Report that the voltage on VBATP was higher than OV threshold
+ *								0 - Overvoltage condition is over and flag read (SPI),
+ *								1 - Voltage at VBATP rises above overvoltage threshold.
+ * 			UV 				- Reports that low VBATP voltage was in undervoltage range
+ *								0 - VBATP rises above UV level and flag read (SPI),
+ *								1 - Voltage drops below UV level.
+ * 			HASH_FAULT 		- SPI register and hash mismatch
+ *								0 - No mismatch and SPI flag read,
+ *								1 - Mismatch between SPI registers and hash.
+ * 			SPI_ERR			- Any SPI error generates a bit (Wrong address, incorrect modulo)
+ *								0 - Read fault status register and no SPI errors,
+ *								1 - SPI message error.
+ * 			INT_FLG 		- Reports that an Interrupt has occurred, user should read the status register to determine cause
+ *								0 - Clear of fault or read of Status register,		
+*								1 - Various (SGx change of state, SPx change of state, Extended status bits).
+ * 			FAULT_STATUS 	- unused. 	
+ *
+ **/
+MC33CD1020_FaultStatus_t MC33CD1020_ReadFaultStatus(void) {
+
+	static MC33CD1020_FaultStatus_t FaultStatus = { 0 };
+
+	FaultStatus.FaultStatusReg = 0;
+	FaultStatus.REG_ADDR_RW = (MC33CD1020_FAULTSTAT | MC33CD1020_READ_SEQ);
+
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&FaultStatus.FaultStatusReg, sizeof(FaultStatus.FaultStatusReg));
+	MC33CD1020_TxCheck();
+	mc33cd1020_inst.spi_rx((uint8_t*)&FaultStatus.FaultStatusReg, sizeof(FaultStatus.FaultStatusReg));
+	MC33CD1020_RxCheck();
+
+	return FaultStatus;
+ }
+
+/*
+ * @brief The MCU may request an Interrupt pulse of duration 100 μs by sending the Interrupt request command. After
+ *			an Interrupt request command, the CD1020 returns the Interrupt request command word, as well as the Fault
+ *			status and INTflg bits set if a fault/interrupt event occurred. Sending an interrupt request command does not set
+ * 			the INTflg bit itself.
+ *
+ **/
+void MC33CD1020_InterruptRequest(void) {
+
+	static MC33CD1020_UniSP_t InterruptRequest = { 0 };
+
+	InterruptRequest.REG_ADDR_RW = (MC33CD1020_INT_PULSE_REQ | MC33CD1020_WRITE_SEQ);
+	InterruptRequest.SP0 = 1;
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&InterruptRequest.UniSPReg, sizeof(InterruptRequest.UniSPReg));
+	MC33CD1020_TxCheck();
+ }
+
+/*
+ * @brief Writing to this register causes all of the SPI registers to reset.
+ *
+ **/
+void MC33CD1020_Reset(void) {
+
+	static MC33CD1020_UniSP_t Reset = { 0 };
+
+	Reset.REG_ADDR_RW = (MC33CD1020_RST | MC33CD1020_WRITE_SEQ);
+	Reset.SP0 = 1;
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&Reset.UniSPReg, sizeof(Reset.UniSPReg));
+	MC33CD1020_TxCheck();
+ }
 
 
 /*
- * @brief Wetting current level SG register 0.
+ * @brief Universal SP R/W function.
+ *
+ * @param rw_bit 		: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param wakeupen_spx	: SP arguments.
+ *
+ * @retval MC33CD1020_UniSP_t type.
  *
  **/
+ MC33CD1020_UniSP_t MC33CD1020_UniRegSP(MC33CD1020_UniSP_t* uniregSP, uint8_t addr_rw_bit, 
+											uint8_t sp0, uint8_t sp1, uint8_t sp2, uint8_t sp3, 
+											uint8_t sp4, uint8_t sp5, uint8_t sp6, uint8_t sp7
+											) {
 
-  /*
- * @brief Continuous weting current SP register.
- *
- **/
+	static MC33CD1020_UniSP_t RetValSP = { 0 };
+
+	uniregSP->REG_ADDR_RW = addr_rw_bit;
+	uniregSP->SP0 = sp0;
+	uniregSP->SP1 = sp1;
+	uniregSP->SP2 = sp2;
+	uniregSP->SP3 = sp3;
+	uniregSP->SP4 = sp4;
+	uniregSP->SP5 = sp5;
+	uniregSP->SP6 = sp6;
+	uniregSP->SP7 = sp7;
+
+	mc33cd1020_inst.spi_tx((uint8_t *)&uniregSP->UniSPReg, sizeof(uniregSP->UniSPReg));
+	MC33CD1020_TxCheck();
+	if(!(addr_rw_bit & 0x01)) {
+		mc33cd1020_inst.spi_rx((uint8_t*)&RetValSP.UniSPReg, sizeof(RetValSP.UniSPReg));
+		MC33CD1020_RxCheck();
+	}
+
+	return RetValSP;
+ }
 
  /*
- * @brief Continuous wetting current SG register.
+ * @brief Universal SG R/W function.
+ *
+ * @param rw_bit 		: MC33CD1020_READ_SEQ or MC33CD1020_WRITE_SEQ. 
+ * @param wakeupen_sgx	: SG arguments.
+ *
+ * @retval MC33CD1020_UniSP_t type.
  *
  **/
+MC33CD1020_UniSG_t MC33CD1020_UniRegSG(MC33CD1020_UniSG_t* uniregSG, uint8_t addr_rw_bit, 
+											uint8_t sg0, uint8_t sg1, uint8_t sg2, uint8_t sg3, 
+											uint8_t sg4, uint8_t sg5, uint8_t sg6, uint8_t sg7,
+											uint8_t sg8, uint8_t sg9, uint8_t sg10, uint8_t sg11,
+											uint8_t sg12, uint8_t sg13
+											) {
+
+	static MC33CD1020_UniSG_t RetValSG = { 0 };
+
+	uniregSG->REG_ADDR_RW = addr_rw_bit;
+	uniregSG->SG0 = sg0;
+	uniregSG->SG1 = sg1;
+	uniregSG->SG2 = sg2;
+	uniregSG->SG3 = sg3;
+	uniregSG->SG4 = sg4;
+	uniregSG->SG5 = sg5;
+	uniregSG->SG6 = sg6;
+	uniregSG->SG7 = sg7;
+	uniregSG->SG8 = sg8;
+	uniregSG->SG9 = sg9;
+	uniregSG->SG10 = sg10;
+	uniregSG->SG11 = sg11;
+	uniregSG->SG12 = sg12;
+	uniregSG->SG13 = sg13;
 
 
-/*
- * @brief Interrupt enable SP register.
- *
- **/
+	mc33cd1020_inst.spi_tx((uint8_t *)&uniregSG->UniSGReg, sizeof(uniregSG->UniSGReg));
+	MC33CD1020_TxCheck();
+	if(!(addr_rw_bit & 0x01)) {
+		mc33cd1020_inst.spi_rx((uint8_t*)&RetValSG.UniSGReg, sizeof(RetValSG.UniSGReg));
+		MC33CD1020_RxCheck();
+	}
 
-  /*
- * @brief Interrupt enable SG register.
- *
- **/
-
- /*
- * @brief Low power mode register.
- *
- **/
-
+	return RetValSG;
+ }
 
  /* Hardware dependent functions. */
 
