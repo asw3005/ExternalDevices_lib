@@ -11,11 +11,9 @@
 #include "stm32g4xx_hal_tim.h"
 #include <stdint.h>
 
-#define HARD_SPI_NSS
-
  /* External variables. */
 extern TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef* TIM3_INx_PWM = &htim3;
+TIM_HandleTypeDef* TIMx_INx_PWM = &htim3;
 
 /* Private variables. */
 
@@ -178,7 +176,7 @@ void DRV8955_IN3Ctrl(uint8_t state) {
 void DRV8955_IN2PWMCtrl(uint8_t state) {
 
 	//HAL_TIM_PWM_Start(TIM3_INx_PWM, TIM_CHANNEL_2);
-    DRV8955_PWMCtrl(TIM3_INx_PWM, TIM_CHANNEL_2, state);
+    DRV8955_PWMCtrl(TIMx_INx_PWM, TIM_CHANNEL_2, state);
 }
 
  /* Hardware dependent functions. */
