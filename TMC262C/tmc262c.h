@@ -242,82 +242,87 @@ typedef enum {
 
 	struct {
 		/* RDSEL = 00. */
-		uint8_t RDSEL00_MSTEP9_8	: 2;
-		uint8_t RDSEL00_MSTEP7_0	: 8;
+		uint8_t RDSEL00_MSTEP9_2	: 8;
+
+		uint8_t RDSEL00_SHORTB_S2GB	: 1;
+		uint8_t RDSEL00_OLA			: 1;
+		uint8_t RDSEL00_OLB			: 1;
+		uint8_t RDSEL00_STST		: 1;
 		/* Reads as 00. */
 		uint8_t RDSEL00_RESERVED9_8	: 2;
+		uint8_t RDSEL00_MSTEP1_0	: 2;
 
-		uint8_t RDSEL00_STST		: 1;
-		uint8_t RDSEL00_OLB			: 1;
-		uint8_t RDSEL00_OLA			: 1;
-		uint8_t RDSEL00_SHORTB_S2GB	: 1;
-		uint8_t RDSEL00_SHORTA_S2GA	: 1;
-		uint8_t RDSEL00_OTPW		: 1;
-		uint8_t RDSEL00_OT			: 1;
-		uint8_t RDSEL00_SG			: 1;
 		uint8_t RDSEL00_RESERVED3_0	: 4;
+		uint8_t RDSEL00_SG			: 1;
+		uint8_t RDSEL00_OT			: 1;
+		uint8_t RDSEL00_OTPW		: 1;
+		uint8_t RDSEL00_SHORTA_S2GA	: 1;
 	};
 
 	struct {
-		/* RDSEL = 00. */
-		uint8_t RDSEL01_SG9_8		: 2;
-		uint8_t RDSEL01_SG7_0		: 8;
+		/* RDSEL = 01. */
+		uint8_t RDSEL01_SG9_2		: 8;
+
+		uint8_t RDSEL01_SHORTB_S2GB	: 1;
+		uint8_t RDSEL01_OLA			: 1;
+		uint8_t RDSEL01_OLB			: 1;
+		uint8_t RDSEL01_STST		: 1;
 		/* Reads as 00. */
 		uint8_t RDSEL01_RESERVED9_8	: 2;
+		uint8_t RDSEL01_SG1_0		: 2;
 
-		uint8_t RDSEL01_STST		: 1;
-		uint8_t RDSEL01_OLB			: 1;
-		uint8_t RDSEL01_OLA			: 1;
-		uint8_t RDSEL01_SHORTB_S2GB	: 1;
-		uint8_t RDSEL01_SHORTA_S2GA	: 1;
-		uint8_t RDSEL01_OTPW		: 1;
-		uint8_t RDSEL01_OT			: 1;
-		uint8_t RDSEL01_SG			: 1;
 		uint8_t RDSEL01_RESERVED3_0	: 4;
+		uint8_t RDSEL01_SG			: 1;
+		uint8_t RDSEL01_OT			: 1;
+		uint8_t RDSEL01_OTPW		: 1;
+		uint8_t RDSEL01_SHORTA_S2GA	: 1;
 	};
 
 	struct {
-		/* RDSEL = 00. */
+		/* RDSEL = 10. */
+		uint8_t RDSEL10_SE4_2		: 3;
 		uint8_t RDSEL10_SG9_5		: 5;
-		uint8_t RDSEL10_SE4_0		: 5;
+
+		uint8_t RDSEL10_SHORTB_S2GB	: 1;
+		uint8_t RDSEL10_OLA			: 1;
+		uint8_t RDSEL10_OLB			: 1;
+		uint8_t RDSEL10_STST		: 1;
 		/* Reads as 00. */
 		uint8_t RDSEL10_RESERVED9_8	: 2;
+		uint8_t RDSEL10_SE1_0		: 2;
 
-		uint8_t RDSEL10_STST		: 1;
-		uint8_t RDSEL10_OLB			: 1;
-		uint8_t RDSEL10_OLA			: 1;
-		uint8_t RDSEL10_SHORTB_S2GB	: 1;
-		uint8_t RDSEL10_SHORTA_S2GA	: 1;
-		uint8_t RDSEL10_OTPW		: 1;
-		uint8_t RDSEL10_OT			: 1;
-		uint8_t RDSEL10_SG			: 1;
 		uint8_t RDSEL10_RESERVED3_0	: 4;
+		uint8_t RDSEL10_SG			: 1;
+		uint8_t RDSEL10_OT			: 1;
+		uint8_t RDSEL10_OTPW		: 1;
+		uint8_t RDSEL10_SHORTA_S2GA	: 1;
 	};
 
 	struct {
-		/* RDSEL = 00. */
-		uint8_t RDSEL11_UV_7V		: 1;
-		uint8_t RDSEL11_ENN_IN		: 1;
-		uint8_t RDSEL11_S2VSB		: 1;
-		uint8_t RDSEL11_S2GB 		: 1;
-		uint8_t RDSEL11_S2VSA 		: 1;
-		uint8_t RDSEL11_S2GA 		: 1;
-		uint8_t RDSEL11_OT150 		: 1;
+		/* RDSEL = 11. */
 		uint8_t RDSEL11_OT136		: 1;
-		uint8_t RDSEL11_OT120		: 1;
-		uint8_t RDSEL11_OT100		: 1;
+		uint8_t RDSEL11_OT150 		: 1;
+		uint8_t RDSEL11_S2GA 		: 1;
+		uint8_t RDSEL11_S2VSA 		: 1;
+		uint8_t RDSEL11_S2GB 		: 1;
+		uint8_t RDSEL11_S2VSB		: 1;
+		uint8_t RDSEL11_ENN_IN		: 1;
+		uint8_t RDSEL11_UV_7V		: 1;
+
+		uint8_t RDSEL11_SHORTB_S2GB	: 1;
+		uint8_t RDSEL11_OLA			: 1;
+		uint8_t RDSEL11_OLB			: 1;
+		uint8_t RDSEL11_STST		: 1;
 		/* Reads as 11. */
 		uint8_t RDSEL11_RESERVED9_8	: 2;
+		uint8_t RDSEL11_OT100		: 1;
+		uint8_t RDSEL11_OT120		: 1;
 
-		uint8_t RDSEL11_STST		: 1;
-		uint8_t RDSEL11_OLB			: 1;
-		uint8_t RDSEL11_OLA			: 1;
-		uint8_t RDSEL11_SHORTB_S2GB	: 1;
-		uint8_t RDSEL11_SHORTA_S2GA	: 1;
-		uint8_t RDSEL11_OTPW		: 1;
-		uint8_t RDSEL11_OT			: 1;
-		uint8_t RDSEL11_SG			: 1;
 		uint8_t RDSEL11_RESERVED3_0	: 4;
+		uint8_t RDSEL11_SG			: 1;
+		uint8_t RDSEL11_OT			: 1;
+		uint8_t RDSEL11_OTPW		: 1;
+		uint8_t RDSEL11_SHORTA_S2GA	: 1;
 	};
 
  } TMC262C_ReadBack_t;
