@@ -58,23 +58,26 @@ typedef enum {
  typedef union {
 
 	struct {
-		uint8_t DrvCtrl_LSB_L;
-		uint8_t DrvCtrl_MSB_L;
 		uint8_t DrvCtrl_LSB_H;
+		uint8_t DrvCtrl_MSB_L;
+		uint8_t DrvCtrl_LSB_L;
 	};
 
 	struct {
-		uint8_t MRES3_0 		: 4;
 		/* MUST BE ZERO. */
-		uint8_t RESERVED7_4		: 4;
-		uint8_t DEDGE 			: 1;
-		uint8_t INTPOL 			: 1;
-		/* MUST BE ZERO. */
-		uint8_t RESERVED17_10	: 8;
+		uint8_t RESERVED17_16	: 2;
 		/* Reg address bits. */
 		uint8_t REG_ADDR 		: 2;
 		uint8_t RESERVED24_20 	: 4;
 
+		uint8_t DEDGE 			: 1;
+		uint8_t INTPOL 			: 1;
+		/* MUST BE ZERO. */
+		uint8_t RESERVED15_10	: 6;
+
+		uint8_t MRES3_0 		: 4;
+		/* MUST BE ZERO. */
+		uint8_t RESERVED7_4		: 4;
 	};
 
  } TMC262C_DrvCtrl_SDOFF0_t;
@@ -86,20 +89,22 @@ typedef enum {
  typedef union {
 
 	struct {
-		uint8_t DrvCtrl_LSB_L;
-		uint8_t DrvCtrl_MSB_L;
 		uint8_t DrvCtrl_LSB_H;
+		uint8_t DrvCtrl_MSB_L;
+		uint8_t DrvCtrl_LSB_L;
 	};
 
 	struct {
-		uint8_t CB7_0 			: 8;
-		uint8_t PHB 			: 1;
-		uint8_t CA7_0 			: 8;
+		uint8_t CA7 			: 1;
 		uint8_t PHA 			: 1;
 		/* Reg address bits. */
 		uint8_t REG_ADDR		: 2;
 		uint8_t RESERVED24_20 	: 4;
 
+		uint8_t PHB 			: 1;
+		uint8_t CA6_0 			: 7;
+
+		uint8_t CB7_0 			: 8;
 	};
 
  } TMC262C_DrvCtrl_SDOFF1_t;
@@ -111,23 +116,26 @@ typedef enum {
  typedef union {
 
 	struct {
-		uint8_t ChopConf_LSB_L;
-		uint8_t ChopConf_MSB_L;
 		uint8_t ChopConf_LSB_H;
+		uint8_t ChopConf_MSB_L;
+		uint8_t ChopConf_LSB_L;
 	};
 
 	struct {
-		uint8_t TOFF3_0			: 4;
-		uint8_t HSTRT2_0		: 3;
-		uint8_t HEND3_0			: 4;
-		uint8_t HDEC1_0			: 2;
-		uint8_t RNDTF			: 1;
-		uint8_t CHM 			: 1;
-		uint8_t TBL1_0			: 2;
+		uint8_t TBL1			: 1;
 		/* Reg address bits. */
 		uint8_t REG_ADDR		: 3;
 		uint8_t RESERVED24_20 	: 4;
 
+		uint8_t HEND3_1			: 3;
+		uint8_t HDEC1_0			: 2;
+		uint8_t RNDTF			: 1;
+		uint8_t CHM 			: 1;
+		uint8_t TBL0			: 1;
+
+		uint8_t TOFF3_0			: 4;
+		uint8_t HSTRT2_0		: 3;
+		uint8_t HEND0			: 1;
 	};
 
  } TMC262C_ChopConf_t;
@@ -139,29 +147,30 @@ typedef enum {
  typedef union {
 
 	struct {
-		uint8_t SmartEn_LSB_L;
-		uint8_t SmartEn_MSB_L;
 		uint8_t SmartEn_LSB_H;
+		uint8_t SmartEn_MSB_L;
+		uint8_t SmartEn_LSB_L;
 	};
 
 	struct {
-		uint8_t SEMIN3_0		: 4;
-		/* MUST BE ZERO. */
-		uint8_t RESERVED4		: 1;
-		uint8_t SEUP1_0			: 2;
-		/* MUST BE ZERO. */
-		uint8_t RESERVED7		: 1;
-		uint8_t SEMAX3_0		: 4;
-		/* MUST BE ZERO. */
-		uint8_t RESERVED12 		: 1;
-		uint8_t SEDN1_0			: 2;
-		uint8_t SEIMIN			: 1;
 		/* MUST BE ZERO. */
 		uint8_t RESERVED16		: 1;
 		/* Reg address bits. */
 		uint8_t REG_ADDR		: 3;
 		uint8_t RESERVED24_20 	: 4;
 
+		uint8_t SEMAX3_0		: 4;
+		/* MUST BE ZERO. */
+		uint8_t RESERVED12 		: 1;
+		uint8_t SEDN1_0			: 2;
+		uint8_t SEIMIN			: 1;
+
+		uint8_t SEMIN3_0		: 4;
+		/* MUST BE ZERO. */
+		uint8_t RESERVED4		: 1;
+		uint8_t SEUP1_0			: 2;
+		/* MUST BE ZERO. */
+		uint8_t RESERVED7		: 1;
 	};
 
  } TMC262C_SmartEn_t;
@@ -173,23 +182,24 @@ typedef enum {
  typedef union {
 
 	struct {
-		uint8_t SgcsConf_LSB_L;
-		uint8_t SgcsConf_MSB_L;
 		uint8_t SgcsConf_LSB_H;
+		uint8_t SgcsConf_MSB_L;
+		uint8_t SgcsConf_LSB_L;
 	};
 
 	struct {
-		uint8_t CS4_0			: 5;
-		/* MUST BE ZERO. */
-		uint8_t RESERVED7_5		: 3;
-		uint8_t SGT6_0			: 7;
-		/* MUST BE ZERO. */
-		uint8_t RESERVED15		: 1;
 		uint8_t SFILT			: 1;
 		/* Reg address bits. */
 		uint8_t REG_ADDR		: 3;
 		uint8_t RESERVED24_20 	: 4;
 
+		uint8_t SGT6_0			: 7;
+		/* MUST BE ZERO. */
+		uint8_t RESERVED15		: 1;
+
+		uint8_t CS4_0			: 5;
+		/* MUST BE ZERO. */
+		uint8_t RESERVED7_5		: 3;
 	};
 
  } TMC262C_SgcsConf_t;
@@ -201,12 +211,23 @@ typedef enum {
  typedef union {
 
 	struct {
-		uint8_t DrvConf_LSB_L;
-		uint8_t DrvConf_MSB_L;
 		uint8_t DrvConf_LSB_H;
+		uint8_t DrvConf_MSB_L;
+		uint8_t DrvConf_LSB_L;
 	};
 
 	struct {
+		uint8_t TST 			: 1;
+		/* Reg address bits. */
+		uint8_t REG_ADDR		: 3;
+		uint8_t RESERVED24_20 	: 4;
+
+		uint8_t TS2G1_0			: 2;
+		uint8_t DISS2G			: 1;
+		uint8_t SLP2			: 1;
+		uint8_t SLPL1_0			: 2;
+		uint8_t SLPH1_0 		: 2;
+
 		uint8_t EN_S2VS			: 1;
 		uint8_t EN_PFD			: 1;
 		uint8_t SHRTSENS		: 1;
@@ -214,16 +235,6 @@ typedef enum {
 		uint8_t RDSEL1_0		: 2;
 		uint8_t VSENSE			: 1;
 		uint8_t SDOFF			: 1;
-		uint8_t TS2G1_0			: 2;
-		uint8_t DISS2G			: 1;
-		uint8_t SLP2			: 1;
-		uint8_t SLPL1_0			: 2;
-		uint8_t SLPH1_0 		: 2;
-		uint8_t TST 			: 1;
-		/* Reg address bits. */
-		uint8_t REG_ADDR		: 3;
-		uint8_t RESERVED24_20 	: 4;
-
 	};
 
  } TMC262C_DrvConf_t;
