@@ -55,7 +55,7 @@ typedef enum {
  * @brief Device configuration DRVCTRL type register (SDOFF = 0).
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint8_t DrvCtrl_LSB_H;
@@ -86,7 +86,7 @@ typedef enum {
  * @brief Device configuration DRVCTRL type register (SDOFF = 1).
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint8_t DrvCtrl_LSB_H;
@@ -113,7 +113,7 @@ typedef enum {
  * @brief Device configuration CHOPCONF type register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint8_t ChopConf_LSB_H;
@@ -144,7 +144,7 @@ typedef enum {
  * @brief Device configuration SMARTEN type register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint8_t SmartEn_LSB_H;
@@ -179,7 +179,7 @@ typedef enum {
  * @brief Device configuration SGCSCONF type register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint8_t SgcsConf_LSB_H;
@@ -208,7 +208,7 @@ typedef enum {
  * @brief Device configuration DRVCONF type register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint8_t DrvConf_LSB_H;
@@ -240,7 +240,7 @@ typedef enum {
  } TMC262C_DrvConf_t;
 
  /*
- * @brief Device configuration read type register.
+ * @brief Device configuration read type register RDSEL00.
  *
  **/
  typedef union __attribute__((aligned(1), packed)) {
@@ -270,6 +270,21 @@ typedef enum {
 		uint8_t RDSEL00_SHORTA_S2GA	: 1;
 	};
 
+
+ } TMC262C_ReadBackRDSEL00_t;	
+
+/*
+ * @brief Device configuration read type register RDSEL01.
+ *
+ **/
+ typedef union __attribute__((aligned(1), packed)) {
+
+	struct {
+		uint8_t ReadBack_MSB_H;
+		uint8_t ReadBack_MSB_L;
+		uint8_t ReadBack_LSB_L;
+	};
+
 	struct {
 		/* RDSEL = 01. */
 		uint8_t RDSEL01_SG9_2		: 8;
@@ -287,6 +302,20 @@ typedef enum {
 		uint8_t RDSEL01_OT			: 1;
 		uint8_t RDSEL01_OTPW		: 1;
 		uint8_t RDSEL01_SHORTA_S2GA	: 1;
+	};
+
+ } TMC262C_ReadBackRDSEL01_t;	
+
+/*
+ * @brief Device configuration read type register RDSEL10.
+ *
+ **/
+ typedef union __attribute__((aligned(1), packed)) {
+
+	struct {
+		uint8_t ReadBack_MSB_H;
+		uint8_t ReadBack_MSB_L;
+		uint8_t ReadBack_LSB_L;
 	};
 
 	struct {
@@ -307,6 +336,20 @@ typedef enum {
 		uint8_t RDSEL10_OT			: 1;
 		uint8_t RDSEL10_OTPW		: 1;
 		uint8_t RDSEL10_SHORTA_S2GA	: 1;
+	};
+
+ } TMC262C_ReadBackRDSEL10_t;
+
+/*
+ * @brief Device configuration read type register RDSEL11.
+ *
+ **/
+ typedef union __attribute__((aligned(1), packed)) {
+
+	struct {
+		uint8_t ReadBack_MSB_H;
+		uint8_t ReadBack_MSB_L;
+		uint8_t ReadBack_LSB_L;
 	};
 
 	struct {
@@ -336,6 +379,30 @@ typedef enum {
 		uint8_t RDSEL11_SHORTA_S2GA	: 1;
 	};
 
+ } TMC262C_ReadBackRDSEL11_t;
+
+/*
+ * @brief Driver control register's set.
+ *
+ **/
+typedef struct DrvCtrl_t {
+
+		TMC262C_DrvCtrl_SDOFF1_t DrvCtrlSPI;
+		TMC262C_DrvCtrl_SDOFF0_t DrvCtrlSTEPDIR;
+
+	} TMC262C_DrvCtrlRSet_t;
+
+/*
+ * @brief Readback register's set.
+ *
+ **/
+ typedef struct {
+
+	TMC262C_ReadBackRDSEL00_t ReadBackRDSEL00;
+	TMC262C_ReadBackRDSEL01_t ReadBackRDSEL01;
+	TMC262C_ReadBackRDSEL10_t ReadBackRDSEL10;
+	TMC262C_ReadBackRDSEL11_t ReadBackRDSEL11;
+
  } TMC262C_ReadBack_t;
 
 /*
@@ -359,6 +426,22 @@ typedef struct {
 
 
 /* Public function prototypes. */
+TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt, uint8_t cs) ;
+TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8_t dedge, uint8_t mres, 
+										uint8_t pha_polarity_a, uint8_t ca_current_a, uint8_t phb_polarity_b, uint8_t cb_current_b);
+TMC262C_ChopConf_t TMC262C_ChopConf(uint8_t tbl, uint8_t chm, uint8_t rndtf, uint8_t hdec0, 
+										uint8_t hdec1, uint8_t hend, uint8_t hstrt, uint8_t toff);
+TMC262C_SmartEn_t TMC262C_SmartEn(uint8_t semin, uint8_t sedn, uint8_t semax, uint8_t seup, 
+									uint8_t semin3_0);
+
+
+
+
+
+
+
+
+
 
 
 #endif /* TMC262C_H_ */
