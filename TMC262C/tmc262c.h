@@ -46,7 +46,7 @@ typedef enum {
 	TMC262C_DRVCTRL,
 	TMC262C_CHOPCONF = 0x04,
 	TMC262C_SMARTEN,
-	TMC262C_SFCSCONF,
+	TMC262C_SGCSCONF,
 	TMC262C_DRVCONF
 	
 } TMC262C_REG_MAP_t;
@@ -426,21 +426,19 @@ typedef struct {
 
 
 /* Public function prototypes. */
-TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt, uint8_t cs) ;
+void TMC262C_EnableCtrl(uint8_t state);
+
+TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt, uint8_t cs, uint8_t read_back) ;
 TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8_t dedge, uint8_t mres, 
-										uint8_t pha_polarity_a, uint8_t ca_current_a, uint8_t phb_polarity_b, uint8_t cb_current_b);
+										uint8_t pha_polarity_a, uint8_t ca_current_a, uint8_t phb_polarity_b, uint8_t cb_current_b, uint8_t read_back);
 TMC262C_ChopConf_t TMC262C_ChopConf(uint8_t tbl, uint8_t chm, uint8_t rndtf, uint8_t hdec0, 
-										uint8_t hdec1, uint8_t hend, uint8_t hstrt, uint8_t toff);
+										uint8_t hdec1, uint8_t hend, uint8_t hstrt, uint8_t toff, uint8_t read_back);
 TMC262C_SmartEn_t TMC262C_SmartEn(uint8_t semin, uint8_t sedn, uint8_t semax, uint8_t seup, 
-									uint8_t semin3_0);
-
-
-
-
-
-
-
-
+									uint8_t semin3_0, uint8_t read_back);
+TMC262C_DrvConf_t TMC262C_DrvConf(uint8_t tst, uint8_t slph, uint8_t slpl, uint8_t tmc262c_slp2, uint8_t dis_s2g, 
+									uint8_t ts2g, uint8_t sdoff, uint8_t vsense, uint8_t rdsel, uint8_t tmc262c_otsens, 
+									uint8_t tmc262c_shrtsens, uint8_t tmc262c_en_pfd, uint8_t tmc262c_en_s2vs, uint8_t read_back);
+TMC262C_ReadBack_t TMC262C_ReadBack(void); 
 
 
 
