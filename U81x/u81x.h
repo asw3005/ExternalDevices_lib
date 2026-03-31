@@ -156,7 +156,7 @@ typedef union __attribute__((aligned(1), packed)) {
  * @brief Data exchange function typedefs.
  *
  **/
-typedef void(*delay_fptr)(uint32_t u81x_delay);
+typedef void(*delay_fptr)(uint32_t delay);
 typedef void(*uart_txrx_fptr)(uint8_t *pData, uint8_t size);
 
 /*

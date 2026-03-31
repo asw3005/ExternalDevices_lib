@@ -165,7 +165,8 @@ uint32_t U81X_ReadDistance(uint8_t module_addr) {
         return 1;
     }
 
-    return (u81x_inst.ReadBackMeas.PayloadDist_MSB_H | u81x_inst.ReadBackMeas.PayloadDist_MSB_L |u81x_inst.ReadBackMeas.PayloadDist_LSB_H | u81x_inst.ReadBackMeas.PayloadDist_LSB_L);
+    return (((uint32_t)u81x_inst.ReadBackMeas.PayloadDist_MSB_H << 24) | ((uint32_t)u81x_inst.ReadBackMeas.PayloadDist_MSB_L << 16) | 
+            ((uint32_t)u81x_inst.ReadBackMeas.PayloadDist_LSB_H << 8) | (uint32_t)u81x_inst.ReadBackMeas.PayloadDist_LSB_L);
 }
 
 /*
@@ -412,7 +413,7 @@ uint16_t U81X_ReadX16(uint8_t module_addr, uint16_t reg_addr) {
     u81x_inst.uart_rx(&u81x_inst.ReadBackReg.Head, sizeof(u81x_inst.ReadBackReg));
     u81x_inst.uart_tx(&u81x_inst.RWCommandFrame.R_Head, U81X_RCMD_DEF);
 
-    return (u81x_inst.ReadBackReg.Payload_MSB | u81x_inst.ReadBackReg.Payload_LSB);
+    return (((uint16_t)u81x_inst.ReadBackReg.Payload_MSB << 8) | (uint16_t)u81x_inst.ReadBackReg.Payload_LSB);
 }
 
 /*
@@ -441,7 +442,7 @@ uint16_t U81X_WriteX16(uint8_t module_addr, uint16_t reg_addr, uint16_t data) {
     u81x_inst.uart_rx(&u81x_inst.ReadBackReg.Head, sizeof(u81x_inst.ReadBackReg));
     u81x_inst.uart_tx(&u81x_inst.RWCommandFrame.W_Head, U81X_WCMD_DEF);
 
-    return (u81x_inst.ReadBackReg.Payload_MSB | u81x_inst.ReadBackReg.Payload_LSB);
+    return (((uint16_t)u81x_inst.ReadBackReg.Payload_MSB << 8) | (uint16_t)u81x_inst.ReadBackReg.Payload_LSB);
 }
 
 /*
@@ -470,7 +471,8 @@ uint32_t U81X_StartMeasX(uint8_t module_addr, uint16_t reg_addr, uint16_t data) 
     u81x_inst.uart_rx(&u81x_inst.ReadBackMeas.Head, sizeof(u81x_inst.ReadBackMeas));
     u81x_inst.uart_tx(&u81x_inst.RWCommandFrame.W_Head, U81X_WCMD_DEF);
 
-    return (u81x_inst.ReadBackMeas.PayloadDist_MSB_H | u81x_inst.ReadBackMeas.PayloadDist_MSB_L |u81x_inst.ReadBackMeas.PayloadDist_LSB_H | u81x_inst.ReadBackMeas.PayloadDist_LSB_L);
+    return (((uint32_t)u81x_inst.ReadBackMeas.PayloadDist_MSB_H << 24) | ((uint32_t)u81x_inst.ReadBackMeas.PayloadDist_MSB_L << 16) | 
+            ((uint32_t)u81x_inst.ReadBackMeas.PayloadDist_LSB_H << 8) | (uint32_t)u81x_inst.ReadBackMeas.PayloadDist_LSB_L);
 }
 
 /*
