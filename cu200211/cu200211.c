@@ -25,7 +25,6 @@ extern UART_HandleTypeDef huart2;
 
 /* Private variables. */
 
-
 /* Private function prototypes. */
 static void CU200211_ClrStrBuffer(void);
 static uint8_t CU200211_CRCCalc(uint8_t *pBuffer, uint8_t Size);
@@ -70,7 +69,7 @@ static CU200211_GInst_t cu200211 = {
  *
  **/
 void CU200211_ClrScreen(void) {
-	CU200211_ClrStrBuffer();
+	CU200211_ClrStrBuffer(); 
 	cu200211.LineOneTxBuff.CRCByte = CU200211_CRCCalc(&cu200211.LineOneTxBuff.StartCode, CU200211_LINE_MSG_SIZE);
 	cu200211.LineTwoTxBuff.CRCByte = CU200211_CRCCalc(&cu200211.LineTwoTxBuff.StartCode, CU200211_LINE_MSG_SIZE);
 	cu200211.tx_data_fptr(&cu200211.LineOneTxBuff.StartCode, CU200211_LINE_MSG_SIZE);
@@ -91,6 +90,13 @@ void CU200211_SendTimeDate(uint8_t ScreenLine, uint8_t LeadZero, uint8_t Hours, 
 							uint8_t Month, uint8_t Date, uint8_t Year) {
 
 	char StrBuff[CU200211_LINE_SIZE + 1] = { ' ' };
+
+	if(Hours > 24) Hours = 24;
+	if(Minutes > 60) Minutes = 60;
+	if(Seconds > 60) Seconds = 60;
+	if(Month > 12) Month = 12;
+	if(Date > 31) Date = 31;
+	if(Year > 99) Year = 99;
 
 	if (LeadZero) {
 	CU200211_SendString(ScreenLine, StrBuff, sprintf(StrBuff, "%2u:%02u:%02u  "
@@ -118,6 +124,8 @@ void CU200211_SendSTemp(uint8_t ScreenLine, char TmpNumber, float Temperature, u
 	char StrBuff[CU200211_LINE_SIZE + 1] = { ' ' };
 
 	if (Temperature >= 100.0f) { Temperature = 99.9f; }
+	if (Humidity >= 99) { Humidity = 99; }
+	if (Pressure >= 810) { Pressure = 810; }
 
 	if (Temperature >= 10) {
 		CU200211_SendString(ScreenLine, StrBuff, sprintf(StrBuff, "%c %3.1f\"C"
@@ -159,8 +167,8 @@ void CU200211_SendTmpHumPress(uint8_t ScreenLine, float Temperature, uint8_t Hum
 	char StrBuff[CU200211_LINE_SIZE + 1] = { ' ' };
 
 	if (Temperature >= 100.0f) { Temperature = 99.9f; }
-	if (Humidity >= 100) { Humidity = 99; }
-	//if (Pressure >= 1000) { Pressure = 999; }
+	if (Humidity >= 99) { Humidity = 99; }
+	if (Pressure >= 810) { Pressure = 810; }
 
 
 	if (Temperature >= 10) {
