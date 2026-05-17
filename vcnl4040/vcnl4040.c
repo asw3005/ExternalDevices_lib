@@ -7,7 +7,6 @@
 #include "stm32g431xx.h"
 #include "stm32g4xx_hal.h"
 #include "stm32g4xx_hal_i2c.h"
-#include <stdint.h>
 
  /* External variables. */
 extern I2C_HandleTypeDef hi2c3;
