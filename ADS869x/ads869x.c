@@ -17,18 +17,13 @@ SPI_HandleTypeDef* ADS869x_SPI = &hspi2;
 /* Private function prototypes. */
 static void ADS869x_SPI_TxCheck(void);
 static void ADS869x_SPI_RxCheck(void);
-static void ADS869x_SPI_TxCplt(SPI_HandleTypeDef* spi_handler);
-static void ADS869x_SPI_RxCplt(SPI_HandleTypeDef* spi_handler);
-static void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
+
 
 /*
  * @brief ADC init function.
  *
  **/
 void ADS869x_Init(void) {
-
-	HAL_SPI_RegisterCallback(ADS869x_SPI, HAL_SPI_TX_COMPLETE_CB_ID, ADS869x_SPI_TxCplt);
-	HAL_SPI_RegisterCallback(ADS869x_SPI, HAL_SPI_RX_COMPLETE_CB_ID, ADS869x_SPI_RxCplt);
 
 	/* Set SPI configuration and GPIO function of SDO1 pin. */
 	//ADS869x_SdoCtrl(ADS869xGetDataStruct(), 0, 0, ADS869x_SDO1_GPO);	
@@ -400,6 +395,24 @@ ADS869x_MGInst_t* ADS869xGetDataStruct(void) {
 /* Hardware dependent functions. */
 
 /*
+ * @brief SPI chip select.
+ *
+ * @param gpio : Either CS_ADC_GPIO_Port or CS_DAC_GPIO_Port.
+ * @param gpio_pin : Either CS_ADC_Pin or CS_DAC_Pin.
+ * @param state : Either GPIO_PIN_SET or GPIO_PIN_RESET.
+ *
+ **/
+void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state) {
+
+	if (state > 0) {
+		gpio->BSRR = gpio_pin;
+	}
+	else {
+		gpio->BSRR = gpio_pin << 16;
+	}
+}
+
+/*
  * @brief  Tx check.
  *
  **/
@@ -444,7 +457,6 @@ void ADS869x_SPI_Tx(uint8_t *pData, uint8_t size) {
 	ADS869x_SPI_CS(ADS869x_CS_ADC_GPIO_Port, ADS869x_CS_ADC_Pin, 0);
 	HAL_SPI_Transmit_IT(ADS869x_SPI, pData, size);
 	//HAL_Delay(3);
-
 	//ADS869x_SPI_CS(ADS869x_CS_ADC_GPIO_Port, ADS869x_CS_ADC_Pin, 1);
 }
 
@@ -460,47 +472,10 @@ void ADS869x_SPI_Rx(uint8_t *pData, uint8_t size) {
 	ADS869x_SPI_CS(ADS869x_CS_ADC_GPIO_Port, ADS869x_CS_ADC_Pin, 0);
 	HAL_SPI_Receive_IT(ADS869x_SPI, pData, size);
 	//HAL_Delay(3);
-
 	//ADS869x_SPI_CS(ADS869x_CS_ADC_GPIO_Port, ADS869x_CS_ADC_Pin, 1);
 }
 
-/*
- * @brief SPI chip select.
- * 
- * @param gpio : Either CS_ADC_GPIO_Port or CS_DAC_GPIO_Port.
- * @param gpio_pin : Either CS_ADC_Pin or CS_DAC_Pin.
- * @param state : Either GPIO_PIN_SET or GPIO_PIN_RESET.
- *
- **/
-static void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state) {
-	
-	if (state > 0) {
-		gpio->BSRR = gpio_pin;
-	}
-	else {
-		gpio->BSRR = gpio_pin << 16;
-	}	
-}
 
-/*
- * @brief Tx completed callback.
- * 
- *
- **/
-static void ADS869x_SPI_TxCplt(SPI_HandleTypeDef* spi_handler) {
 
-	ADS869x_SPI_CS(ADS869x_CS_ADC_GPIO_Port, ADS869x_CS_ADC_Pin, 1);
-	ADS869xGetDataStruct()->ADC0Struct.isTxReady = 1;
-}
 
-/*
- * @brief Rx completed callback.
- * 
- *
- **/
-static void ADS869x_SPI_RxCplt(SPI_HandleTypeDef* spi_handler) {
-
-	ADS869x_SPI_CS(ADS869x_CS_ADC_GPIO_Port, ADS869x_CS_ADC_Pin, 1);
-	ADS869xGetDataStruct()->ADC0Struct.isRxReady = 1;
-}
 

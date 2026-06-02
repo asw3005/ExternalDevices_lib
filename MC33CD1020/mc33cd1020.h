@@ -16,8 +16,10 @@
 #include "stm32g431xx.h"
 
 /* GPIO configuration. */
-#define MC33CD1020_CS_Pin		GPIO_PIN_12
-#define MC33CD1020_CS_GPIO_Port	GPIOB
+#define MC33CD1020_CS_Pin			GPIO_PIN_3
+#define MC33CD1020_CS_GPIO_Port		GPIOA
+#define MC33CD1020_WAKE_B_Pin		GPIO_PIN_5
+#define MC33CD1020_WAKE_B_GPIO_Port	GPIOC
 
 #define MC33CD1020_READ_SEQ 	0x00
 #define MC33CD1020_WRITE_SEQ 	0x01
@@ -63,10 +65,6 @@ typedef enum {
 	
 } MC33CD1020_REG_MAP_t;
 
-
-
-
-
 /*
  * @brief Data exchange function typedefs.
  *
@@ -74,43 +72,26 @@ typedef enum {
 typedef void(*delay_fptr)(uint32_t delay);
 typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 
-/*
- * @brief MISO return word.
- *
- **/
- typedef union {
-
-	struct {
-		uint32_t RetWord;
-	};
-
-	struct {
-		uint32_t RESERVED21_0 		: 22;
-		uint32_t INT_FLG 			: 1;
-		uint32_t FAULT_STATUS		: 1;
-		/* 7bit address + RW. */
-		uint32_t REG_ADDR_RW0		: 8;
-	};
-
-	struct {
-		uint32_t REG_DATA 			: 24;
-		/* 7bit address + RW. */
-		uint32_t REG_ADDR_RW1		: 8;
-	};
-
- } MC33CD1020_RetWord_t;
 
 /*
  * @brief Device configuration universal SP type register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t UniSPReg;
 	};
 
 	struct {
+
+		/* 7bit address + RW. */
+		uint32_t REG_ADDR_RW		: 8;
+		uint32_t RESERVED21_16 		: 6;
+		uint32_t INT_FLG			: 1;
+		uint32_t FAULT_STATUS		: 1;
+		uint32_t RESERVED15_8 		: 8;
+
 		/* SP0 - SP7. */
 		uint32_t SP0 				: 1;
 		uint32_t SP1 				: 1;
@@ -120,11 +101,6 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t SP5 				: 1;
 		uint32_t SP6 				: 1;
 		uint32_t SP7 				: 1;
-		uint32_t RESERVED21_8 		: 14;
-		uint32_t INT_FLG			: 1;
-		uint32_t FAULT_STATUS		: 1;
-		/* 7bit address + RW. */
-		uint32_t REG_ADDR_RW		: 8;
 	};
 
  } MC33CD1020_UniSP_t;
@@ -133,14 +109,29 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Device configuration universal SG type register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t UniSGReg;
 	};
 
 	struct {
+
+		/* 7bit address + RW. */
+		uint32_t REG_ADDR_RW		: 8;
+		uint32_t RESERVED21_16 		: 6;
+		uint32_t INT_FLG			: 1;
+		uint32_t FAULT_STATUS		: 1;
+
 		/* SG0 - SG13. */
+		uint32_t SG8 				: 1;
+		uint32_t SG9 				: 1;
+		uint32_t SG10 				: 1;
+		uint32_t SG11 				: 1;
+		uint32_t SG12 				: 1;
+		uint32_t SG13 				: 1;
+		uint32_t RESERVED15_14 		: 2;
+
 		uint32_t SG0 				: 1;
 		uint32_t SG1 				: 1;
 		uint32_t SG2 				: 1;
@@ -149,17 +140,6 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t SG5 				: 1;
 		uint32_t SG6 				: 1;
 		uint32_t SG7 				: 1;
-		uint32_t SG8 				: 1;
-		uint32_t SG9 				: 1;
-		uint32_t SG10 				: 1;
-		uint32_t SG11 				: 1;
-		uint32_t SG12 				: 1;
-		uint32_t SG13 				: 1;
-		uint32_t RESERVED21_14 		: 8;
-		uint32_t INT_FLG			: 1;
-		uint32_t FAULT_STATUS		: 1;
-		/* 7bit address + RW. */
-		uint32_t REG_ADDR_RW		: 8;
 	};
 
  } MC33CD1020_UniSG_t;
@@ -168,13 +148,28 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Device configuration register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t DevCfgReg;
 	};
 
 	struct {
+
+		/* 7bit address + RW. */
+		uint32_t REG_ADDR_RW		: 8;
+		uint32_t RESERVED21_16 		: 6;
+		uint32_t INT_FLG			: 1;
+		uint32_t FAULT_STATUS		: 1;
+
+		uint32_t RESERVED9_8 		: 2;
+		uint32_t INTB_OUT 			: 1;
+		/* Default 1. */
+		uint32_t WAKEB_VDDQCHECK 	: 1;
+		uint32_t VBATP_OVDIS 		: 1;
+		uint32_t SBPOLLTIME 		: 1;
+		uint32_t RESERVED15_14 		: 2;
+
 		/* SP0 - SP7 default 1. */
 		uint32_t SP0 				: 1;
 		uint32_t SP1 				: 1;
@@ -184,17 +179,6 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t SP5 				: 1;
 		uint32_t SP6 				: 1;
 		uint32_t SP7 				: 1;
-		uint32_t RESERVED9_8 		: 2;
-		uint32_t INTB_OUT 			: 1;
-		/* Default 1. */
-		uint32_t WAKEB_VDDQCHECK 	: 1;
-		uint32_t VBATP_OVDIS 		: 1;
-		uint32_t SBPOLLTIME 		: 1;
-		uint32_t RESERVED21_14 		: 8;
-		uint32_t INT_FLG			: 1;
-		uint32_t FAULT_STATUS		: 1;
-		/* 7bit address + RW. */
-		uint32_t REG_ADDR_RW		: 8;
 	};
 
  } MC33CD1020_DevCfg_t;
@@ -205,14 +189,18 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Weting current level SP register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t WettCurrentSPReg;
 	};
 
 	struct {
-		/* SP0 - SP7 default 110. */
+
+		/* 7bit address + RW. */
+		uint32_t REG_ADDR_RW		: 8;
+
+		/* SP0 - SP7 default 110. Bit 0 is always zero. */
 		uint32_t RESERVED0			: 1;
 		uint32_t SP0 				: 2;
 		uint32_t RESERVED3			: 1;
@@ -229,8 +217,6 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t SP6 				: 2;
 		uint32_t RESERVED21			: 1;
 		uint32_t SP7 				: 2;
-		/* 7bit address + RW. */
-		uint32_t REG_ADDR_RW		: 8;
 	};
 
  } MC33CD1020_WettCurrentSP_t;
@@ -239,14 +225,18 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Wetting current level SG register 0.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t WettCurrentSGReg0;
 	};
 
 	struct {
-		/* SG0 - SG7 default 110. */
+
+		/* 7bit address + RW. */
+		uint8_t REG_ADDR_RW			: 8;
+
+		/* SG0 - SG7 default 110. Bit 0 is always zero. */
 		uint32_t RESERVED0			: 1;
 		uint32_t SG0 				: 2;
 		uint32_t RESERVED3			: 1;
@@ -263,8 +253,6 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t SG6 				: 2;
 		uint32_t RESERVED21			: 1;
 		uint32_t SG7 				: 2;
-		/* 7bit address + RW. */
-		uint8_t REG_ADDR_RW			: 8;
 	};
 
  } MC33CD1020_WettCurrentSGReg0_t;
@@ -273,14 +261,18 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Wetting current level SG register 1.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t WettCurrentSGReg1;
 	};
 
 	struct {
-		/* SG8 - SG13 default 110. */
+
+		/* 7bit address + RW. */
+		uint32_t REG_ADDR_RW		: 8;
+
+		/* SG8 - SG13 default 110. Bit 0 is always zero. */
 		uint32_t RESERVED0			: 1;
 		uint32_t SG8 				: 2;
 		uint32_t RESERVED3			: 1;
@@ -294,8 +286,6 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t RESERVED15			: 1;
 		uint32_t SG13 				: 2;
 		uint32_t RESERVED23_18   	: 6;
-		/* 7bit address + RW. */
-		uint32_t REG_ADDR_RW		: 8;
 	};
 
  } MC33CD1020_WettCurrentSGReg1_t;
@@ -304,20 +294,23 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Low power mode register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t LowPwrModeReg;
 	};
 
 	struct {
-		/* POLL3_0 default 0x1111. */
-		uint32_t POLL3_0 			: 4;
-		uint32_t RESERVED21_8    	: 18;
-		uint32_t INT_FLG			: 1;
-		uint32_t FAULT_STATUS		: 1;
+
 		/* 7bit address + RW. */
 		uint32_t REG_ADDR_RW		: 8;
+		uint32_t RESERVED21_16    	: 6;
+		uint32_t INT_FLG			: 1;
+		uint32_t FAULT_STATUS		: 1;
+		uint32_t RESERVED15_8    	: 8;
+		/* POLL3_0 default 0x1111. */
+		uint32_t POLL3_0 			: 4;
+		uint32_t RESERVED7_4    	: 4;
 	};
 
  } MC33CD1020_LowPwrMode_t;
@@ -326,21 +319,27 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief AMUX control register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t AmuxCtrlReg;
 	};
 
 	struct {
-		/* ASEL5_0 default 0. */
-		uint32_t ASEL5_0 			: 6;
-		uint32_t ASETT0				: 1;
-		uint32_t RESERVED21_7    	: 15;
-		uint32_t INT_FLG			: 1;
-		uint32_t FAULT_STATUS		: 1;
+
 		/* 7bit address + RW. */
 		uint32_t REG_ADDR_RW		: 8;
+		uint32_t RESERVED21_16    	: 6;
+		uint32_t INT_FLG			: 1;
+		uint32_t FAULT_STATUS		: 1;
+		uint32_t RESERVED15_8    	: 8;
+
+		/* Default 0.? */
+		uint32_t ASEL5_0 			: 6;
+		/* Default 0. */
+		uint32_t ASETT0				: 1;
+		uint32_t RESERVED7    		: 1;
+
 	};
 
  } MC33CD1020_AmuxCtrl_t;
@@ -349,14 +348,37 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Read switch status register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t SwStatusReg;
 	};
 
 	struct {
+
+		/* 7bit address + R. */
+		uint32_t REG_ADDR_RW		: 8;
+
+		/* SP0 - SP7. */
+		uint32_t SP2 				: 1;
+		uint32_t SP3 				: 1;
+		uint32_t SP4 				: 1;
+		uint32_t SP5 				: 1;
+		uint32_t SP6 				: 1;
+		uint32_t SP7 				: 1;
+		uint32_t INT_FLG 			: 1;
+		uint32_t FAULT_STATUS		: 1;
+
 		/* SG0 - SG13. */
+		uint32_t SG8 				: 1;
+		uint32_t SG9 				: 1;
+		uint32_t SG10 				: 1;
+		uint32_t SG11 				: 1;
+		uint32_t SG12 				: 1;
+		uint32_t SG13 				: 1;
+		uint32_t SP0 				: 1;
+		uint32_t SP1 				: 1;
+
 		uint32_t SG0 				: 1;
 		uint32_t SG1 				: 1;
 		uint32_t SG2 				: 1;
@@ -365,26 +387,7 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t SG5 				: 1;
 		uint32_t SG6 				: 1;
 		uint32_t SG7 				: 1;
-		uint32_t SG8 				: 1;
-		uint32_t SG9 				: 1;
-		uint32_t SG10 				: 1;
-		uint32_t SG11 				: 1;
-		uint32_t SG12 				: 1;
-		uint32_t SG13 				: 1;
-		/* SP0 - SP7. */
-		uint32_t SP0 				: 1;
-		uint32_t SP1 				: 1;
-		uint32_t SP2 				: 1;
-		uint32_t SP3 				: 1;
-		uint32_t SP4 				: 1;
-		uint32_t SP5 				: 1;
-		uint32_t SP6 				: 1;
-		uint32_t SP7 				: 1;
 		
-		uint32_t INT_FLG 			: 1;
-		uint32_t FAULT_STATUS		: 1;
-		/* 7bit address + R. */
-		uint32_t REG_ADDR_RW		: 8;
 	};
 
  } MC33CD1020_SwStatusRead_t;
@@ -393,14 +396,27 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
  * @brief Fault status register.
  *
  **/
- typedef union {
+ typedef union __attribute__((aligned(1), packed)) {
 
 	struct {
 		uint32_t FaultStatusReg;
 	};
 
 	struct {
+
+		/* 7bit address + R. */
+		uint32_t REG_ADDR_RW		: 8;
+
+		uint32_t RESERVED21_16		: 6;
+		uint32_t INT_FLG 			: 1;
+		uint32_t FAULT_STATUS  		: 1;
+
 		/*  */
+		uint32_t RESERVED8			: 1;
+		uint32_t HASH_FAULT			: 1;
+		uint32_t SPI_ERR			: 1;
+		uint32_t RESERVED15_11		: 5;
+
 		uint32_t POR 				: 1;
 		uint32_t SPI_WAKE			: 1;
 		uint32_t WAKEB_WAKE			: 1;
@@ -409,40 +425,10 @@ typedef void(*spi_txrx_fptr)(uint8_t *pData, uint8_t size);
 		uint32_t TEMP_FLG			: 1;
 		uint32_t OV  				: 1;
 		uint32_t UV  				: 1;
-		uint32_t RESERVED16			: 1;
-		uint32_t HASH_FAULT			: 1;
-		uint32_t SPI_ERR			: 1;
-		uint32_t RESERVED21_11		: 1;
-		/* Default 1. */
-		uint32_t INT_FLG 			: 1;
-		uint32_t FAULT_STATUS  		: 1;
-		/* 7bit address + R. */
-		uint32_t REG_ADDR_RW		: 8;
+
 	};
 
  } MC33CD1020_FaultStatus_t;
-
-/*
- * @brief SPI tx/rx data fields.
- *
- **/
- typedef union {
-
-	struct {
-
-		uint32_t RegData;
-	};
-
-	struct {
-
-		uint8_t CmdWord;
-		uint8_t RegDataH_LSB;
-		uint8_t RegDataL_MSB;
-		uint8_t RegDataL_LSB;
-	};
-
- } MC33CD1020_TxRxData_t;
-
 
 /*
  * @brief General data instance struct.
@@ -458,14 +444,16 @@ typedef struct {
 
 
 /* Public function prototypes. */
+
 void MC33CD1020_Reset(void); 
+void MC33CD1020_WakeUp(void);
 void MC33CD1020_EnterLpmMode(void); 
 uint32_t MC33CD1020_SPICheck(void);
 void MC33CD1020_InterruptRequest(void);
 MC33CD1020_SwStatusRead_t MC33CD1020_ReadSWStatus(void); 
 MC33CD1020_FaultStatus_t MC33CD1020_ReadFaultStatus(void);
 MC33CD1020_LowPwrMode_t MC33CD1020_LowPwrModeCfg(uint8_t rw_bit, uint8_t poll_rate);
-MC33CD1020_LowPwrMode_t MC33CD1020_LowPwrModeCfg(uint8_t rw_bit, uint8_t poll_rate);
+
 MC33CD1020_AmuxCtrl_t MC33CD1020_AMUXCtrl(uint8_t rw_bit, uint8_t amux_current, uint8_t amux_channel);
 
 MC33CD1020_DevCfg_t MC33CD1020_DevCfg(uint8_t rw_bit, 

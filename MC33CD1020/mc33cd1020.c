@@ -5,13 +5,14 @@
  **/
 
 #include "mc33cd1020.h"
+#include "cmsis_gcc.h"
 #include "spi.h"
 #include "stm32g4xx_hal.h"
+#include "stm32g4xx_hal_gpio.h"
+#include "stm32g4xx_hal_spi.h"
 #include <stdint.h>
-//#include <stdint.h>
 
-
-#define HARD_SPI_NSS
+//#define HARD_SPI_NSS
 
  /* External variables. */
 extern SPI_HandleTypeDef hspi2;
@@ -25,6 +26,7 @@ static uint8_t MC33CD1020_TxCheck(void);
 static uint8_t MC33CD1020_RxCheck(void); 
 static void MC33CD1020_Tx(uint8_t *pData, uint8_t size);
 static void MC33CD1020_Rx(uint8_t *pData, uint8_t size);
+static void MC33CD1020_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
 
 /* General struct. */
 static MC33CD1020_GInst_t mc33cd1020_inst = {
@@ -46,13 +48,34 @@ static MC33CD1020_GInst_t mc33cd1020_inst = {
 **/
 uint32_t MC33CD1020_SPICheck(void) {
 
-	static uint32_t SPICheckData = { 0 };
+	static uint32_t SPICheckWData = { 0 };
+	//static uint32_t SPICheckRData = { 0 };
 
-	mc33cd1020_inst.spi_tx((uint8_t *)&SPICheckData, sizeof(SPICheckData));
-	MC33CD1020_TxCheck();
-	mc33cd1020_inst.spi_rx((uint8_t*)&SPICheckData, sizeof(SPICheckData));
-	MC33CD1020_RxCheck();
-	return SPICheckData;
+	//HAL_SPI_TX_RX_COMPLETE_CB_ID
+	
+	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 0);
+	// HAL_SPI_TransmitReceive_IT(MC33CD1020_SpiInst, (uint8_t *)&SPICheckWData, (uint8_t *)&SPICheckRData, 4);
+	// MC33CD1020_TxCheck();
+	
+	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 1);
+	
+	// __NOP();__NOP();__NOP();__NOP();__NOP();
+	// __NOP();__NOP();__NOP();__NOP();__NOP();
+	
+	
+	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 0);
+	// HAL_SPI_TransmitReceive_IT(MC33CD1020_SpiInst, (uint8_t *)&SPICheckWData, (uint8_t *)&SPICheckRData, 4);
+	// MC33CD1020_TxCheck();
+	
+	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 1);
+	
+	
+	SPICheckWData = 0;
+	mc33cd1020_inst.spi_tx((uint8_t *)&SPICheckWData, sizeof(SPICheckWData));
+	mc33cd1020_inst.spi_rx((uint8_t *)&SPICheckWData, sizeof(SPICheckWData));
+
+	__NOP();
+	return SPICheckWData;
 }
 
 /*
@@ -100,10 +123,8 @@ uint32_t MC33CD1020_SPICheck(void) {
 	DevCfg.SBPOLLTIME = sbpoll_time;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&DevCfg.DevCfgReg, sizeof(DevCfg.DevCfgReg));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
 		mc33cd1020_inst.spi_rx((uint8_t*)&DevCfg.DevCfgReg, sizeof(DevCfg.DevCfgReg));
-		MC33CD1020_RxCheck();
 	}
 
 	return DevCfg;
@@ -204,10 +225,8 @@ uint32_t MC33CD1020_SPICheck(void) {
 	WettCurrentSP.SP7 = sp7;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&WettCurrentSP.WettCurrentSPReg, sizeof(WettCurrentSP.WettCurrentSPReg));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
 		mc33cd1020_inst.spi_rx((uint8_t*)&WettCurrentSP.WettCurrentSPReg, sizeof(WettCurrentSP.WettCurrentSPReg));
-		MC33CD1020_RxCheck();
 	}
 
 	return WettCurrentSP;
@@ -245,10 +264,8 @@ uint32_t MC33CD1020_SPICheck(void) {
 	WettCurrentSG.SG7 = sg7;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&WettCurrentSG.WettCurrentSGReg0, sizeof(WettCurrentSG.WettCurrentSGReg0));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
 		mc33cd1020_inst.spi_rx((uint8_t*)&WettCurrentSG.WettCurrentSGReg0, sizeof(WettCurrentSG.WettCurrentSGReg0));
-		MC33CD1020_RxCheck();
 	}
 
 	return WettCurrentSG;
@@ -284,10 +301,8 @@ uint32_t MC33CD1020_SPICheck(void) {
 	WettCurrentSG.SG13 = sg13;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&WettCurrentSG.WettCurrentSGReg1, sizeof(WettCurrentSG.WettCurrentSGReg1));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
 		mc33cd1020_inst.spi_rx((uint8_t*)&WettCurrentSG.WettCurrentSGReg1, sizeof(WettCurrentSG.WettCurrentSGReg1));
-		MC33CD1020_RxCheck();
 	}
 
 	return WettCurrentSG;
@@ -457,10 +472,8 @@ MC33CD1020_LowPwrMode_t MC33CD1020_LowPwrModeCfg(uint8_t rw_bit, uint8_t poll_ra
 	LowPwrMode.POLL3_0 = poll_rate;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&LowPwrMode.LowPwrModeReg, sizeof(LowPwrMode.LowPwrModeReg));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
 		mc33cd1020_inst.spi_rx((uint8_t*)&LowPwrMode.LowPwrModeReg, sizeof(LowPwrMode.LowPwrModeReg));
-		MC33CD1020_RxCheck();
 	}
 
 	return LowPwrMode;
@@ -733,7 +746,17 @@ void MC33CD1020_EnterLpmMode(void) {
 	EnterLpmMode.SP0 = 1;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&EnterLpmMode.UniSPReg, sizeof(EnterLpmMode.UniSPReg));
-	MC33CD1020_TxCheck();
+ }
+
+  /*
+ * @brief Wakes up the chip by falling edge of WAKA_B pin. 
+ *
+ **/
+void MC33CD1020_WakeUp(void) {
+
+	MC33CD1020_WAKE_B_GPIO_Port->BSRR = MC33CD1020_WAKE_B_Pin << 16;
+	__NOP();
+	MC33CD1020_WAKE_B_GPIO_Port->BSRR = MC33CD1020_WAKE_B_Pin;
  }
 
 /*
@@ -768,10 +791,8 @@ MC33CD1020_AmuxCtrl_t MC33CD1020_AMUXCtrl(uint8_t rw_bit, uint8_t amux_current, 
 	AmuxControl.ASEL5_0 = amux_channel;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&AmuxControl.AmuxCtrlReg, sizeof(AmuxControl.AmuxCtrlReg));
-	MC33CD1020_TxCheck();
 	if(!rw_bit) {
 		mc33cd1020_inst.spi_rx((uint8_t*)&AmuxControl.AmuxCtrlReg, sizeof(AmuxControl.AmuxCtrlReg));
-		MC33CD1020_RxCheck();
 	}
 
 	return AmuxControl;
@@ -802,9 +823,7 @@ MC33CD1020_SwStatusRead_t MC33CD1020_ReadSWStatus(void) {
 
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&ReadSwStatus.SwStatusReg, sizeof(ReadSwStatus.SwStatusReg));
-	MC33CD1020_TxCheck();
 	mc33cd1020_inst.spi_rx((uint8_t*)&ReadSwStatus.SwStatusReg, sizeof(ReadSwStatus.SwStatusReg));
-	MC33CD1020_RxCheck();
 
 	return ReadSwStatus;
  }
@@ -860,9 +879,7 @@ MC33CD1020_FaultStatus_t MC33CD1020_ReadFaultStatus(void) {
 
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&FaultStatus.FaultStatusReg, sizeof(FaultStatus.FaultStatusReg));
-	MC33CD1020_TxCheck();
 	mc33cd1020_inst.spi_rx((uint8_t*)&FaultStatus.FaultStatusReg, sizeof(FaultStatus.FaultStatusReg));
-	MC33CD1020_RxCheck();
 
 	return FaultStatus;
  }
@@ -882,7 +899,6 @@ void MC33CD1020_InterruptRequest(void) {
 	InterruptRequest.SP0 = 1;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&InterruptRequest.UniSPReg, sizeof(InterruptRequest.UniSPReg));
-	MC33CD1020_TxCheck();
  }
 
 /*
@@ -897,7 +913,6 @@ void MC33CD1020_Reset(void) {
 	Reset.SP0 = 1;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&Reset.UniSPReg, sizeof(Reset.UniSPReg));
-	MC33CD1020_TxCheck();
  }
 
 
@@ -928,10 +943,8 @@ void MC33CD1020_Reset(void) {
 	uniregSP->SP7 = sp7;
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&uniregSP->UniSPReg, sizeof(uniregSP->UniSPReg));
-	MC33CD1020_TxCheck();
 	if(!(addr_rw_bit & 0x01)) {
 		mc33cd1020_inst.spi_rx((uint8_t*)&RetValSP.UniSPReg, sizeof(RetValSP.UniSPReg));
-		MC33CD1020_RxCheck();
 	}
 
 	return RetValSP;
@@ -973,10 +986,8 @@ MC33CD1020_UniSG_t MC33CD1020_UniRegSG(MC33CD1020_UniSG_t* uniregSG, uint8_t add
 
 
 	mc33cd1020_inst.spi_tx((uint8_t *)&uniregSG->UniSGReg, sizeof(uniregSG->UniSGReg));
-	MC33CD1020_TxCheck();
 	if(!(addr_rw_bit & 0x01)) {
-		mc33cd1020_inst.spi_rx((uint8_t*)&RetValSG.UniSGReg, sizeof(RetValSG.UniSGReg));
-		MC33CD1020_RxCheck();
+		mc33cd1020_inst.spi_rx((uint8_t *)&RetValSG.UniSGReg, sizeof(RetValSG.UniSGReg));
 	}
 
 	return RetValSG;
@@ -1015,8 +1026,9 @@ static void MC33CD1020_Tx(uint8_t *pData, uint8_t size) {
 	#ifndef HARD_SPI_NSS
 	MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 0);
     #endif
-	HAL_SPI_Transmit(MC33CD1020_SpiInst, pData, size, 10);
+	HAL_SPI_Transmit_IT(MC33CD1020_SpiInst, pData, size);
     #ifndef HARD_SPI_NSS
+	MC33CD1020_TxCheck();
 	MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 1);
     #endif
 }
@@ -1031,8 +1043,9 @@ static void MC33CD1020_Rx(uint8_t *pData, uint8_t size) {
 	#ifndef HARD_SPI_NSS
 	MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 0);
     #endif
-	HAL_SPI_Receive(MC33CD1020_SpiInst, pData, size, 10);
+	HAL_SPI_Receive_IT(MC33CD1020_SpiInst, pData, size);
     #ifndef HARD_SPI_NSS
+	MC33CD1020_RxCheck();
 	MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 1);
     #endif
 }

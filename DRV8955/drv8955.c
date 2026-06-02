@@ -214,24 +214,3 @@ static void DRV8955_PWMCtrl(TIM_HandleTypeDef* timer, uint32_t channel, uint8_t 
 
 
 /* Interrupt callbacks. */
-
-/*
-	@brief  EXTI line detection callbacks.
-	@param  GPIO_Pin: Specifies the pins connected EXTI line
-	@retval None
- */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-
-	//BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-	if(GPIO_Pin == GPIO_PIN_2) {
-
-		/* Disable external line ITs. */
-		HAL_NVIC_DisableIRQ(EXTI2_IRQn);
-	   /* Notify the task. */
-	//    xTaskNotifyFromISR( PassHandle_TH,
-	// 		   	   	   	   BtnClickBit,
-	// 					   eSetBits,
-	// 					   &xHigherPriorityTaskWoken );
-	}
-}

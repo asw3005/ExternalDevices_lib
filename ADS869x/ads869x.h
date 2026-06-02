@@ -662,7 +662,7 @@ ADS869x_MGInst_t* ADS869xGetDataStruct(void);
 /* Hardware dependent function prototypes. */
 void ADS869x_SPI_Tx(uint8_t *pData, uint8_t size);
 void ADS869x_SPI_Rx(uint8_t *pData, uint8_t size);
-
+void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
 
 #endif /* ADS869x_H_ */
 
