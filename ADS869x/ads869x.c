@@ -9,6 +9,7 @@
 #include "stm32g4xx_hal.h"
 #include "stm32g4xx_hal_def.h"
 #include <stdint.h>
+#include "math.h"
 
 /* External variables. */
 extern SPI_HandleTypeDef hspi2;
@@ -17,6 +18,7 @@ SPI_HandleTypeDef* ADS869x_SPI = &hspi2;
 /* Private function prototypes. */
 static void ADS869x_SPI_TxCheck(void);
 static void ADS869x_SPI_RxCheck(void);
+static void ADS869x_SPI_TxRxCheck(void);
 
 
 /*
@@ -59,7 +61,7 @@ void ADS869x_RST(uint8_t state) {
 }
 
 /*
- *	@brief Scale factor.
+ * @brief Read voltage.
  *	
  * @param scale : ADS869x_VALUE_OF_DIVISION_5_12P  			= +5.12V
  *				  ADS869x_VALUE_OF_DIVISION_6_144P 			= +6.144V
@@ -81,34 +83,69 @@ float ADS869x_GetVoltage(float scale) {
 }
 
 /*
- * @brief Sets low threshold for the input alarm.
- * 
+ * @brief Get RMS voltage.
+ *
+ * @param scale : ADS869x_VALUE_OF_DIVISION_5_12P  			= +5.12V
+ *				  ADS869x_VALUE_OF_DIVISION_6_144P 			= +6.144V
+ *				  ADS869x_VALUE_OF_DIVISION_10_24P 			= +10.24V
+ *				  ADS869x_VALUE_OF_DIVISION_12_288P 		= +12.288V
+ *				  ADS869x_VALUE_OF_DIVISION_2_56P_2_56N 	= +2.56V to -2.56V
+ *				  ADS869x_VALUE_OF_DIVISION_5_12P_5_122N 	= +5.12V to -5.12V
+ *				  ADS869x_VALUE_OF_DIVISION_6_144P_6_144N 	= +6.144V to -6.144V
+ *				  ADS869x_VALUE_OF_DIVISION_10_24P_10_24N 	= +10.24V to -10.24V
+ *				  ADS869x_VALUE_OF_DIVISION_12_288P_12_288N = +12.288V to -12.288V
+ *
+ * @param burst_size : amount of data to read and then get RMS from it.
+ *
+ **/
+float ADS869x_GetRmsVoltage(float scale, uint8_t burst_size) {
+
+	float RMSVoltage, ADCVoltage = 0;
+
+	/* Processing the data to get RMS. */
+	RMSVoltage = 0;
+	for (uint8_t i = 0; i < burst_size; i++) {
+
+		ADCVoltage = scale * (uint32_t)(ADS869x_ReadADC(&(ADS869xGetDataStruct()->ADC0Struct)).DataWord >> 14);
+		RMSVoltage += ADCVoltage*ADCVoltage;
+	}
+	RMSVoltage = RMSVoltage/burst_size;
+	RMSVoltage = sqrtf(RMSVoltage);
+
+	return RMSVoltage;
+}
+
+/*
+ * @brief Read ADC samples one at a time.
+ *
  * @param *device : Instance of the general data struct ADS869x_GInst_t.
- * @return 14-bit ADC data type of ADS869x_OutputDataWord_t.
+ * @return 18-bit ADC data type of ADS869x_OutputDataWord_t.
  *
  **/
 ADS869x_OutputDataWord_t ADS869x_ReadADC(ADS869x_GInst_t* device)
 {
 	ADS869x_OutputDataWord_t DataWord;
-	
+
 	device->data.ADDRESS = ADS869x_NOP;
 	device->data.COMMAND = ADS869x_NOP;
 	device->data.REG_DATA_LSB = ADS869x_NOP;
 	device->data.REG_DATA_MSB = ADS869x_NOP;
+	device->isTxReady = 0;
+	device->isRxReady = 0;
 
 	device->spi_tx(&device->data.Command, 4);
-	ADS869x_SPI_TxCheck();	
-	
+	ADS869x_SPI_TxCheck();
+
 	//device->delay(1);
 	device->spi_rx(&device->data.Command, 4);
 	ADS869x_SPI_RxCheck();
 	//device->delay(1);
-	
+
 	DataWord.DataWord_LSW_LSB = device->data.REG_DATA_LSB;
 	DataWord.DataWord_LSW_MSB = device->data.REG_DATA_MSB;
 	DataWord.DataWord_HSW_LSB = device->data.Address;
 	DataWord.DataWord_HSW_MSB = device->data.Command;
-	
+
 	return DataWord;
 }
 
@@ -447,6 +484,23 @@ static void ADS869x_SPI_RxCheck(void) {
 }
 
 /*
+ * @brief  TxRx DMA check.
+ *
+ **/
+static void ADS869x_SPI_TxRxCheck(void) {
+
+	// ADS869xGetDataStruct()->ADC0Struct.isTxReady = 0;
+	do {
+		if (ADS869xGetDataStruct()->ADC0Struct.isTxRxDMAReady) {
+			__NOP();
+			ADS869xGetDataStruct()->ADC0Struct.isTxRxDMAReady = 0;
+			break;
+		}
+	}
+	while(1);
+}
+
+/*
  * @brief
  *
  **/
@@ -474,8 +528,6 @@ void ADS869x_SPI_Rx(uint8_t *pData, uint8_t size) {
 	//HAL_Delay(3);
 	//ADS869x_SPI_CS(ADS869x_CS_ADC_GPIO_Port, ADS869x_CS_ADC_Pin, 1);
 }
-
-
 
 
 

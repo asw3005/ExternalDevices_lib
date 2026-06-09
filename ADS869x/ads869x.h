@@ -558,7 +558,7 @@ typedef union __attribute__((aligned(1), packed)) {
 	
 	uint32_t DataWord;	
 	struct {		
-		uint32_t DataWord_LSW_LSB	: 8;		
+		uint32_t DataWord_LSW_LSB	: 8;
 		uint32_t DataWord_LSW_MSB	: 8;
 		uint32_t DataWord_HSW_LSB	: 8;
 		uint32_t DataWord_HSW_MSB	: 8;
@@ -572,15 +572,14 @@ typedef union __attribute__((aligned(1), packed)) {
 		uint32_t DEVICE_ADDRESS		: 4;
 		uint32_t CONVERSION_RESULT	: 18;
 	};
-	
+
 	/* All data flags disabled format. */
 	struct {
 		uint32_t RESERVED13_0_ALL		: 14;
 		uint32_t CONVERSION_RESULT_ALL	: 18;
 	};
-	
-} ADS869x_OutputDataWord_t;
 
+} ADS869x_OutputDataWord_t;
 
 /*
  * @brief Read/write data struct.
@@ -619,6 +618,7 @@ typedef struct {
 
 	uint8_t isTxReady;
 	uint8_t isRxReady;
+	uint8_t isTxRxDMAReady;
 	ADS869x_InputCmd_t data;
 	volatile uint16_t* tx_byte_cnt; 
 	volatile uint16_t* rx_byte_cnt;
@@ -629,7 +629,7 @@ typedef struct {
 } ADS869x_GInst_t;
 
 /*
- * @brief Multistruct of general data struct.
+ * @brief Multi struct of general data struct.
  *
  **/
 typedef struct {
@@ -644,6 +644,7 @@ typedef struct {
 void ADS869x_Init(void);
 void ADS869x_RST(uint8_t state);
 float ADS869x_GetVoltage(float scale);
+float ADS869x_GetRmsVoltage(float scale, uint8_t burst_size);
 ADS869x_OutputDataWord_t ADS869x_ReadADC(ADS869x_GInst_t* device);
 uint16_t ADS869x_W_R_REG(ADS869x_GInst_t* device, uint8_t address);
 void ADS869x_RstPwdn(ADS869x_GInst_t* device, uint8_t pwrdn, uint8_t nap_en, uint8_t rstn_app, uint8_t in_al_dis, uint8_t vdd_al_dis);
@@ -662,6 +663,7 @@ ADS869x_MGInst_t* ADS869xGetDataStruct(void);
 /* Hardware dependent function prototypes. */
 void ADS869x_SPI_Tx(uint8_t *pData, uint8_t size);
 void ADS869x_SPI_Rx(uint8_t *pData, uint8_t size);
+void ADS869x_SPI_DmaTxRx(uint8_t *pTxData, uint8_t *pRxData, uint8_t size);
 void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
 
 #endif /* ADS869x_H_ */
