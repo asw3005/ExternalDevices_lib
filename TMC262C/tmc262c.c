@@ -26,6 +26,7 @@ static uint8_t TMC262C_RxCheck(void);
 static void TMC262C_Tx(uint8_t *pData, uint8_t size);
 static void TMC262C_Rx(uint8_t *pData, uint8_t size);
 static void TMC262C_RxTx(uint8_t *pTxData, uint8_t *pRxData, uint8_t size);
+static void TMC262C_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
 
 /* General struct. */
 static TMC262C_GInst_t tmc262c_inst = {
@@ -54,28 +55,18 @@ void TMC262C_Init(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(TMC262C_CS_GPIO_Port, &GPIO_InitStruct);
-	
+
+    TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_SET);
 }
 
 /*
  * @brief Driver control register. 
  *
- * @param sdoff_state 		: STEP/DIR mode - SDOFF, DRVCONF[7], bit is clear, the STEP/DIR interface is enabled, and DRVCTRL is a configuration register 
+ * @param sdoff_state 		: Select driver control register format.
+ * 								0 - STEP/DIR interface is enabled, and DRVCTRL is a configuration register
  *								for the STEP/DIR interface (default).
- *							  SPI mode 	  - SDOFF bit, DRVCONF[7], is set, the STEP/DIR interface is disabled, and DRVCTRL is the interface for specifying the 
- * 								currents through each coil. 
- *
- * @param pha_polarity_a 	: Sign of current flow through coil A.
- *								0 - current flows from OA1 pins to OA2 pins,
- *								1 - current flows from OA2 pins to OA1 pins.
- * @param ca_current_a 		: Magnitude of current flow through coil A. The range is 0 to 248, if hysteresis or offset are used up to their full extent. The 
- *								resulting value after applying hysteresis or offset must not exceed 255.
- * @param phb_polarity_b 	: Sign of current flow through coil B.
- *								0 - current flows from OB1 pins to OB2 pins,
- *								1 - current flows from OB2 pins to OB1 pins.
- * @param cb_current_b 		: Magnitude of current flow through coil B. The range is 0 to 248, if hysteresis or offset are used up to their fullextent. The 
- *								resulting value after applying hysteresis or offset must not exceed 255.
- *
+ *							  	1 - STEP/DIR interface is disabled, and DRVCTRL is the interface for specifying the
+ * 								currents through each coil.
  * @param intpol			: Enable STEP interpolation.
  *								0 - disable STEP pulse interpolation,
  *								1 - enable MicroPlyer STEP pulse multiplication by 16.
@@ -86,6 +77,16 @@ void TMC262C_Init(void) {
  *								0 - 256, 1 - 128, 2 - 64, 3 - 32,
  *								4 - 16,	 5 - 8,   6 - 4, 7 - 2 (halfstep),
  *								8 - 1 (fullstep)
+ * @param pha_polarity_a 	: Sign of current flow through coil A.
+ *								0 - current flows from OA1 pins to OA2 pins,
+ *								1 - current flows from OA2 pins to OA1 pins.
+ * @param ca_current_a 		: Magnitude of current flow through coil A. The range is 0 to 248, if hysteresis or offset are used up to their full extent. The 
+ *								resulting value after applying hysteresis or offset must not exceed 255.
+ * @param phb_polarity_b 	: Sign of current flow through coil B.
+ *								0 - current flows from OB1 pins to OB2 pins,
+ *								1 - current flows from OB2 pins to OB1 pins.
+ * @param cb_current_b 		: Magnitude of current flow through coil B. The range is 0 to 248, if hysteresis or offset are used up to their fullextent. The 
+ *								resulting value after applying hysteresis or offset must not exceed 255.
  * @param read_back 		: Read current state of register (it is software only register read, hardware registers are read only).
  *								0 - regular state, write current values to the register,
  *								1 - read back, it'll not write any values to the register.	
@@ -107,6 +108,8 @@ TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8
 			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED17_16 = 0;
 			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED15_10 = 0;
 			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED7_4 = 0;
+			/* Send 3 bytes to the driver. Highest four bit are dummy. */
+			TMC262C_Tx(&DrvCtrlRSet.DrvCtrlSTEPDIR.DrvCtrl_LSB_H, 3);
 
 		} else {
 
@@ -114,10 +117,10 @@ TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8
 			DrvCtrlRSet.DrvCtrlSPI.PHB = phb_polarity_b;
 			DrvCtrlRSet.DrvCtrlSPI.CA6_0 = ca_current_a;
 			DrvCtrlRSet.DrvCtrlSPI.CA7 = ca_current_a >> 7;
+			/* Send 3 bytes to the driver. Highest four bit are dummy. */
+			TMC262C_Tx(&DrvCtrlRSet.DrvCtrlSPI.DrvCtrl_LSB_H, 3);
 		}
 
-		/* Send 3 bytes to the driver. Highest four bit are dummy. */
-		TMC262C_Tx(&DrvCtrlRSet.DrvCtrlSPI.DrvCtrl_LSB_H, 3);
 		/* Check transmit or just wait. */
 		TMC262C_TxCheck();
 	}
@@ -137,7 +140,8 @@ TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8
  * @param rndtf 	: Enable randomizing the slow decay phase duration.
  *						0 - chopper off time is fixed as set by bits tOFF,
  *						1 - random mode, tOFF is random modulated by dNCLK= -24 … +6 clocks.
- * @param hdec10	: Hysteresis decrement period setting, in system clock periods:
+ * @param hdec1,
+ * 		  hdec0 	: Hysteresis decrement period setting, in system clock periods:
  *					  CHM = 0
  *						00 - 16, 01 - 32, 10 - 48, 11 - 64.
  *					  CHM = 1
@@ -166,13 +170,13 @@ TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8
  *						0000 - driver disable, all bridges off,
  *						0001 - 1 (use with TBL of minimum 24 clocks),
  *						0010 - 1111 2..15.
- * @param read_back : Read current state of register (it is software only register read, hardware registers are read only).
+ * @param read_back : Read current state of register (it is software only register read, hardware registers are write only).
  *						0 - regular state, write current values to the register,
  *						1 - read back, it'll not write any values to the register.	
  *
 **/
-TMC262C_ChopConf_t TMC262C_ChopConf(uint8_t tbl, uint8_t chm, uint8_t rndtf, uint8_t hdec0, 
-										uint8_t hdec1, uint8_t hend, uint8_t hstrt, uint8_t toff, uint8_t read_back) {
+TMC262C_ChopConf_t TMC262C_ChopConf(uint8_t tbl, uint8_t chm, uint8_t rndtf, uint8_t hdec1,
+										uint8_t hdec0, uint8_t hend, uint8_t hstrt, uint8_t toff, uint8_t read_back) {
 
 	static TMC262C_ChopConf_t ChopConf = { 0 };
 
@@ -207,11 +211,11 @@ TMC262C_ChopConf_t TMC262C_ChopConf(uint8_t tbl, uint8_t chm, uint8_t rndtf, uin
  *				      decrement of the coil current.
  *						0 - 32, 1 - 8, 2 - 2, 3 - 1. 
  * @param semax 	: Upper CoolStep threshold as an offset from the lower threshold. If the StallGuard2 measurement value SG is sampled equal to or above 
- *					  (SEMIN+SEMAX+1) x 32 enough times, then the coil current scaling factor is decremented.
+ *					  (SEMIN+SEMAX+1) x 32 enough times, then the coil current scaling factor is decremented. Range 0..15.
  * @param seup 		: Current increment size. Number of current increment steps for each time that the StallGuard2 value SG is sampled below the lower threshold.
  *						0 - 1, 1 - 2, 2 - 4, 3 - 8.
  * @param semin3_0 	: Lower CoolStep threshold. CoolStep disable. If SEMIN is 0, CoolStep is disabled. If SEMIN is nonzero and the StallGuard2 value SG falls 
- *					  below SEMIN x 32, the CoolStep current scaling factor is increased.	
+ *					  below SEMIN x 32, the CoolStep current scaling factor is increased. Range 0..15.
  * @param read_back : Read current state of register (it is software only register read, hardware registers are read only).
  *						0 - regular state, write current values to the register,
  *						1 - read back, it'll not write any values to the register.						
@@ -249,6 +253,9 @@ TMC262C_SmartEn_t TMC262C_SmartEn(uint8_t semin, uint8_t sedn, uint8_t semax, ui
  * @param sfilt 	: StallGuard2 filter enable.
  *						0 - standard mode, fastest response time,
  *						1 - filtered mode, updated once for each four fullsteps to compensate for variation in motor construction, highest accuracy.
+ * @param sgt_sign	: sign of the sgt parameter.
+ * 						0 - positive value,
+ * 						1 - negative value.
  * @param sgt 		: StallGuard2 threshold value. The StallGuard2 threshold value controls the optimum measurement range for readout and stall indicator
  *				  	  output (SG_TST). A lower value results in a higher sensitivity and less torque is required to indicate a stall. The value is a two’s
  * 				  	  complement signed integer. Range: -64 to +63.
@@ -261,14 +268,14 @@ TMC262C_SmartEn_t TMC262C_SmartEn(uint8_t semin, uint8_t sedn, uint8_t semax, ui
  *						1 - read back, it'll not write any values to the register.				
  *
 **/
-TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt, uint8_t cs, uint8_t read_back) {
+TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt_sign, uint8_t sgt, uint8_t cs, uint8_t read_back) {
 
 	static TMC262C_SgcsConf_t StallGuard = { 0 };
 
 	if(!read_back) {
 		StallGuard.REG_ADDR = TMC262C_SGCSCONF;
 		StallGuard.SFILT = sfilt;
-		StallGuard.SGT6_0 = sgt;
+		StallGuard.SGT6_0 = (sgt_sign << 6) | sgt;
 		StallGuard.CS4_0 = cs;
 		StallGuard.RESERVED15 = 0;
 		StallGuard.RESERVED7_5 = 0;
@@ -419,7 +426,7 @@ TMC262C_DrvConf_t TMC262C_DrvConf(uint8_t tst, uint8_t slph, uint8_t slpl, uint8
  * @retval bits9_8 	: 11 response allows to distinguish -C type. Non-C-type delivers %00 in each case.
  *
 **/
-TMC262C_ReadBack_t TMC262C_ReadBack(void) {
+TMC262C_ReadBack_t* TMC262C_ReadBack(void) {
 
 	static TMC262C_DrvConf_t DrvConf = { 0 };
 	static TMC262C_ReadBack_t ReadBack = { 0 };
@@ -444,7 +451,7 @@ TMC262C_ReadBack_t TMC262C_ReadBack(void) {
 	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL11.ReadBack_MSB_H, 3);
 	tmc262c_inst.delay(1);
 
-	return ReadBack;
+	return &ReadBack;
 }
 
  /* Hardware dependent functions. */
@@ -465,6 +472,23 @@ void TMC262C_EnableCtrl(uint8_t state) {
 	else {
 		TMC262C_EN_GPIO_Port->BSRR = TMC262C_EN_Pin << 16;
 	}	
+}
+
+/*
+* @brief Direction select.
+*
+* @param direction :0 - forward,
+*					1 - backward.
+*
+**/
+void TMC262C_DirectionCtrl(uint8_t direction) {
+
+	if (direction > 0) {
+		TMC262C_DIR_GPIO_Port->BSRR = TMC262C_DIR_Pin;
+	}
+	else {
+		TMC262C_DIR_GPIO_Port->BSRR = TMC262C_DIR_Pin << 16;
+	}
 }
 
 #ifndef HARD_SPI_NSS
@@ -496,7 +520,7 @@ static void TMC262C_Tx(uint8_t *pData, uint8_t size) {
 	#ifndef HARD_SPI_NSS
 	TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_RESET);
     #endif
-	HAL_SPI_Transmit(TMC262C_SpiInst, pData, size, 10);
+	HAL_SPI_Transmit_IT(TMC262C_SpiInst, pData, size);
     #ifndef HARD_SPI_NSS
 	TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_SET);
     #endif
@@ -512,7 +536,7 @@ static void TMC262C_Rx(uint8_t *pData, uint8_t size) {
 	#ifndef HARD_SPI_NSS
 	TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_RESET);
     #endif
-	HAL_SPI_Receive(TMC262C_SpiInst, pData, size, 10);
+	HAL_SPI_Receive_IT(TMC262C_SpiInst, pData, size);
     #ifndef HARD_SPI_NSS
 	TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_SET);
     #endif
@@ -528,7 +552,7 @@ static void TMC262C_RxTx(uint8_t *pTxData, uint8_t *pRxData, uint8_t size) {
 	#ifndef HARD_SPI_NSS
 	TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_RESET);
     #endif
-	HAL_SPI_TransmitReceive(TMC262C_SpiInst, pTxData, pRxData, size, 10);
+	HAL_SPI_TransmitReceive_IT(TMC262C_SpiInst, pTxData, pRxData, size);
     #ifndef HARD_SPI_NSS
 	TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_SET);
     #endif
@@ -541,7 +565,8 @@ static void TMC262C_RxTx(uint8_t *pTxData, uint8_t *pRxData, uint8_t size) {
 **/
 static uint8_t TMC262C_TxCheck(void) {
 
-	tmc262c_inst.delay(5);
+	//tmc262c_inst.delay(1);
+	__NOP();__NOP();__NOP();__NOP();__NOP();
 	return 0;
 }
 
@@ -551,6 +576,7 @@ static uint8_t TMC262C_TxCheck(void) {
 **/
 static uint8_t TMC262C_RxCheck(void) {
 
-	tmc262c_inst.delay(5);
+	//tmc262c_inst.delay(1);
+	__NOP();__NOP();__NOP();__NOP();__NOP();
 	return 0;
 }

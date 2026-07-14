@@ -49,30 +49,12 @@ static MC33CD1020_GInst_t mc33cd1020_inst = {
 uint32_t MC33CD1020_SPICheck(void) {
 
 	static uint32_t SPICheckWData = { 0 };
-	//static uint32_t SPICheckRData = { 0 };
-
-	//HAL_SPI_TX_RX_COMPLETE_CB_ID
-	
-	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 0);
-	// HAL_SPI_TransmitReceive_IT(MC33CD1020_SpiInst, (uint8_t *)&SPICheckWData, (uint8_t *)&SPICheckRData, 4);
-	// MC33CD1020_TxCheck();
-	
-	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 1);
-	
-	// __NOP();__NOP();__NOP();__NOP();__NOP();
-	// __NOP();__NOP();__NOP();__NOP();__NOP();
-	
-	
-	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 0);
-	// HAL_SPI_TransmitReceive_IT(MC33CD1020_SpiInst, (uint8_t *)&SPICheckWData, (uint8_t *)&SPICheckRData, 4);
-	// MC33CD1020_TxCheck();
-	
-	// MC33CD1020_SPI_CS(MC33CD1020_CS_GPIO_Port, MC33CD1020_CS_Pin, 1);
-	
 	
 	SPICheckWData = 0;
 	mc33cd1020_inst.spi_tx((uint8_t *)&SPICheckWData, sizeof(SPICheckWData));
 	mc33cd1020_inst.spi_rx((uint8_t *)&SPICheckWData, sizeof(SPICheckWData));
+
+	SPICheckWData = (SPICheckWData << 24) | ((SPICheckWData & 0x0000FF00) << 8) | ((SPICheckWData & 0x00FF0000) >> 8) | (SPICheckWData >> 24);
 
 	__NOP();
 	return SPICheckWData;

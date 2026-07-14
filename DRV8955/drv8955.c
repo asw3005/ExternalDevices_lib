@@ -11,6 +11,9 @@
 #include "stm32g4xx_hal_tim.h"
 #include <stdint.h>
 
+/* PWM mode enable. */
+//#define PWM_MODE
+
  /* External variables. */
 extern TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef* TIMx_INx_PWM = &htim3;
@@ -38,6 +41,7 @@ void DRV8955_Init(void) {
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
+	#ifndef PWM_MODE
     /*Configure GPIO pin : input pin 4 */
     GPIO_InitStruct.Pin = IN4_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -61,12 +65,13 @@ void DRV8955_Init(void) {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(IN1_GPIO_Port, &GPIO_InitStruct);
     #endif
+	#endif /* PWM_MODE */
 
     /*Configure GPIO pin : COIL_FAULT__Pin */
-    GPIO_InitStruct.Pin = nFAULT_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(nFAULT_GPIO_Port, &GPIO_InitStruct);
+//    GPIO_InitStruct.Pin = nFAULT_PIN;
+//    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+//    GPIO_InitStruct.Pull = GPIO_PULLUP;
+//    HAL_GPIO_Init(nFAULT_GPIO_Port, &GPIO_InitStruct);
 
     /*Configure GPIO pin : COIL_SLEEP__Pin */
     GPIO_InitStruct.Pin = nSLEEP_PIN;

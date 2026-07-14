@@ -108,6 +108,10 @@ float ADS869x_GetRmsVoltage(float scale, uint8_t burst_size) {
 
 		ADCVoltage = scale * (uint32_t)(ADS869x_ReadADC(&(ADS869xGetDataStruct()->ADC0Struct)).DataWord >> 14);
 		RMSVoltage += ADCVoltage*ADCVoltage;
+		for (uint16_t j = 0; j < 750; j++) {
+			/* Cycle > 5uS. */
+			__NOP();
+		}
 	}
 	RMSVoltage = RMSVoltage/burst_size;
 	RMSVoltage = sqrtf(RMSVoltage);
