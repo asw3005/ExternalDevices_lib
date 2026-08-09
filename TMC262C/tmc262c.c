@@ -10,7 +10,7 @@
 #include "spi.h"
 #include "stm32g4xx_hal_spi.h"
 #include <stdint.h>
-
+#include "tim.h"
 //#define HARD_SPI_NSS
 
  /* External variables. */
@@ -45,7 +45,7 @@ static TMC262C_GInst_t tmc262c_inst = {
  * @brief Init control pins.
  *
 **/
-void TMC262C_Init(void) {
+void TMC262C_Init(uint8_t motor_profile) {
 
     GPIO_InitTypeDef GPIO_InitStruct = { 0} ;
 
@@ -56,11 +56,228 @@ void TMC262C_Init(void) {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(TMC262C_CS_GPIO_Port, &GPIO_InitStruct);
 
+    /*Configure GPIO pin : input pin 4 */
+    GPIO_InitStruct.Pin = MCU_DRVSTEP_TIM1_CH3_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(MCU_DRVSTEP_TIM1_CH3_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : input pin 4 */
+    GPIO_InitStruct.Pin = MCU_DRVDIR_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(MCU_DRVDIR_GPIO_Port, &GPIO_InitStruct);
+
     TMC262C_SPI_CS(TMC262C_CS_GPIO_Port, TMC262C_CS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(MCU_DRVDIR_GPIO_Port, MCU_DRVDIR_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(MCU_DRVSTEP_TIM1_CH3_GPIO_Port, MCU_DRVSTEP_TIM1_CH3_Pin, GPIO_PIN_SET);
+
+	TMC262C_SetMotorProfile(motor_profile);
 }
 
 /*
- * @brief Driver control register. 
+ * @brief Driver control register.
+ *
+ * @param motor_profile:
+ *
+**/
+void TMC262C_SetMotorProfile(uint8_t motor_profile) {
+
+	switch (motor_profile) {
+
+		case TMC262C_SMALL_TEST_R75:
+
+			/* Parameter[4] resolution. */
+				TMC262C_DrvCtrl(0,
+									0,
+									0,
+									1, 	// Microstep resolution for STEP/DIR mode.
+									0,
+									0,
+									0,
+									0,
+									0); // READ_BACK
+				/* For Rsense = 50mOhm -> 6 - 1A, 8 - 1.2A, 16 - 2.2A,  22 - 3A, 24 - 3.3A (parameter[4]) */
+				TMC262C_StallGuard(0, 	// Stall guard mode.
+									0, 	// Stall guard parameter sign.
+									19,	// Stall guard threshold.
+									10, // Rsense = 75mOhm, Irms = (24/32) * 3A = 2.25A.  10
+									0); // READ_BACK
+				/* Parameter[1] TBL - sine wave is distorted when it's too low. */
+				/* Parameter[6..8] - The sine wave shape near zero transition will
+				 * show a small ledge between both half waves in case the hysteresis
+				 * setting is too small. */
+				/* 10, 2 SpreadCycle, 4-2 big, 4-6 small */
+				TMC262C_ChopConf(1, 		// TBL
+									0, 		// CHM
+									0, 		// RNDTF
+									0, 0, 	// HDEC10
+									7, 		// HEND FD 7
+									5, 		// HSTRT FD 3
+									2, 		// TOFF FCHOP
+									0);		// READ_BACK
+				/* Classic constant off-time chopper. */
+			//	TMC262C_ChopConf(2, 		// TBL
+			//						1, 		// CHM
+			//						1, 		// RNDTF
+			//						0, 0, 	// HDEC10 (HDEC[0] - FDH[3])
+			//						15, 	// HEND Sine wave offset
+			//						6,		// HSTRT FDL[2..0]
+			//						1,		// TOFF SD
+			//						0);		// READ_BACK
+
+
+				TMC262C_DrvConf(0, 6, 6, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
+				TMC262C_SmartEn(0, 3, 0, 0, 5, 0);
+
+			break;
+
+		case TMC262C_NEMA17_R75:
+
+			/* Parameter[4] resolution. */
+				TMC262C_DrvCtrl(0,
+									0,
+									0,
+									1, 	// Microstep resolution for STEP/DIR mode.
+									0,
+									0,
+									0,
+									0,
+									0); // READ_BACK
+				/* For Rsense = 50mOhm -> 6 - 1A, 8 - 1.2A, 16 - 2.2A,  22 - 3A, 24 - 3.3A (parameter[4]) */
+				TMC262C_StallGuard(0, 	// Stall guard mode.
+									0, 	// Stall guard parameter sign.
+									10,	// Stall guard threshold.
+									24, // Rsense = 75mOhm, Irms = (24/32) * 3A = 2.25A.  10
+									0); // READ_BACK
+				/* Parameter[1] TBL - sine wave is distorted when it's too low. */
+				/* Parameter[6..8] - The sine wave shape near zero transition will
+				 * show a small ledge between both half waves in case the hysteresis
+				 * setting is too small. */
+				/* 10, 2 SpreadCycle, 4-2 big, 4-6 small */
+				TMC262C_ChopConf(1, 		// TBL
+									0, 		// CHM
+									0, 		// RNDTF
+									0, 0, 	// HDEC10
+									4, 		// HEND FD 7 6
+									2, 		// HSTRT FD 3 3
+									2, 		// TOFF FCHOP
+									0);		// READ_BACK
+				/* Classic constant off-time chopper. */
+			//	TMC262C_ChopConf(2, 		// TBL
+			//						1, 		// CHM
+			//						1, 		// RNDTF
+			//						0, 0, 	// HDEC10 (HDEC[0] - FDH[3])
+			//						15, 	// HEND Sine wave offset
+			//						6,		// HSTRT FDL[2..0]
+			//						1,		// TOFF SD
+			//						0);		// READ_BACK
+
+
+				TMC262C_DrvConf(0, 6, 6, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
+				TMC262C_SmartEn(0, 7, 0, 0, 5, 0);
+
+			break;
+
+		case TMC262C_NEMA17_R50:
+
+					/* Parameter[4] resolution. */
+						TMC262C_DrvCtrl(0,
+											0,
+											0,
+											1, 	// Microstep resolution for STEP/DIR mode.
+											0,
+											0,
+											0,
+											0,
+											0); // READ_BACK
+						/* For Rsense = 50mOhm -> 6 - 1A, 8 - 1.2A, 16 - 2.2A,  22 - 3A, 24 - 3.3A (parameter[4]) */
+						TMC262C_StallGuard(0, 	// Stall guard mode.
+											0, 	// Stall guard parameter sign.
+											4,	// Stall guard threshold.
+											16, // Rsense = 50mOhm
+											0); // READ_BACK
+						/* Parameter[1] TBL - sine wave is distorted when it's too low. */
+						/* Parameter[6..8] - The sine wave shape near zero transition will
+						 * show a small ledge between both half waves in case the hysteresis
+						 * setting is too small. */
+						/* 10, 2 SpreadCycle, 4-2 big, 4-6 small */
+						TMC262C_ChopConf(1, 		// TBL
+											0, 		// CHM
+											0, 		// RNDTF
+											0, 0, 	// HDEC10
+											4, 		// HEND FD 7 6
+											2, 		// HSTRT FD 3 3
+											2, 		// TOFF FCHOP
+											0);		// READ_BACK
+						/* Classic constant off-time chopper. */
+					//	TMC262C_ChopConf(2, 		// TBL
+					//						1, 		// CHM
+					//						1, 		// RNDTF
+					//						0, 0, 	// HDEC10 (HDEC[0] - FDH[3])
+					//						15, 	// HEND Sine wave offset
+					//						6,		// HSTRT FDL[2..0]
+					//						1,		// TOFF SD
+					//						0);		// READ_BACK
+
+
+						TMC262C_DrvConf(0, 6, 6, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
+						TMC262C_SmartEn(0, 3, 0, 0, 5, 0);
+
+					break;
+
+
+	default:
+		break;
+
+	}
+}
+
+/*
+ * @brief Set step resolution.
+ *
+ */
+void TMC262C_SetStepRes(uint8_t step_res) {
+
+	static uint8_t StepResSelector = 0;
+	static TMC262C_DrvCtrlRSet_t DrvCtrlRSet = { 0 };
+
+
+	DrvCtrlRSet = TMC262C_DrvCtrl(0, 0, 0, 1, 0, 0, 0, 0, 1); // READ_BACK
+
+	if (step_res == 256) {
+		StepResSelector = 0;
+	} else if (step_res == 128) {
+		StepResSelector = 1;
+	} else if (step_res == 64) {
+		StepResSelector = 2;
+	} else if (step_res == 32) {
+		StepResSelector = 3;
+	} else if (step_res == 16) {
+		StepResSelector = 4;
+	} else if (step_res == 8) {
+		StepResSelector = 5;
+	} else if (step_res == 4) {
+		StepResSelector = 6;
+	} else if (step_res == 2) {
+		StepResSelector = 7;
+	} else if (step_res == 1) {
+		StepResSelector = 8;
+	} else {
+		StepResSelector = DrvCtrlRSet.DrvCtrlSTEPDIR.MRES3_0;
+	}
+
+	DrvCtrlRSet.DrvCtrlSTEPDIR.MRES3_0 = StepResSelector;
+	TMC262C_DrvCtrl(0, 	DrvCtrlRSet.DrvCtrlSTEPDIR.INTPOL,
+						DrvCtrlRSet.DrvCtrlSTEPDIR.DEDGE,
+						DrvCtrlRSet.DrvCtrlSTEPDIR.MRES3_0,
+						0, 0, 0, 0, 1);
+}
+
+/*
+ * @brief Driver control register.
  *
  * @param sdoff_state 		: Select driver control register format.
  * 								0 - STEP/DIR interface is enabled, and DRVCTRL is a configuration register
@@ -437,24 +654,64 @@ TMC262C_ReadBack_t* TMC262C_ReadBack(void) {
 	/* Read all four responce formats. */
 	DrvConf.RDSEL1_0 = 1;
 	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL00.ReadBack_MSB_H, 3);
-	tmc262c_inst.delay(1);
+	//tmc262c_inst.delay(1);
+	for (uint8_t i = 0; i < 250; i++) {
+		__NOP();
+	}
 
 	DrvConf.RDSEL1_0 = 2;
 	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL01.ReadBack_MSB_H, 3);
-	tmc262c_inst.delay(1);
+	//tmc262c_inst.delay(1);
+	for (uint8_t i = 0; i < 250; i++) {
+		__NOP();
+	}
 
 	DrvConf.RDSEL1_0 = 3;
 	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL10.ReadBack_MSB_H, 3);
-	tmc262c_inst.delay(1);
+	//tmc262c_inst.delay(1);
+	for (uint8_t i = 0; i < 250; i++) {
+		__NOP();
+	}
 
 	DrvConf.RDSEL1_0 = 0;
 	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL11.ReadBack_MSB_H, 3);
-	tmc262c_inst.delay(1);
+	//tmc262c_inst.delay(1);
+	for (uint8_t i = 0; i < 250; i++) {
+		__NOP();
+	}
 
 	return &ReadBack;
 }
 
  /* Hardware dependent functions. */
+
+/*
+ * @brief Clock for the STEP interface(micro.step/s).
+ */
+void TMC262C_SetSpeed(uint32_t speed) {
+
+	uint32_t TmpSpeedFD, TmpSpeedSD;
+	TmpSpeedFD = (170000000 / (speed * 4));
+	TmpSpeedSD = TmpSpeedFD >> 16;
+	/* USER CODE BEGIN TIM1_Init 1 */
+	// APB2 clock 170MHz.
+	/* USER CODE END TIM1_Init 1 */
+	htim1.Instance = TIM1;
+	htim1.Init.Prescaler = (uint16_t)TmpSpeedFD;
+	htim1.Init.CounterMode = TIM_COUNTERMODE_DOWN;
+	if (TmpSpeedSD == 0) {
+		htim1.Init.Period = TmpSpeedSD + 1;
+	} else {
+		htim1.Init.Period = ((170000000 / (uint16_t)TmpSpeedFD) / 2) / speed;
+	}
+	htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	htim1.Init.RepetitionCounter = 0;
+	htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+	if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+	{
+	Error_Handler();
+	}
+}
 
  /*
  * @brief Switches off all MOSFETs. Tie low ENN pin for normal operation.

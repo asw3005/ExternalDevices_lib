@@ -51,6 +51,18 @@ typedef enum {
 	
 } TMC262C_REG_MAP_t;
 
+/*
+ * @brief Register map.
+ *
+ **/
+typedef enum {
+
+	TMC262C_SMALL_TEST_R75,
+	TMC262C_NEMA17_R75,
+	TMC262C_NEMA17_R50
+
+} TMC262C_MOTOR_PROFILE_t;
+
  /*
  * @brief Device configuration DRVCTRL type register (SDOFF = 0).
  *
@@ -426,9 +438,11 @@ typedef struct {
 
 
 /* Public function prototypes. */
-void TMC262C_Init(void);
 void TMC262C_EnableCtrl(uint8_t state);
+void TMC262C_Init(uint8_t motor_profile);
 void TMC262C_DirectionCtrl(uint8_t direction);
+void TMC262C_SetMotorProfile(uint8_t motor_profile);
+void TMC262C_SetStepRes(uint8_t step_res);
 
 TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt_sign, uint8_t sgt, uint8_t cs, uint8_t read_back) ;
 TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8_t dedge, uint8_t mres, 
@@ -442,7 +456,7 @@ TMC262C_DrvConf_t TMC262C_DrvConf(uint8_t tst, uint8_t slph, uint8_t slpl, uint8
 									uint8_t tmc262c_shrtsens, uint8_t tmc262c_en_pfd, uint8_t tmc262c_en_s2vs, uint8_t read_back);
 TMC262C_ReadBack_t* TMC262C_ReadBack(void);
 
-
+void TMC262C_SetSpeed(uint32_t speed);
 
 #endif /* TMC262C_H_ */
 
