@@ -75,6 +75,7 @@ void TMC262C_Init(uint8_t motor_profile) {
 	HAL_GPIO_WritePin(MCU_DRVSTEP_TIM1_CH3_GPIO_Port, MCU_DRVSTEP_TIM1_CH3_Pin, GPIO_PIN_SET);
 
 	TMC262C_SetMotorProfile(motor_profile);
+	TMC262C_SetSpeed(25600);
 }
 
 /*
@@ -84,6 +85,11 @@ void TMC262C_Init(uint8_t motor_profile) {
  *
 **/
 void TMC262C_SetMotorProfile(uint8_t motor_profile) {
+
+
+	uint32_t rData = { 0 };
+
+	TMC262C_EnableCtrl(1);
 
 	switch (motor_profile) {
 
@@ -129,7 +135,54 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 			//						0);		// READ_BACK
 
 
-				TMC262C_DrvConf(0, 6, 6, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
+				TMC262C_DrvConf(0, 7, 7, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
+				TMC262C_SmartEn(0, 3, 0, 0, 5, 0);
+
+			break;
+
+		case TMC262C_SMALL_TEST_R50:
+
+			/* Parameter[4] resolution. */
+				TMC262C_DrvCtrl(0,
+									0,
+									0,
+									1, 	// Microstep resolution for STEP/DIR mode.
+									0,
+									0,
+									0,
+									0,
+									0); // READ_BACK
+				/* For Rsense = 50mOhm -> 6 - 1A, 8 - 1.2A, 16 - 2.2A,  22 - 3A, 24 - 3.3A (parameter[4]) */
+				TMC262C_StallGuard(0, 	// Stall guard mode.
+									0, 	// Stall guard parameter sign.
+									19,	// Stall guard threshold.
+									6, 	// Rsense = 50mOhm
+									0); // READ_BACK
+				/* Parameter[1] TBL - sine wave is distorted when it's too low. */
+				/* Parameter[6..8] - The sine wave shape near zero transition will
+				 * show a small ledge between both half waves in case the hysteresis
+				 * setting is too small. */
+				/* 10, 2 SpreadCycle, 4-2 big, 4-6 small */
+				TMC262C_ChopConf(1, 		// TBL
+									0, 		// CHM
+									0, 		// RNDTF
+									0, 0, 	// HDEC10
+									7, 		// HEND FD 7
+									5, 		// HSTRT FD 3
+									2, 		// TOFF FCHOP
+									0);		// READ_BACK
+				/* Classic constant off-time chopper. */
+			//	TMC262C_ChopConf(2, 		// TBL
+			//						1, 		// CHM
+			//						1, 		// RNDTF
+			//						0, 0, 	// HDEC10 (HDEC[0] - FDH[3])
+			//						15, 	// HEND Sine wave offset
+			//						6,		// HSTRT FDL[2..0]
+			//						1,		// TOFF SD
+			//						0);		// READ_BACK
+
+
+				TMC262C_DrvConf(0, 7, 7, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
 				TMC262C_SmartEn(0, 3, 0, 0, 5, 0);
 
 			break;
@@ -176,7 +229,7 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 			//						0);		// READ_BACK
 
 
-				TMC262C_DrvConf(0, 6, 6, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
+				TMC262C_DrvConf(0, 7, 7, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
 				TMC262C_SmartEn(0, 7, 0, 0, 5, 0);
 
 			break;
@@ -193,6 +246,12 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 											0,
 											0,
 											0); // READ_BACK
+
+						rData = 0;
+						((TMC262C_DrvCtrl_SDOFF0_t*)&rData)->MRES3_0 = 1;
+						TMC262C_NDrvCtrl(&rData, 0, 0);
+
+
 						/* For Rsense = 50mOhm -> 6 - 1A, 8 - 1.2A, 16 - 2.2A,  22 - 3A, 24 - 3.3A (parameter[4]) */
 						TMC262C_StallGuard(0, 	// Stall guard mode.
 											0, 	// Stall guard parameter sign.
@@ -223,7 +282,7 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 					//						0);		// READ_BACK
 
 
-						TMC262C_DrvConf(0, 6, 6, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
+						TMC262C_DrvConf(0, 7, 7, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
 						TMC262C_SmartEn(0, 3, 0, 0, 5, 0);
 
 					break;
@@ -244,6 +303,7 @@ void TMC262C_SetStepRes(uint8_t step_res) {
 	static uint8_t StepResSelector = 0;
 	static TMC262C_DrvCtrlRSet_t DrvCtrlRSet = { 0 };
 
+	TMC262C_EnableCtrl(1);
 
 	DrvCtrlRSet = TMC262C_DrvCtrl(0, 0, 0, 1, 0, 0, 0, 0, 1); // READ_BACK
 
@@ -273,7 +333,69 @@ void TMC262C_SetStepRes(uint8_t step_res) {
 	TMC262C_DrvCtrl(0, 	DrvCtrlRSet.DrvCtrlSTEPDIR.INTPOL,
 						DrvCtrlRSet.DrvCtrlSTEPDIR.DEDGE,
 						DrvCtrlRSet.DrvCtrlSTEPDIR.MRES3_0,
-						0, 0, 0, 0, 1);
+						0, 0, 0, 0, 0);
+}
+
+/*
+ * @brief Driver control register.
+ *
+ * @param INTPOL			: Enable STEP interpolation.
+ *								0 - disable STEP pulse interpolation,
+ *								1 - enable MicroPlyer STEP pulse multiplication by 16.
+ * @param DEDGE				: Enable double edge STEP pulses.
+ *								0 - rising STEP pulse edge is active, falling edge is inactive,
+ *								1 - both rising and falling STEP pulse edges are active.
+ * @param MRES3_0			: Microstep resolution for STEP/DIR mode, microsteps per 90 degrees.
+ *								0 - 256, 1 - 128, 2 - 64, 3 - 32,
+ *								4 - 16,	 5 - 8,   6 - 4, 7 - 2 (halfstep),
+ *								8 - 1 (fullstep)
+ * @param PHA			 	: Sign of current flow through coil A.
+ *								0 - current flows from OA1 pins to OA2 pins,
+ *								1 - current flows from OA2 pins to OA1 pins.
+ * @param CA7, CA6_0 		: Magnitude of current flow through coil A. The range is 0 to 248, if hysteresis or offset are used up to their full extent. The
+ *								resulting value after applying hysteresis or offset must not exceed 255.
+ * @param PHB			 	: Sign of current flow through coil B.
+ *								0 - current flows from OB1 pins to OB2 pins,
+ *								1 - current flows from OB2 pins to OB1 pins.
+ * @param CB7_0		 		: Magnitude of current flow through coil B. The range is 0 to 248, if hysteresis or offset are used up to their fullextent. The
+ *								resulting value after applying hysteresis or offset must not exceed 255.
+ * @param sdoff_state 		: Select driver control register format.
+ * 								0 - STEP/DIR interface is enabled, and DRVCTRL is a configuration register
+ *								for the STEP/DIR interface (default).
+ *							  	1 - STEP/DIR interface is disabled, and DRVCTRL is the interface for specifying the
+ * 								currents through each coil.
+ * @param read_back 		: Read current state of register (it is software only register read, hardware registers are read only).
+ *								0 - regular state, write current values to the register,
+ *								1 - read back, it'll not write any values to the register.	
+ *
+**/
+TMC262C_DrvCtrlRSet_t TMC262C_NDrvCtrl(void* p, uint8_t sdoff_state, uint8_t read_back) {
+
+	static TMC262C_DrvCtrlRSet_t DrvCtrlRSet = { 0 };
+
+	if(!read_back) {
+		DrvCtrlRSet.DrvCtrlSPI.REG_ADDR = TMC262C_DRVCTRL;
+
+		if(!sdoff_state) {
+
+			DrvCtrlRSet.DrvCtrlSTEPDIR = *(TMC262C_DrvCtrl_SDOFF0_t*)p;
+			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED17_16 = 0;
+			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED15_10 = 0;
+			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED7_4 = 0;
+			/* Send 3 bytes to the driver. Highest four bits are dummy. */
+			TMC262C_Tx(&DrvCtrlRSet.DrvCtrlSTEPDIR.DrvCtrl_LSB_H, 3);
+
+		} else {
+
+			DrvCtrlRSet.DrvCtrlSPI = *(TMC262C_DrvCtrl_SDOFF1_t*)p;
+			TMC262C_Tx(&DrvCtrlRSet.DrvCtrlSPI.DrvCtrl_LSB_H, 3);
+		}
+
+		/* Check transmit or just wait. */
+		TMC262C_TxCheck();
+	}
+
+	return DrvCtrlRSet;
 }
 
 /*
@@ -297,16 +419,16 @@ void TMC262C_SetStepRes(uint8_t step_res) {
  * @param pha_polarity_a 	: Sign of current flow through coil A.
  *								0 - current flows from OA1 pins to OA2 pins,
  *								1 - current flows from OA2 pins to OA1 pins.
- * @param ca_current_a 		: Magnitude of current flow through coil A. The range is 0 to 248, if hysteresis or offset are used up to their full extent. The 
+ * @param ca_current_a 		: Magnitude of current flow through coil A. The range is 0 to 248, if hysteresis or offset are used up to their full extent. The
  *								resulting value after applying hysteresis or offset must not exceed 255.
  * @param phb_polarity_b 	: Sign of current flow through coil B.
  *								0 - current flows from OB1 pins to OB2 pins,
  *								1 - current flows from OB2 pins to OB1 pins.
- * @param cb_current_b 		: Magnitude of current flow through coil B. The range is 0 to 248, if hysteresis or offset are used up to their fullextent. The 
+ * @param cb_current_b 		: Magnitude of current flow through coil B. The range is 0 to 248, if hysteresis or offset are used up to their fullextent. The
  *								resulting value after applying hysteresis or offset must not exceed 255.
  * @param read_back 		: Read current state of register (it is software only register read, hardware registers are read only).
  *								0 - regular state, write current values to the register,
- *								1 - read back, it'll not write any values to the register.	
+ *								1 - read back, it'll not write any values to the register.
  *
 **/
 TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8_t dedge, uint8_t mres, 
@@ -325,7 +447,7 @@ TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8
 			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED17_16 = 0;
 			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED15_10 = 0;
 			DrvCtrlRSet.DrvCtrlSTEPDIR.RESERVED7_4 = 0;
-			/* Send 3 bytes to the driver. Highest four bit are dummy. */
+			/* Send 3 bytes to the driver. Highest four bits are dummy. */
 			TMC262C_Tx(&DrvCtrlRSet.DrvCtrlSTEPDIR.DrvCtrl_LSB_H, 3);
 
 		} else {
@@ -646,40 +768,49 @@ TMC262C_DrvConf_t TMC262C_DrvConf(uint8_t tst, uint8_t slph, uint8_t slpl, uint8
 TMC262C_ReadBack_t* TMC262C_ReadBack(void) {
 
 	static TMC262C_DrvConf_t DrvConf = { 0 };
-	static TMC262C_ReadBack_t ReadBack = { 0 };
+	//static TMC262C_ReadBack_t ReadBack = { 0 };
 
 	/* Read current value of driver configuration. */
 	DrvConf = TMC262C_DrvConf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
 
 	/* Read all four responce formats. */
 	DrvConf.RDSEL1_0 = 1;
-	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL00.ReadBack_MSB_H, 3);
+	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &TMC262C_GetReadBack()->ReadBackRDSEL00.ReadBack_MSB_H, 3);
 	//tmc262c_inst.delay(1);
 	for (uint8_t i = 0; i < 250; i++) {
 		__NOP();
 	}
 
 	DrvConf.RDSEL1_0 = 2;
-	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL01.ReadBack_MSB_H, 3);
+	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &TMC262C_GetReadBack()->ReadBackRDSEL01.ReadBack_MSB_H, 3);
 	//tmc262c_inst.delay(1);
 	for (uint8_t i = 0; i < 250; i++) {
 		__NOP();
 	}
 
 	DrvConf.RDSEL1_0 = 3;
-	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL10.ReadBack_MSB_H, 3);
+	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &TMC262C_GetReadBack()->ReadBackRDSEL10.ReadBack_MSB_H, 3);
 	//tmc262c_inst.delay(1);
 	for (uint8_t i = 0; i < 250; i++) {
 		__NOP();
 	}
 
 	DrvConf.RDSEL1_0 = 0;
-	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &ReadBack.ReadBackRDSEL11.ReadBack_MSB_H, 3);
+	TMC262C_RxTx(&DrvConf.DrvConf_LSB_H, &TMC262C_GetReadBack()->ReadBackRDSEL11.ReadBack_MSB_H, 3);
 	//tmc262c_inst.delay(1);
 	for (uint8_t i = 0; i < 250; i++) {
 		__NOP();
 	}
 
+	return TMC262C_GetReadBack();
+}
+
+/*
+ * @brief Getter for readback.
+ */
+TMC262C_ReadBack_t* TMC262C_GetReadBack(void) {
+
+	static TMC262C_ReadBack_t ReadBack = { 0 };
 	return &ReadBack;
 }
 

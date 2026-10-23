@@ -7,6 +7,10 @@
 #ifndef TMC262C_H_
 #define TMC262C_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #ifndef NULL
 #define NULL (void*)0
@@ -58,6 +62,7 @@ typedef enum {
 typedef enum {
 
 	TMC262C_SMALL_TEST_R75,
+	TMC262C_SMALL_TEST_R50,
 	TMC262C_NEMA17_R75,
 	TMC262C_NEMA17_R50
 
@@ -457,6 +462,16 @@ TMC262C_DrvConf_t TMC262C_DrvConf(uint8_t tst, uint8_t slph, uint8_t slpl, uint8
 TMC262C_ReadBack_t* TMC262C_ReadBack(void);
 
 void TMC262C_SetSpeed(uint32_t speed);
+
+
+TMC262C_DrvCtrlRSet_t TMC262C_NDrvCtrl(void* p, uint8_t sdoff_state, uint8_t read_back);
+
+/* Getter/setter. */
+TMC262C_ReadBack_t* TMC262C_GetReadBack(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* TMC262C_H_ */
 
