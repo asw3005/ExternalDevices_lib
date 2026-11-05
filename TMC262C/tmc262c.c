@@ -11,6 +11,7 @@
 #include "stm32g4xx_hal_spi.h"
 #include <stdint.h>
 #include "tim.h"
+#include "math.h"
 //#define HARD_SPI_NSS
 
  /* External variables. */
@@ -29,12 +30,12 @@ static void TMC262C_RxTx(uint8_t *pTxData, uint8_t *pRxData, uint8_t size);
 static void TMC262C_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
 
 /* General struct. */
-static TMC262C_GInst_t tmc262c_inst = {
-
-	.delay = HAL_Delay,
-	.spi_rx = TMC262C_Rx,
-	.spi_tx = TMC262C_Tx
-};
+//static TMC262C_GInst_t tmc262c_inst = {
+//
+//	.delay = HAL_Delay,
+//	.spi_rx = TMC262C_Rx,
+//	.spi_tx = TMC262C_Tx
+//};
 
 /*
  * @brief 
@@ -256,7 +257,7 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 						TMC262C_StallGuard(0, 	// Stall guard mode.
 											0, 	// Stall guard parameter sign.
 											4,	// Stall guard threshold.
-											16, // Rsense = 50mOhm
+											24, // Rsense = 50mOhm
 											0); // READ_BACK
 						/* Parameter[1] TBL - sine wave is distorted when it's too low. */
 						/* Parameter[6..8] - The sine wave shape near zero transition will
@@ -283,7 +284,7 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 
 
 						TMC262C_DrvConf(0, 7, 7, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
-						TMC262C_SmartEn(0, 3, 0, 0, 5, 0);
+						TMC262C_SmartEn(0, 3, 0, 0, 13, 0);
 
 					break;
 
@@ -295,7 +296,59 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 }
 
 /*
- * @brief Set step resolution.
+ * @brief Set motor current.
+ *
+ */
+void TMC262C_SetMotorCurrent(float current) {
+
+	uint8_t CurrentScale;
+	static TMC262C_SgcsConf_t StallGuard = { 0 };
+
+	const float IOFFSET 	= 0.0f;
+	const float Scale 		= VSENSE0 / RSENSE;
+	const float IMultConst 	= 0.70710678118654752440084436210485f;
+
+	if (current > 4.4f) { return; }
+
+	CurrentScale = (uint8_t)( roundf(( (current * 32) / (Scale * IMultConst) ) - 1 + IOFFSET) );
+
+	TMC262C_EnableCtrl(1);
+	StallGuard = TMC262C_StallGuard(0, 0, 0, 0, 1); // READ_BACK
+	StallGuard.CS4_0 = CurrentScale;
+
+	/* StallGuard.SGT6_0 = (sgt_sign << 6) | sgt; */
+	TMC262C_StallGuard( StallGuard.SFILT,
+						((StallGuard.SGT6_0 >> 6) & 0x01),
+						(StallGuard.SGT6_0 & 0x3F),
+						StallGuard.CS4_0,
+						0); // READ_BACK
+}
+
+/*
+ * @brief Set stall guard value.
+ *
+ */
+void TMC262C_SetSgThr(int8_t stall_guard) {
+
+	uint8_t Sign = 0;
+	static TMC262C_SgcsConf_t StallGuard = { 0 };
+
+	if ( (stall_guard < -64) || (stall_guard > 63) ) { return; }
+	if (stall_guard < 0) { Sign = 1; }
+
+	TMC262C_EnableCtrl(1);
+	StallGuard = TMC262C_StallGuard(0, 0, 0, 0, 1); // READ_BACK
+
+	/* StallGuard.SGT6_0 = (sgt_sign << 6) | sgt; */
+	TMC262C_StallGuard( StallGuard.SFILT,
+						Sign,
+						(stall_guard & 0x3F),
+						StallGuard.CS4_0,
+						0); // READ_BACK
+}
+
+/*
+ * @brief Set step resolution (for only step/dir configuration).
  *
  */
 void TMC262C_SetStepRes(uint8_t step_res) {

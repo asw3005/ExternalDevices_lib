@@ -36,6 +36,10 @@ extern "C" {
 #define TMC262C_MOSI_Pin 		GPIO_PIN_12
 #define TMC262C_MOSI_GPIO_Port	GPIOC
 
+#define VSENSE0					325.0f 	// mV
+#define VSENSE1					173.0f 	// mV
+#define RSENSE					50.0f 	// mOhm
+
 /*
  * @brief 
  *
@@ -380,7 +384,7 @@ typedef enum {
 		uint8_t RDSEL11_ENN_IN		: 1;
 		uint8_t RDSEL11_UV_7V		: 1;
 
-		uint8_t RDSEL11_SHORTB_S2GB	: 1;
+		uint8_t RDSEL11_SHORTB		: 1;
 		uint8_t RDSEL11_OLA			: 1;
 		uint8_t RDSEL11_OLB			: 1;
 		uint8_t RDSEL11_STST		: 1;
@@ -393,7 +397,7 @@ typedef enum {
 		uint8_t RDSEL11_SG			: 1;
 		uint8_t RDSEL11_OT			: 1;
 		uint8_t RDSEL11_OTPW		: 1;
-		uint8_t RDSEL11_SHORTA_S2GA	: 1;
+		uint8_t RDSEL11_SHORTA		: 1;
 	};
 
  } TMC262C_ReadBackRDSEL11_t;
@@ -415,6 +419,8 @@ typedef struct DrvCtrl_t {
  **/
  typedef struct {
 
+	uint8_t EnState;
+	uint8_t IRQStallDetect;
 	TMC262C_ReadBackRDSEL00_t ReadBackRDSEL00;
 	TMC262C_ReadBackRDSEL01_t ReadBackRDSEL01;
 	TMC262C_ReadBackRDSEL10_t ReadBackRDSEL10;
@@ -448,6 +454,8 @@ void TMC262C_Init(uint8_t motor_profile);
 void TMC262C_DirectionCtrl(uint8_t direction);
 void TMC262C_SetMotorProfile(uint8_t motor_profile);
 void TMC262C_SetStepRes(uint8_t step_res);
+void TMC262C_SetSgThr(int8_t stall_guard);
+void TMC262C_SetMotorCurrent(float current);
 
 TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt_sign, uint8_t sgt, uint8_t cs, uint8_t read_back) ;
 TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8_t dedge, uint8_t mres, 
