@@ -57,30 +57,46 @@ typedef void(*brt38_delay_fptr)(uint32_t delay);
  } BRT38_Data_t;
 
  /*
-  * @brief Encoder data struct typedef.
+  * @brief Static parameters struct typedef.
   */
  typedef struct __attribute__((aligned(1), packed)) {
 
-	/* Static data. */
 	const uint8_t FactoryTurns;
 	const uint16_t FactoryResolution;
+	uint32_t LimMin;
+	uint32_t LimMax;
+	uint32_t KeepAliveDelta;
+	/* 0 - zero home, 1 - middle home. */
+	uint8_t HomePos;
+
+ } ENC_S_Param_t;
+
+ /*
+  * @brief Dynamic parameters struct typedef.
+  */
+ typedef struct __attribute__((aligned(1), packed)) {
 
 	/* Dynamic data. */
 	uint16_t Single;
 	uint16_t Turns;
 	uint32_t AbsPosition;
-	uint32_t LimMin;
-	uint32_t LimMax;
 	uint32_t FullDistance;
-	uint32_t KeepAliveDelta;
 	uint32_t DeltaPos;
 	uint32_t PreviousPos;
 	uint32_t ForwardPos;
 	uint32_t BackwardPos;
 
-	/* 0 - zero home, 1 - middle home. */
-	uint8_t HomePos;
+ } ENC_D_Param_t;
 
+ /*
+  * @brief Encoder data struct typedef.
+  */
+ typedef struct __attribute__((aligned(1), packed)) {
+
+	/* Static data. */
+	ENC_S_Param_t S_Param;
+	/* Dynamic data. */
+	ENC_D_Param_t D_Param;
 	/* Read back. */
 	BRT38_Data_t EncReadBack;
 
@@ -99,8 +115,10 @@ typedef void(*brt38_delay_fptr)(uint32_t delay);
 /* Public function prototypes. */
 void BRT38_SetSero(void);
 void BRT38_SetMiddle(void);
-ENCInst_t* EncoderGetInst(void);
 void BRT38_ReadPosition(ENCData_t* enc_inst);
+
+ENCInst_t* ENC_GetInst(void);
+void ENC_CalcFullDistance(ENCData_t* enc_inst);
 
 #ifdef __cplusplus
 }

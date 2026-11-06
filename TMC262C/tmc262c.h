@@ -417,16 +417,50 @@ typedef struct DrvCtrl_t {
  * @brief Readback register's set.
  *
  **/
- typedef struct {
+typedef struct {
 
-	uint8_t EnState;
-	uint8_t IRQStallDetect;
-	TMC262C_ReadBackRDSEL00_t ReadBackRDSEL00;
-	TMC262C_ReadBackRDSEL01_t ReadBackRDSEL01;
-	TMC262C_ReadBackRDSEL10_t ReadBackRDSEL10;
-	TMC262C_ReadBackRDSEL11_t ReadBackRDSEL11;
+uint8_t IRQStallDetect;
+TMC262C_ReadBackRDSEL00_t ReadBackRDSEL00;
+TMC262C_ReadBackRDSEL01_t ReadBackRDSEL01;
+TMC262C_ReadBackRDSEL10_t ReadBackRDSEL10;
+TMC262C_ReadBackRDSEL11_t ReadBackRDSEL11;
 
- } TMC262C_ReadBack_t;
+} TMC262C_ReadBack_t;
+
+/*
+* @brief Dynamic parameters.
+*
+**/
+typedef struct __attribute__((aligned(1), packed)) {
+
+uint8_t EnState;
+
+} TMC262C_Dparam_t;
+
+/*
+* @brief Static parameters set.
+*
+**/
+typedef struct __attribute__((aligned(1), packed)) {
+
+int8_t StallGuardThr;
+uint8_t StepResolution;
+uint16_t MotorCurrentRMS;
+
+} TMC262C_Sparam_t;
+
+/*
+* @brief Parameters' set.
+*
+**/
+typedef struct __attribute__((aligned(1), packed)) {
+
+/* Dynamic parameters. */
+TMC262C_Dparam_t D_Param;
+/* Static parameters. */
+TMC262C_Sparam_t S_Param;
+
+} TMC262C_Cfg_t;
 
 /*
  * @brief Data exchange function typedefs.
@@ -455,7 +489,7 @@ void TMC262C_DirectionCtrl(uint8_t direction);
 void TMC262C_SetMotorProfile(uint8_t motor_profile);
 void TMC262C_SetStepRes(uint8_t step_res);
 void TMC262C_SetSgThr(int8_t stall_guard);
-void TMC262C_SetMotorCurrent(float current);
+void TMC262C_SetMotorCurrent(uint16_t current);
 
 TMC262C_SgcsConf_t TMC262C_StallGuard(uint8_t sfilt, uint8_t sgt_sign, uint8_t sgt, uint8_t cs, uint8_t read_back) ;
 TMC262C_DrvCtrlRSet_t TMC262C_DrvCtrl(uint8_t sdoff_state, uint8_t intpol, uint8_t dedge, uint8_t mres, 
@@ -475,6 +509,7 @@ void TMC262C_SetSpeed(uint32_t speed);
 TMC262C_DrvCtrlRSet_t TMC262C_NDrvCtrl(void* p, uint8_t sdoff_state, uint8_t read_back);
 
 /* Getter/setter. */
+TMC262C_Cfg_t* TMC262C_DriverParam(void);
 TMC262C_ReadBack_t* TMC262C_GetReadBack(void);
 
 #ifdef __cplusplus

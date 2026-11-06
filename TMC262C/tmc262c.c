@@ -296,10 +296,10 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 }
 
 /*
- * @brief Set motor current.
+ * @brief Set motor current, mA.
  *
  */
-void TMC262C_SetMotorCurrent(float current) {
+void TMC262C_SetMotorCurrent(uint16_t current) {
 
 	uint8_t CurrentScale;
 	static TMC262C_SgcsConf_t StallGuard = { 0 };
@@ -308,9 +308,9 @@ void TMC262C_SetMotorCurrent(float current) {
 	const float Scale 		= VSENSE0 / RSENSE;
 	const float IMultConst 	= 0.70710678118654752440084436210485f;
 
-	if (current > 4.4f) { return; }
+	if (current > 4400) { return; }
 
-	CurrentScale = (uint8_t)( roundf(( (current * 32) / (Scale * IMultConst) ) - 1 + IOFFSET) );
+	CurrentScale = (uint8_t)( roundf(( ( ((float)current / 1000) * 32.0f ) / (Scale * IMultConst) ) - 1 + IOFFSET) );
 
 	TMC262C_EnableCtrl(1);
 	StallGuard = TMC262C_StallGuard(0, 0, 0, 0, 1); // READ_BACK
@@ -865,6 +865,16 @@ TMC262C_ReadBack_t* TMC262C_GetReadBack(void) {
 
 	static TMC262C_ReadBack_t ReadBack = { 0 };
 	return &ReadBack;
+}
+
+
+/*
+ * @brief Getter/setter for parameters.
+ */
+TMC262C_Cfg_t* TMC262C_DriverParam(void) {
+
+	static TMC262C_Cfg_t DriverParam = { 0 };
+	return &DriverParam;
 }
 
  /* Hardware dependent functions. */

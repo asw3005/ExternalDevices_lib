@@ -26,6 +26,9 @@ static void BRT38_Rx(uint8_t *pData, uint8_t size);
  * @brief 
  *
 **/
+void ENC_CalcFullDistance(ENCData_t* enc_inst) {
+	enc_inst->D_Param.FullDistance = enc_inst->S_Param.LimMax - enc_inst->S_Param.LimMin;
+}
 
 /*
  * @brief Read encoder data (non blocking IT mode).
@@ -38,27 +41,27 @@ void BRT38_ReadPosition(ENCData_t* enc_inst) {
     BRT38_Rx((uint8_t *)&enc_inst->EncReadBack.Data, sizeof(enc_inst->EncReadBack.Data));
     BRT38_Rx((uint8_t *)&enc_inst->EncReadBack.Data, sizeof(enc_inst->EncReadBack.Data));
 
-    enc_inst->Single = ((uint16_t)enc_inst->EncReadBack.SINGLE11_8 << 8) | (uint16_t)enc_inst->EncReadBack.SINGLE7_0;
-    enc_inst->Turns = enc_inst->EncReadBack.TURNS;
-    enc_inst->AbsPosition = enc_inst->Single + ( enc_inst->FactoryResolution * enc_inst->Turns );
-    enc_inst->KeepAliveDelta = enc_inst->AbsPosition - enc_inst->PreviousPos;
-    enc_inst->PreviousPos = enc_inst->AbsPosition;
-    enc_inst->FullDistance = enc_inst->LimMax - enc_inst->LimMin;
+    enc_inst->D_Param.Single = ((uint16_t)enc_inst->EncReadBack.SINGLE11_8 << 8) | (uint16_t)enc_inst->EncReadBack.SINGLE7_0;
+    enc_inst->D_Param.Turns = enc_inst->EncReadBack.TURNS;
+    enc_inst->D_Param.AbsPosition = enc_inst->D_Param.Single + ( enc_inst->S_Param.FactoryResolution * enc_inst->D_Param.Turns );
+    enc_inst->D_Param.DeltaPos = enc_inst->D_Param.AbsPosition - enc_inst->D_Param.PreviousPos;
+    enc_inst->D_Param.PreviousPos = enc_inst->D_Param.AbsPosition;
+    enc_inst->D_Param.FullDistance = enc_inst->S_Param.LimMax - enc_inst->S_Param.LimMin;
 }
 
 /*
  * @brief Encoder data setter/getter.
  */
-ENCInst_t* EncoderGetInst(void) {
+ENCInst_t* ENC_GetInst(void) {
 
 	static ENCInst_t EncInst = {
-		.EncInst0.FactoryTurns 		= 16,
-		.EncInst0.FactoryResolution	= 4096,
-		.EncInst0.LimMin			= 500,
-		.EncInst0.LimMax 			= 65000,
-		.EncInst0.HomePos			= 1,
-		.EncInst0.KeepAliveDelta	= 10,
-		.EncInst0.PreviousPos		= 0
+		.EncInst0.S_Param.FactoryTurns 		= 16,
+		.EncInst0.S_Param.FactoryResolution	= 4096,
+		.EncInst0.S_Param.LimMin			= 500,
+		.EncInst0.S_Param.LimMax 			= 65000,
+		.EncInst0.S_Param.HomePos			= 1,
+		.EncInst0.S_Param.KeepAliveDelta	= 10,
+		.EncInst0.D_Param.PreviousPos		= 0
 	};
 	return &EncInst;
 }

@@ -14,16 +14,14 @@
 /* PWM mode enable. */
 //#define PWM_MODE
 
- /* External variables. */
-extern TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef* TIMx_INx_PWM = &htim3;
-
+/* External variables. */
 /* Private variables. */
 
 
 /* Private function prototypes. */
+static DRV8955_DefaultParam_t* DRV8955_RW_DefaultParam(void);
 static void DRV8955_PinCtrl(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
-static void DRV8955_PWMCtrl(TIM_HandleTypeDef* timer, uint32_t channel, uint8_t state);
+static void DRV8955_PWMCtrl(uint32_t channel, uint8_t state);
 
 /* General struct. */
 
@@ -37,7 +35,7 @@ static void DRV8955_PWMCtrl(TIM_HandleTypeDef* timer, uint32_t channel, uint8_t 
  * @brief Init control pins.
  *
 **/
-void DRV8955_Init(void) {
+void DRV8955_Init(TIM_HandleTypeDef* timer, uint32_t ch1, uint32_t ch2) {
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -80,6 +78,9 @@ void DRV8955_Init(void) {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(nSLEEP_GPIO_Port, &GPIO_InitStruct);
 
+    DRV8955_RW_DefaultParam()->Tim = timer;
+    DRV8955_RW_DefaultParam()->Channel_1 = ch1;
+    DRV8955_RW_DefaultParam()->Channel_2 = ch2;
 }
 
 /*
@@ -181,7 +182,16 @@ void DRV8955_IN3Ctrl(uint8_t state) {
 void DRV8955_IN2PWMCtrl(uint8_t state) {
 
 	//HAL_TIM_PWM_Start(TIM3_INx_PWM, TIM_CHANNEL_2);
-    DRV8955_PWMCtrl(TIMx_INx_PWM, TIM_CHANNEL_2, state);
+    DRV8955_PWMCtrl(DRV8955_RW_DefaultParam()->Channel_1, state);
+}
+
+/*
+ * @brief Default parameters read/write.
+ */
+static DRV8955_DefaultParam_t* DRV8955_RW_DefaultParam(void) {
+
+	static DRV8955_DefaultParam_t DrvParam;
+	return &DrvParam;
 }
 
  /* Hardware dependent functions. */
@@ -208,12 +218,12 @@ static void DRV8955_PinCtrl(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state
  *                  1 - start PWM.
  *
  **/
-static void DRV8955_PWMCtrl(TIM_HandleTypeDef* timer, uint32_t channel, uint8_t state) {
+static void DRV8955_PWMCtrl(uint32_t channel, uint8_t state) {
 
     if(state > 0) {
-	    HAL_TIM_PWM_Start(timer, channel);
+	    HAL_TIM_PWM_Start(DRV8955_RW_DefaultParam()->Tim, channel);
     } else {
-        HAL_TIM_PWM_Stop(timer, channel);
+        HAL_TIM_PWM_Stop(DRV8955_RW_DefaultParam()->Tim, channel);
     }
 }
 

@@ -7,19 +7,24 @@
 #ifndef DRV8955_H_
 #define DRV8955_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef NULL
 #define NULL (void*)0
 #endif /* NULL */
 
 
 #include "stm32g431xx.h"
+#include "stm32g4xx_hal.h"
 
 /* Method control select. */
 
 /* Input control select. */
 
 /* Comment this string to use ONE SOLID OUTPUT mode. */
-//#define ONE_OUT_CTRL
+#define ONE_OUT_CTRL
 #ifndef ONE_OUT_CTRL
 /* Comment this string to use TWO SEPARATE OUTPUTS mode. */
 #define TWO_OUT_CTRL
@@ -64,6 +69,8 @@ typedef enum {
 } DRV8955_SLEEPMODE_t;
 
 
+
+
 /*
  * @brief Data exchange function typedefs.
  *
@@ -76,12 +83,18 @@ typedef void(*delay_fptr)(uint32_t delay);
  **/
 typedef struct {
 
+	uint32_t Channel_1;
+	uint32_t Channel_2;
+	TIM_HandleTypeDef* Tim;
 
-} DRV8955_GInst_t;
+} DRV8955_DefaultParam_t;
 
 
 /* Public function prototypes. */
-void DRV8955_Init(void);
+
+/* Device parameter struct RW. */
+
+void DRV8955_Init(TIM_HandleTypeDef* timer, uint32_t ch1, uint32_t ch2);
 void DRV8955_IN1Ctrl(uint8_t state);
 void DRV8955_IN2Ctrl(uint8_t state);
 void DRV8955_IN3Ctrl(uint8_t state);
@@ -89,6 +102,10 @@ void DRV8955_IN4Ctrl(uint8_t state);
 void DRV8955_SleepCtrl(uint8_t state);
 
 void DRV8955_IN2PWMCtrl(uint8_t state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DRV8955_H_ */
 
