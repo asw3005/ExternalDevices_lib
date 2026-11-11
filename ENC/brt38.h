@@ -68,6 +68,7 @@ typedef void(*brt38_delay_fptr)(uint32_t delay);
 	uint32_t KeepAliveDelta;
 	/* 0 - zero home, 1 - middle home. */
 	uint8_t HomePos;
+	uint32_t CRC32;
 
  } ENC_S_Param_t;
 

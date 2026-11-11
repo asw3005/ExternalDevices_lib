@@ -78,21 +78,55 @@ typedef enum {
 typedef void(*delay_fptr)(uint32_t delay);
 
 /*
- * @brief General data instance struct.
- *
- **/
-typedef struct {
+* @brief Dynamic parameters.
+*
+**/
+typedef struct __attribute__((aligned(1), packed)) {
 
+	uint8_t State_Ch1;
+	uint8_t State_Ch2;
 	uint32_t Channel_1;
 	uint32_t Channel_2;
 	TIM_HandleTypeDef* Tim;
 
-} DRV8955_DefaultParam_t;
+} DRV8955_Dparam_t;
+
+/*
+* @brief Static parameters set.
+*
+**/
+typedef struct __attribute__((aligned(1), packed)) {
+
+	uint8_t ProfileIsActive_Ch1;
+	uint8_t ProfileIsActive_Ch2;
+	uint8_t Profile_Ch1;
+	uint8_t Profile_Ch2;
+	uint16_t ILoad_Ch1;
+	uint16_t ILoad_Ch2;
+	uint16_t PwmLevel_Ch1;
+	uint16_t PwmLevel_Ch2;
+	uint32_t CRC32;
+
+} DRV8955_Sparam_t;
+
+/*
+* @brief Parameters' set.
+*
+**/
+typedef struct __attribute__((aligned(1), packed)) {
+
+	/* Dynamic parameters. */
+	DRV8955_Dparam_t D_Param;
+	/* Static parameters. */
+	DRV8955_Sparam_t S_Param;
+
+} DRV8955_Cfg_t;
 
 
 /* Public function prototypes. */
 
 /* Device parameter struct RW. */
+DRV8955_Cfg_t* DRV8955_Param(void);
 
 void DRV8955_Init(TIM_HandleTypeDef* timer, uint32_t ch1, uint32_t ch2);
 void DRV8955_IN1Ctrl(uint8_t state);
@@ -102,7 +136,6 @@ void DRV8955_IN4Ctrl(uint8_t state);
 void DRV8955_SleepCtrl(uint8_t state);
 
 void DRV8955_IN2PWMCtrl(uint8_t state);
-
 #ifdef __cplusplus
 }
 #endif

@@ -27,20 +27,13 @@ private:
 
 public:
 
-	enum class ELD_CURRENT_PROFILE_t {
+	enum class ECL_LOAD_CURRENT_t {
 
-		ILOAD_1CH_150mA = 1,
-		ILOAD_1CH_500mA,
-		ILOAD_1CH_600mA,
-		ILOAD_1CH_RSVD4,
-		ILOAD_1CH_RSVD5,
-
-		ILOAD_2CH_150mA,
-		ILOAD_2CH_300mA,
-		ILOAD_2CH_600mA,
-		ILOAD_2CH_720mA,
-		ILOAD_1CH_RSVD10
-
+		ILOAD_150mA = 150,
+		ILOAD_420mA = 420,
+		ILOAD_500mA = 500,
+		ILOAD_600mA = 600,
+		ILOAD_MAX 	= 600
 	};
 
 	enum class ELD_DAC_OUT_VOLTAGE_t {
@@ -52,6 +45,7 @@ public:
 
 		DACV_1CH_600mA 	= 1704,
 		DACV_1CH_500mA 	= 1420,
+		DACV_1CH_420mA	= 1120,
 		DACV_1CH_150mA 	= 431,
 
 		DACV_1CH_MAX 	= 1704
@@ -87,8 +81,8 @@ public:
 	void ELD_SetCurrent(uint32_t load_current);
 	void ELD_SetCurrent(ELD_OUTPUT_SELECT_t channel, uint32_t load_current);
 
-	void ELD_SetCurrentProfile(ELD_CURRENT_PROFILE_t i_profile);
-	void ELD_SetCurrentProfile(ELD_OUTPUT_SELECT_t channel, ELD_CURRENT_PROFILE_t i_profile);
+	void ELD_SetCurrentProfile(ECL_LOAD_CURRENT_t i_profile);
+	void ELD_SetCurrentProfile(ELD_OUTPUT_SELECT_t channel, ECL_LOAD_CURRENT_t i_profile);
 
 	void ELD_SleepCtrl(ELD_SLEEP_CONTROL_t state);
 	void ELD_OutCtrl(ELD_OUTPUT_SELECT_t output, ELD_OUTPUT_STATE_t out_state);

@@ -16,8 +16,7 @@ ExtLoadDriver::ExtLoadDriver(TIM_HandleTypeDef* tim, uint32_t tim_ch, DAC_Handle
 		dac_ch1(dac_ch),
 		opamp(opamp)
 
-{
-}
+{}
 
 ExtLoadDriver::ExtLoadDriver(TIM_HandleTypeDef* tim, uint32_t tim_ch1, uint32_t tim_ch2, DAC_HandleTypeDef* dac, uint32_t dac_ch1, uint32_t dac_ch2, OPAMP_HandleTypeDef* opamp) :
 		tim(tim),
@@ -35,8 +34,8 @@ ExtLoadDriver::ExtLoadDriver(TIM_HandleTypeDef* tim, uint32_t tim_ch1, uint32_t 
  */
 void ExtLoadDriver::ELD_InitOneChannel(void) {
 
-	DRV8955_Init(this->tim, this->tim_ch1, this->dac_ch1);
-	ExtLoadDriver::ELD_SetCurrentProfile(ELD_CURRENT_PROFILE_t::ILOAD_1CH_600mA);
+	DRV8955_Init(this->tim, this->tim_ch1, this->tim_ch1);
+	ExtLoadDriver::ELD_SetCurrentProfile(ECL_LOAD_CURRENT_t::ILOAD_420mA);
 	HAL_DAC_Start(this->dac, this->dac_ch1);
 	HAL_OPAMP_Start(this->opamp);
 	ExtLoadDriver::ELD_OutCtrl(ELD_OUTPUT_SELECT_t::OUT34, ELD_OUTPUT_STATE_t::LOAD_OFF);
@@ -49,7 +48,7 @@ void ExtLoadDriver::ELD_InitOneChannel(void) {
 void ExtLoadDriver::ELD_InitTwoChannels(void) {
 
 	DRV8955_Init(this->tim, this->tim_ch1, this->tim_ch2);
-	ExtLoadDriver::ELD_SetCurrentProfile(ELD_CURRENT_PROFILE_t::ILOAD_2CH_600mA);
+	ExtLoadDriver::ELD_SetCurrentProfile(ECL_LOAD_CURRENT_t::ILOAD_420mA);
 	HAL_DAC_Start(this->dac, this->dac_ch1);
 	HAL_DAC_Start(this->dac, this->dac_ch2);
 	HAL_OPAMP_Start(this->opamp);
@@ -61,24 +60,28 @@ void ExtLoadDriver::ELD_InitTwoChannels(void) {
 /*
  * @brief Set RAW value.
  */
-void ExtLoadDriver::ELD_SetCurrentProfile(ELD_CURRENT_PROFILE_t i_profile) {
+void ExtLoadDriver::ELD_SetCurrentProfile(ECL_LOAD_CURRENT_t i_profile) {
 
 	switch(i_profile) {
 
-	case ELD_CURRENT_PROFILE_t::ILOAD_1CH_150mA:
+	case ECL_LOAD_CURRENT_t::ILOAD_150mA:
 		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_150mA;
 		break;
 
-	case ELD_CURRENT_PROFILE_t::ILOAD_1CH_500mA:
+	case ECL_LOAD_CURRENT_t::ILOAD_420mA:
+		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_420mA;
+		break;
+
+	case ECL_LOAD_CURRENT_t::ILOAD_500mA:
 		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_500mA;
 		break;
 
-	case ELD_CURRENT_PROFILE_t::ILOAD_1CH_600mA:
+	case ECL_LOAD_CURRENT_t::ILOAD_600mA:
 		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_600mA;
 		break;
 
 	default:
-		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_150mA;
+		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_420mA;
 		break;
 
 	}
@@ -88,24 +91,28 @@ void ExtLoadDriver::ELD_SetCurrentProfile(ELD_CURRENT_PROFILE_t i_profile) {
 /*
  * @brief Set RAW value.
  */
-void ExtLoadDriver::ELD_SetCurrentProfile(ELD_OUTPUT_SELECT_t channel, ELD_CURRENT_PROFILE_t i_profile) {
+void ExtLoadDriver::ELD_SetCurrentProfile(ELD_OUTPUT_SELECT_t channel, ECL_LOAD_CURRENT_t i_profile) {
 
 	switch(i_profile) {
 
-	case ELD_CURRENT_PROFILE_t::ILOAD_1CH_150mA:
+	case ECL_LOAD_CURRENT_t::ILOAD_150mA:
 		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_150mA;
 		break;
 
-	case ELD_CURRENT_PROFILE_t::ILOAD_1CH_500mA:
+	case ECL_LOAD_CURRENT_t::ILOAD_420mA:
+		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_420mA;
+		break;
+
+	case ECL_LOAD_CURRENT_t::ILOAD_500mA:
 		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_500mA;
 		break;
 
-	case ELD_CURRENT_PROFILE_t::ILOAD_1CH_600mA:
+	case ECL_LOAD_CURRENT_t::ILOAD_600mA:
 		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_600mA;
 		break;
 
 	default:
-		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_150mA;
+		DacVoltage = ELD_DAC_OUT_VOLTAGE_t::DACV_1CH_420mA;
 		break;
 
 	}

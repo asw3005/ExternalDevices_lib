@@ -408,10 +408,10 @@ typedef enum {
  **/
 typedef struct DrvCtrl_t {
 
-		TMC262C_DrvCtrl_SDOFF1_t DrvCtrlSPI;
-		TMC262C_DrvCtrl_SDOFF0_t DrvCtrlSTEPDIR;
+	TMC262C_DrvCtrl_SDOFF1_t DrvCtrlSPI;
+	TMC262C_DrvCtrl_SDOFF0_t DrvCtrlSTEPDIR;
 
-	} TMC262C_DrvCtrlRSet_t;
+} TMC262C_DrvCtrlRSet_t;
 
 /*
  * @brief Readback register's set.
@@ -419,11 +419,11 @@ typedef struct DrvCtrl_t {
  **/
 typedef struct {
 
-uint8_t IRQStallDetect;
-TMC262C_ReadBackRDSEL00_t ReadBackRDSEL00;
-TMC262C_ReadBackRDSEL01_t ReadBackRDSEL01;
-TMC262C_ReadBackRDSEL10_t ReadBackRDSEL10;
-TMC262C_ReadBackRDSEL11_t ReadBackRDSEL11;
+	uint8_t IRQStallDetect;
+	TMC262C_ReadBackRDSEL00_t ReadBackRDSEL00;
+	TMC262C_ReadBackRDSEL01_t ReadBackRDSEL01;
+	TMC262C_ReadBackRDSEL10_t ReadBackRDSEL10;
+	TMC262C_ReadBackRDSEL11_t ReadBackRDSEL11;
 
 } TMC262C_ReadBack_t;
 
@@ -433,7 +433,7 @@ TMC262C_ReadBackRDSEL11_t ReadBackRDSEL11;
 **/
 typedef struct __attribute__((aligned(1), packed)) {
 
-uint8_t EnState;
+	uint8_t EnState;
 
 } TMC262C_Dparam_t;
 
@@ -443,9 +443,10 @@ uint8_t EnState;
 **/
 typedef struct __attribute__((aligned(1), packed)) {
 
-int8_t StallGuardThr;
-uint8_t StepResolution;
-uint16_t MotorCurrentRMS;
+	int8_t StallGuardThr;
+	uint8_t StepResolution;
+	uint16_t MotorCurrentRMS;
+	uint32_t CRC32;
 
 } TMC262C_Sparam_t;
 
@@ -455,10 +456,10 @@ uint16_t MotorCurrentRMS;
 **/
 typedef struct __attribute__((aligned(1), packed)) {
 
-/* Dynamic parameters. */
-TMC262C_Dparam_t D_Param;
-/* Static parameters. */
-TMC262C_Sparam_t S_Param;
+	/* Dynamic parameters. */
+	TMC262C_Dparam_t D_Param;
+	/* Static parameters. */
+	TMC262C_Sparam_t S_Param;
 
 } TMC262C_Cfg_t;
 
@@ -515,6 +516,7 @@ TMC262C_ReadBack_t* TMC262C_GetReadBack(void);
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif /* TMC262C_H_ */
 
