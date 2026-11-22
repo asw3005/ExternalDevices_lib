@@ -20,6 +20,13 @@ static void ADS869x_SPI_TxCheck(void);
 static void ADS869x_SPI_RxCheck(void);
 static void ADS869x_SPI_TxRxCheck(void);
 
+static ADC_Cfg_t Param;
+static ADS869x_MGInst_t ads869x_inst = {
+
+	.ADC0Struct.delay = HAL_Delay,
+	.ADC0Struct.spi_tx = ADS869x_SPI_Tx,
+	.ADC0Struct.spi_rx = ADS869x_SPI_Rx
+};
 
 /*
  * @brief ADC init function.
@@ -28,17 +35,17 @@ static void ADS869x_SPI_TxRxCheck(void);
 void ADS869x_Init(void) {
 
 	/* Set SPI configuration and GPIO function of SDO1 pin. */
-	//ADS869x_SdoCtrl(ADS869xGetDataStruct(), 0, 0, ADS869x_SDO1_GPO);	
+	//ADS869x_SdoCtrl(ADS869xGetInst(), 0, 0, ADS869x_SDO1_GPO);
 	/* Enable LED on the ADC's pin. */
-	//ADS869x_SdoPinSetReset(ADS869xGetDataStruct(), 1);	
+	//ADS869x_SdoPinSetReset(ADS869xGetInst(), 1);
 	/* Enable ADC's test data sequence. */
-	ADS869xGetDataStruct()->ADC0Struct.isTxReady = 0;
-	ADS869x_DataOutCtrl(&(ADS869xGetDataStruct()->ADC0Struct), ADS869x_CONVDATA, 0, 0, ADS869x_ACTIVE_IN_DO_NOT_INCL, ADS869x_ACTIVE_VDD_DO_NOT_INCL, 0);
+	ads869x_inst.ADC0Struct.isTxReady = 0;
+	ADS869x_DataOutCtrl(&(ads869x_inst.ADC0Struct), ADS869x_CONVDATA, 0, 0, ADS869x_ACTIVE_IN_DO_NOT_INCL, ADS869x_ACTIVE_VDD_DO_NOT_INCL, 0);
 	ADS869x_SPI_TxCheck();
 
 	/* Selecting ADC input range. */
-	ADS869xGetDataStruct()->ADC0Struct.isTxReady = 0;
-	ADS869x_RangeSel(&(ADS869xGetDataStruct()->ADC0Struct), ADS869x_P1_25VREF, 0);
+	ads869x_inst.ADC0Struct.isTxReady = 0;
+	ADS869x_RangeSel(&(ads869x_inst.ADC0Struct), ADS869x_P1_25VREF, 0);
 	ADS869x_SPI_TxCheck();
 }
 
@@ -76,10 +83,10 @@ void ADS869x_RST(uint8_t state) {
  **/
 float ADS869x_GetVoltage(float scale) {	
 
-	ADS869xGetDataStruct()->ADC0Struct.tx_byte_cnt = &ADS869x_SPI->TxXferCount;
-	ADS869xGetDataStruct()->ADC0Struct.rx_byte_cnt = &ADS869x_SPI->RxXferCount;
+	ads869x_inst.ADC0Struct.tx_byte_cnt = &ADS869x_SPI->TxXferCount;
+	ads869x_inst.ADC0Struct.rx_byte_cnt = &ADS869x_SPI->RxXferCount;
 
-	return  /* ADS869x_INPUT_RANGE * */ scale * (uint32_t)(ADS869x_ReadADC(&(ADS869xGetDataStruct()->ADC0Struct)).DataWord >> 14);
+	return  /* ADS869x_INPUT_RANGE * */ scale * (uint32_t)(ADS869x_ReadADC(&(ads869x_inst.ADC0Struct)).DataWord >> 14);
 }
 
 /*
@@ -106,7 +113,7 @@ float ADS869x_GetRmsVoltage(float scale, uint8_t burst_size) {
 	RMSVoltage = 0;
 	for (uint8_t i = 0; i < burst_size; i++) {
 
-		ADCVoltage = scale * (uint32_t)(ADS869x_ReadADC(&(ADS869xGetDataStruct()->ADC0Struct)).DataWord >> 14);
+		ADCVoltage = scale * (uint32_t)(ADS869x_ReadADC(&(ads869x_inst.ADC0Struct)).DataWord >> 14);
 		RMSVoltage += ADCVoltage*ADCVoltage;
 		for (uint16_t j = 0; j < 750; j++) {
 			/* Cycle > 5uS. */
@@ -117,6 +124,13 @@ float ADS869x_GetRmsVoltage(float scale, uint8_t burst_size) {
 	RMSVoltage = sqrtf(RMSVoltage);
 
 	return RMSVoltage;
+}
+
+/*
+ * @brief Get converted data.
+ */
+uint32_t ADS869x_GetRawData(void) {
+	return (uint32_t)(ADS869x_ReadADC(&(ads869x_inst.ADC0Struct)).DataWord >> 14);
 }
 
 /*
@@ -411,27 +425,19 @@ void ADS869x_SetAlarmLTh(ADS869x_GInst_t* device, uint16_t inp_alrm_low_th)
 
 /*
  * @brief Data strucut getter/setter.
- * 
+ *
  *
  **/
 ADS869x_MGInst_t* ADS869xGetDataStruct(void) {
-
-	/* General data struct of ADC unit. */
-	static ADS869x_MGInst_t ads869x_minst = { 
-
-		.ADC0Struct.delay = HAL_Delay,
-		.ADC0Struct.spi_tx = ADS869x_SPI_Tx,
-		.ADC0Struct.spi_rx = ADS869x_SPI_Rx
-	};
-
-	// ads869x_minst.ADC0Struct.delay = HAL_Delay;
-	// ads869x_minst.ADC0Struct.spi_tx = ADS869x_SPI_Tx;
-	// ads869x_minst.ADC0Struct.spi_rx = ADS869x_SPI_Rx;
-
-
-	return &ads869x_minst;
+	return &ads869x_inst;
 }
 
+/*
+ * @brief Default parameters read/write.
+ */
+ADC_Cfg_t* ADC_Param(void) {
+	return &Param;
+}
 
 /* Hardware dependent functions. */
 
@@ -459,11 +465,11 @@ void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state) {
  **/
  static void ADS869x_SPI_TxCheck(void) {
 
-	// ADS869xGetDataStruct()->ADC0Struct.isTxReady = 0;
+	// ads869x_inst.ADC0Struct.isTxReady = 0;
 	do {
-		if (ADS869xGetDataStruct()->ADC0Struct.isTxReady) {
+		if (ads869x_inst.ADC0Struct.isTxReady) {
 			__NOP();
-			ADS869xGetDataStruct()->ADC0Struct.isTxReady = 0;
+			ads869x_inst.ADC0Struct.isTxReady = 0;
 			break;
 		}
 	}
@@ -476,11 +482,11 @@ void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state) {
  **/
 static void ADS869x_SPI_RxCheck(void) {
 	
-	// ADS869xGetDataStruct()->ADC0Struct.isRxReady = 0;
+	// ads869x_inst.ADC0Struct.isRxReady = 0;
 	do {
-		if (ADS869xGetDataStruct()->ADC0Struct.isRxReady) {
+		if (ads869x_inst.ADC0Struct.isRxReady) {
 			__NOP();
-			ADS869xGetDataStruct()->ADC0Struct.isRxReady = 0;
+			ads869x_inst.ADC0Struct.isRxReady = 0;
 			break;
 		}
 	}
@@ -493,11 +499,11 @@ static void ADS869x_SPI_RxCheck(void) {
  **/
 static void ADS869x_SPI_TxRxCheck(void) {
 
-	// ADS869xGetDataStruct()->ADC0Struct.isTxReady = 0;
+	// ads869x_inst.ADC0Struct.isTxReady = 0;
 	do {
-		if (ADS869xGetDataStruct()->ADC0Struct.isTxRxDMAReady) {
+		if (ads869x_inst.ADC0Struct.isTxRxDMAReady) {
 			__NOP();
-			ADS869xGetDataStruct()->ADC0Struct.isTxRxDMAReady = 0;
+			ads869x_inst.ADC0Struct.isTxRxDMAReady = 0;
 			break;
 		}
 	}

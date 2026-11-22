@@ -7,6 +7,10 @@
 #ifndef MC33CD1020_H_
 #define MC33CD1020_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #ifndef NULL
 #define NULL (void*)0
@@ -445,6 +449,7 @@ typedef struct {
 
 /* Public function prototypes. */
 
+uint8_t MC33CD1020_Init(void);
 void MC33CD1020_Reset(void); 
 void MC33CD1020_WakeUp(void);
 void MC33CD1020_EnterLpmMode(void); 
@@ -556,7 +561,9 @@ MC33CD1020_UniSG_t MC33CD1020_UniRegSG(MC33CD1020_UniSG_t* uniregSG, uint8_t add
 											uint8_t sg12, uint8_t sg13
 											);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MC33CD1020_H_ */
 

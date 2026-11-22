@@ -7,13 +7,12 @@
 #ifndef ADS869x_H_
 #define ADS869x_H_
 
-#include <stdint.h>
-#ifndef NULL
-#define NULL (void*)0
-#endif /* NULL */
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "stm32g431xx.h"
+#include <stdint.h>
 
 /* GPIO configuration. */
 #define ADS869x_CS_ADC_Pin							GPIO_PIN_12
@@ -611,6 +610,41 @@ typedef union __attribute__((aligned(1), packed)) {
 } ADS869x_InputCmd_t;
 
 /*
+* @brief Dynamic parameters.
+*
+**/
+typedef struct {
+
+	uint32_t RawData;
+	float Voltage;
+	float RmsVoltage;
+
+} ADC_Dparam_t;
+
+/*
+* @brief Static parameters set.
+*
+**/
+typedef struct __attribute__((aligned(1), packed)) {
+
+	 uint8_t RmsCoeff;
+
+} ADC_Sparam_t;
+
+/*
+* @brief Parameters' set.
+*
+**/
+typedef struct {
+
+	/* Dynamic parameters. */
+	ADC_Dparam_t D_Param;
+	/* Static parameters. */
+	ADC_Sparam_t S_Param;
+
+} ADC_Cfg_t;
+
+/*
  * @brief General data instance struct.
  *
  **/
@@ -642,7 +676,9 @@ typedef struct {
 
 /* Public function prototypes. */
 void ADS869x_Init(void);
+ADC_Cfg_t* ADC_Param(void);
 void ADS869x_RST(uint8_t state);
+uint32_t ADS869x_GetRawData(void);
 float ADS869x_GetVoltage(float scale);
 float ADS869x_GetRmsVoltage(float scale, uint8_t burst_size);
 ADS869x_OutputDataWord_t ADS869x_ReadADC(ADS869x_GInst_t* device);
@@ -665,6 +701,10 @@ void ADS869x_SPI_Tx(uint8_t *pData, uint8_t size);
 void ADS869x_SPI_Rx(uint8_t *pData, uint8_t size);
 void ADS869x_SPI_DmaTxRx(uint8_t *pTxData, uint8_t *pRxData, uint8_t size);
 void ADS869x_SPI_CS(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ADS869x_H_ */
 

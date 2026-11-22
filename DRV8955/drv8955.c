@@ -4,7 +4,7 @@
  *
  **/
 
-#include "drv8955.h"
+#include <drv8955.h>
 #include "stm32g431xx.h"
 #include "stm32g4xx_hal.h"
 #include "stm32g4xx_hal_gpio.h"
@@ -23,7 +23,7 @@ static void DRV8955_PinCtrl(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state
 static void DRV8955_PWMCtrl(uint32_t channel, uint8_t state);
 
 /* General struct. */
-
+static DRV8955_Param_t DrvParam;
 
 /*
  * @brief 
@@ -77,9 +77,9 @@ void DRV8955_Init(TIM_HandleTypeDef* timer, uint32_t ch1, uint32_t ch2) {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(nSLEEP_GPIO_Port, &GPIO_InitStruct);
 
-    DRV8955_Param()->D_Param.Tim = timer;
-    DRV8955_Param()->D_Param.Channel_1 = ch1;
-    DRV8955_Param()->D_Param.Channel_2 = ch2;
+    DrvParam.Tim = timer;
+    DrvParam.Channel_1 = ch1;
+    DrvParam.Channel_2 = ch2;
 }
 
 /*
@@ -180,17 +180,7 @@ void DRV8955_IN3Ctrl(uint8_t state) {
  **/
 void DRV8955_IN2PWMCtrl(uint8_t state) {
 
-	//HAL_TIM_PWM_Start(TIM3_INx_PWM, TIM_CHANNEL_2);
-    DRV8955_PWMCtrl(DRV8955_Param()->D_Param.Channel_1, state);
-}
-
-/*
- * @brief Default parameters read/write.
- */
-DRV8955_Cfg_t* DRV8955_Param(void) {
-
-	static DRV8955_Cfg_t DrvParam;
-	return &DrvParam;
+    DRV8955_PWMCtrl(DrvParam.Channel_1, state);
 }
 
  /* Hardware dependent functions. */
@@ -219,12 +209,12 @@ static void DRV8955_PinCtrl(GPIO_TypeDef* gpio, uint16_t gpio_pin, uint8_t state
  **/
 static void DRV8955_PWMCtrl(uint32_t channel, uint8_t state) {
 
+	if (DrvParam.Tim == NULL) return;
+
     if(state > 0) {
-	    HAL_TIM_PWM_Start(DRV8955_Param()->D_Param.Tim, channel);
+	    HAL_TIM_PWM_Start(DrvParam.Tim, channel);
     } else {
-        HAL_TIM_PWM_Stop(DRV8955_Param()->D_Param.Tim, channel);
+        HAL_TIM_PWM_Stop(DrvParam.Tim, channel);
     }
 }
 
-
-/* Interrupt callbacks. */

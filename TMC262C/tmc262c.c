@@ -257,7 +257,7 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 						TMC262C_StallGuard(0, 	// Stall guard mode.
 											0, 	// Stall guard parameter sign.
 											4,	// Stall guard threshold.
-											24, // Rsense = 50mOhm
+											16, // Rsense = 50mOhm
 											0); // READ_BACK
 						/* Parameter[1] TBL - sine wave is distorted when it's too low. */
 						/* Parameter[6..8] - The sine wave shape near zero transition will
@@ -284,7 +284,7 @@ void TMC262C_SetMotorProfile(uint8_t motor_profile) {
 
 
 						TMC262C_DrvConf(0, 7, 7, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0);
-						TMC262C_SmartEn(0, 3, 0, 0, 13, 0);
+						TMC262C_SmartEn(0, 3, 0, 0, 5, 0);
 
 					break;
 
@@ -351,7 +351,7 @@ void TMC262C_SetSgThr(int8_t stall_guard) {
  * @brief Set step resolution (for only step/dir configuration).
  *
  */
-void TMC262C_SetStepRes(uint8_t step_res) {
+void TMC262C_SetStepRes(uint16_t step_res) {
 
 	static uint8_t StepResSelector = 0;
 	static TMC262C_DrvCtrlRSet_t DrvCtrlRSet = { 0 };
@@ -865,16 +865,6 @@ TMC262C_ReadBack_t* TMC262C_GetReadBack(void) {
 
 	static TMC262C_ReadBack_t ReadBack = { 0 };
 	return &ReadBack;
-}
-
-
-/*
- * @brief Getter/setter for parameters.
- */
-TMC262C_Cfg_t* TMC262C_DriverParam(void) {
-
-	static TMC262C_Cfg_t DriverParam = { 0 };
-	return &DriverParam;
 }
 
  /* Hardware dependent functions. */

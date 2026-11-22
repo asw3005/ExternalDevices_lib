@@ -46,6 +46,32 @@ static MC33CD1020_GInst_t mc33cd1020_inst = {
  * @retval uint32_t : 0x00123456. 
  *
 **/
+uint8_t MC33CD1020_Init(void) {
+
+	MC33CD1020_Reset();
+	HAL_Delay(10);
+	if(MC33CD1020_SPICheck() == 0x00123456) {
+		MC33CD1020_DevCfg(MC33CD1020_WRITE_SEQ, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0);
+		MC33CD1020_TriStateSP(MC33CD1020_WRITE_SEQ, 1, 1, 1, 1, 0, 0, 1, 1);
+		MC33CD1020_TriStateSG(MC33CD1020_WRITE_SEQ, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1);
+		MC33CD1020_IntEnSP(MC33CD1020_WRITE_SEQ, 0, 0, 0, 0, 1, 1, 0, 0);
+		MC33CD1020_IntEnSG(MC33CD1020_WRITE_SEQ, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0);
+		MC33CD1020_WakeUpEnSP(MC33CD1020_WRITE_SEQ, 0, 0, 0, 0, 1, 1, 0, 0);
+		MC33CD1020_WakeUpEnSG(MC33CD1020_WRITE_SEQ, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0);
+		//MC33CD1020_ContWettCurrentSG(MC33CD1020_WRITE_SEQ, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0);
+		/* Enable AMUX. Read of input SG10, 11, SP4, 5. */
+		//MC33CD1020_AMUXCtrl(MC33CD1020_WRITE_SEQ, 0, 11);
+		return 0;
+	}
+	return 1;
+}
+
+
+/*
+ * @brief SPI check.
+ * @retval uint32_t : 0x00123456.
+ *
+**/
 uint32_t MC33CD1020_SPICheck(void) {
 
 	static uint32_t SPICheckWData = { 0 };
