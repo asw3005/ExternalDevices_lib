@@ -23,20 +23,25 @@ typedef void(*brt38_delay_fptr)(uint32_t delay);
  * @brief BRT38 typedef.
  *
  **/
- typedef union __attribute__((aligned(1), packed)){
-
-    uint16_t Data;
+ typedef union __attribute__((aligned(1), packed)) {
 
     struct {
-        uint8_t Data_MSB;
-        uint8_t Data_LSB;
+        uint8_t Data_MSB_H;
+        uint8_t Data_LSB_H;
+        uint8_t Data_MSB_L;
     };
 
     /* 12-bit, 16-turns */
     struct {
-        uint8_t SINGLE11_8  : 4;
+        uint8_t SINGLE11_9  : 3;
         uint8_t TURNS       : 4;
-        uint8_t SINGLE7_0   : 8;
+    	uint8_t DUMMY0		: 1;
+
+        uint8_t SINGLE8_1   : 8;
+
+        uint8_t DEAD_TIME	: 7;
+        uint8_t SINGLE0		: 1;
+
     };
 
  } BRT38_Data_t;

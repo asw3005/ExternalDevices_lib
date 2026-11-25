@@ -14,7 +14,7 @@ static BRT38_InterfaceParam_t ENC_IO;
 static ENC_Data_t EncInst = { 0 };
 
 /* Private function prototypes. */
-static void BRT38Start(void);
+//static void BRT38Start(void);
 static void BRT38_Rx(uint8_t *pData, uint8_t size);
 
 /*
@@ -42,19 +42,18 @@ void BRT38_IO_Init(SPI_HandleTypeDef* spi,
 ENC_Data_t* BRT38_UpdatePosition(void) {
 
 	BRT38_Data_t EncReadBack;
-    /* Two dummy reads and one real to update out data (this is hardware pause, above 50uS). ??? */
-    BRT38_Rx((uint8_t *)&EncReadBack.Data, sizeof(EncReadBack.Data));
-    BRT38_Rx((uint8_t *)&EncReadBack.Data, sizeof(EncReadBack.Data));
-    BRT38_Rx((uint8_t *)&EncReadBack.Data, sizeof(EncReadBack.Data));
 
-    EncInst.Single = ((uint16_t)EncReadBack.SINGLE11_8 << 8) | (uint16_t)EncReadBack.SINGLE7_0;
+	/* Two dummy reads and one real to update out data (encoder changes his output data only for third time). ??? */
+    BRT38_Rx(&EncReadBack.Data_MSB_H, sizeof(EncReadBack));
+    for (uint16_t i = 0; i < 500; i++);
+    BRT38_Rx(&EncReadBack.Data_MSB_H, sizeof(EncReadBack));
+    for (uint16_t i = 0; i < 500; i++);
+    BRT38_Rx(&EncReadBack.Data_MSB_H, sizeof(EncReadBack));
+    EncInst.Single = ((uint16_t)EncReadBack.SINGLE11_9 << 9) | ((uint16_t)EncReadBack.SINGLE8_1 << 1) | (uint16_t)EncReadBack.SINGLE0;
     EncInst.Turns = EncReadBack.TURNS;
 
     return &EncInst;
 }
-
-
- /* Hardware dependent functions. */
 
 /* Hardware dependent functions. */
 
@@ -79,50 +78,14 @@ void BRT38_SetMiddle(void) {
 }
 
 /*
-* @brief CLK HIGH to LOW transition.
-*
-* @param gpio      : START_PIN.
-* @param gpio_pin  : START_GPIO_Port.
-*
-**/
-static void BRT38Start(void) {
-
-   GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-   GPIO_InitStruct.Pin = ENC_IO.ClockStartPin;
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-   GPIO_InitStruct.Pull = GPIO_PULLUP;
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-   //GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-   HAL_GPIO_Init(ENC_IO.ClockStartPort, &GPIO_InitStruct);
-	
-   /* RST pin state. */
-   ENC_IO.ClockStartPort->BSRR = ENC_IO.ClockStartPin << 16;
-   for(uint8_t i = 0; i < 30; i++) {
-       __NOP();
-   }
-   /* SET pin high. */
-   //gpio->BSRR = gpio_pin;
-
-   GPIO_InitStruct.Pin = ENC_IO.ClockStartPin;
-   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-   GPIO_InitStruct.Pull = GPIO_PULLUP;
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-   GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-   HAL_GPIO_Init(ENC_IO.ClockStartPort, &GPIO_InitStruct);
-	
-}
-
-
-/*
 * @brief SPI Rx data.
 *
 **/
 static void BRT38_Rx(uint8_t *pData, uint8_t size) {
 	
-   BRT38Start();
-   HAL_SPI_Receive(ENC_IO.Spi, pData, size, 5);
-   HAL_Delay(1);
+	uint8_t dummy_tx[3] = { 0 };
+   //HAL_SPI_Receive(ENC_IO.Spi, pData, size, 5);
+	HAL_SPI_TransmitReceive(ENC_IO.Spi, dummy_tx, pData, size, 2);
 
 }
 
